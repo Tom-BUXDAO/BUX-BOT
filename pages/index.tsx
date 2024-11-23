@@ -7,6 +7,7 @@ import Image from 'next/image';
 import styles from '../styles/Home.module.css';
 import { useRouter } from 'next/router';
 import UserProfile from '../components/UserProfile';
+import RoleInfo from '../components/RoleInfo';
 
 interface CollectionCount {
   name: string;
@@ -165,6 +166,8 @@ export default function Home() {
             </>
           )}
         </div>
+        
+        <RoleInfo />
       </main>
     </div>
   );

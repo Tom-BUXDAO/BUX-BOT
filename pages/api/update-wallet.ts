@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { getToken } from 'next-auth/jwt';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyHolder } from '../../utils/verifyHolder';
+import { updateDiscordRoles } from '../../utils/discordRoles';
 
 interface ErrorResponse {
   message: string;
@@ -40,6 +41,9 @@ export default async function handler(
         updatedAt: new Date(),
       },
     });
+
+    // Update Discord roles
+    await updateDiscordRoles(token.discordId as string, collections);
 
     return res.status(200).json({
       ...user,
