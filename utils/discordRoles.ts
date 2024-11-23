@@ -27,7 +27,7 @@ const getAllManagedRoleIds = () => {
   // Add BUXDAO 5 role
   if (BUXDAO_5_ROLE_ID) roleIds.add(BUXDAO_5_ROLE_ID);
 
-  return Array.from(roleIds);
+  return Array.from(roleIds).filter((id): id is string => id !== undefined);
 };
 
 const client = new Client({ 
@@ -92,7 +92,7 @@ export async function updateDiscordRoles(discordId: string, collections: Collect
       }
 
       // Add whale role if applicable
-      if (config.whale && collection.count >= config.whale.threshold) {
+      if (config.whale?.roleId && collection.count >= (config.whale?.threshold || 0)) {
         console.log(`Adding whale role for ${collection.name}`);
         const whaleRole = await guild.roles.fetch(config.whale.roleId);
         if (whaleRole) await member.roles.add(whaleRole);
