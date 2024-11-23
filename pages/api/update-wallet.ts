@@ -41,10 +41,12 @@ export default async function handler(
       isHolder,
       collections
     });
-  } catch (error) {
-    console.error('Error updating wallet address:', error);
+  } catch (err) {
+    console.error('Error updating wallet address:', err);
+    const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
     return res.status(500).json({ 
       message: 'Error updating wallet address',
+      error: errorMessage,
       token: token
     });
   }
