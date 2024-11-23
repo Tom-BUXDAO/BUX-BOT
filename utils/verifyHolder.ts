@@ -11,6 +11,13 @@ interface CollectionCount {
   count: number;
 }
 
+interface NFT {
+  mint: string;
+  name: string;
+  symbol: string;
+  [key: string]: any;  // for other properties we don't care about
+}
+
 export async function verifyHolder(walletAddress: string): Promise<{
   isHolder: boolean;
   collections: CollectionCount[];
@@ -37,7 +44,7 @@ export async function verifyHolder(walletAddress: string): Promise<{
       throw new Error('Failed to fetch wallet NFTs');
     }
 
-    const ownedNFTs = data.result;
+    const ownedNFTs = data.result as NFT[];
     const heldCollections: CollectionCount[] = [];
 
     // Main collections
@@ -70,7 +77,7 @@ export async function verifyHolder(walletAddress: string): Promise<{
         const hashlist = JSON.parse(data);
         
         // Count NFTs from this collection
-        const nftsInCollection = ownedNFTs.filter(nft => 
+        const nftsInCollection = ownedNFTs.filter((nft: NFT) => 
           hashlist.includes(nft.mint)
         );
 
@@ -94,7 +101,7 @@ export async function verifyHolder(walletAddress: string): Promise<{
         const hashlist = JSON.parse(data);
         
         // Count NFTs from this collection
-        const nftsInCollection = ownedNFTs.filter(nft => 
+        const nftsInCollection = ownedNFTs.filter((nft: NFT) => 
           hashlist.includes(nft.mint)
         );
 
