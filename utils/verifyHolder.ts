@@ -54,7 +54,8 @@ export async function verifyHolder(walletAddress: string): Promise<{
       { name: 'celebcatz', mint_list: 'celebcatz.json' },
       { name: 'fcked_catz', mint_list: 'fcked_catz.json' },
       { name: 'money_monsters', mint_list: 'money_monsters.json' },
-      { name: 'money_monsters3d', mint_list: 'money_monsters3d.json' }
+      { name: 'money_monsters3d', mint_list: 'money_monsters3d.json' },
+      { name: 'ai_bitbots', mint_list: 'ai_bitbots.json' }
     ];
 
     // Collab collections

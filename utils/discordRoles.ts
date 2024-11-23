@@ -16,6 +16,8 @@ const client = new Client({
   ] 
 });
 
+const BUX_TOKEN_ADDRESS = 'FMiRxSbLqRTWiBszt1DZmXd7SrscWCccY7fcXNtwWxHK';
+
 export async function updateDiscordRoles(discordId: string, collections: CollectionCount[]): Promise<string[]> {
   try {
     console.log('Starting role update for Discord ID:', discordId);
@@ -57,7 +59,41 @@ export async function updateDiscordRoles(discordId: string, collections: Collect
 
     const assignedRoles: string[] = [];
 
-    // Add holder roles
+    // Get BUX balance
+    if (member && publicKey) {
+      try {
+        const response = await fetch(
+          `https://api.shyft.to/sol/v1/wallet/token_balance?network=mainnet-beta&wallet=${publicKey}&token=${BUX_TOKEN_ADDRESS}`,
+          {
+            headers: {
+              'x-api-key': process.env.NEXT_PUBLIC_SHYFT_API_KEY || '',
+            },
+          }
+        );
+
+        const data = await response.json();
+        if (data.success && data.result) {
+          const buxBalance = parseFloat(data.result.balance);
+          
+          // Assign BUX roles in descending order
+          for (const threshold of BUX_THRESHOLDS.sort((a, b) => b.threshold - a.threshold)) {
+            if (buxBalance >= threshold.threshold && threshold.roleId) {
+              const role = await guild.roles.fetch(threshold.roleId);
+              if (role) {
+                await member.roles.add(role);
+                assignedRoles.push(role.name);
+                console.log(`Added BUX role: ${role.name}`);
+                break; // Only assign the highest tier role
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking BUX balance:', error);
+      }
+    }
+
+    // Add NFT collection roles
     for (const collection of collections) {
       const config = NFT_THRESHOLDS[collection.name as keyof typeof NFT_THRESHOLDS];
       if (!config) continue;
