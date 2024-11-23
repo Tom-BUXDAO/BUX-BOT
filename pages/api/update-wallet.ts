@@ -3,6 +3,29 @@ import { getToken } from 'next-auth/jwt';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyHolder } from '../../utils/verifyHolder';
 
+interface ErrorWithMessage {
+  message: string;
+}
+
+function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as Record<string, unknown>).message === 'string'
+  );
+}
+
+function toErrorWithMessage(maybeError: unknown): ErrorWithMessage {
+  if (isErrorWithMessage(maybeError)) return maybeError;
+
+  try {
+    return new Error(JSON.stringify(maybeError));
+  } catch {
+    return new Error(String(maybeError));
+  }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -41,11 +64,12 @@ export default async function handler(
       isHolder,
       collections
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error updating wallet address:', error);
+    const errorWithMessage = toErrorWithMessage(error);
     return res.status(500).json({ 
       message: 'Error updating wallet address', 
-      error: error.message,
+      error: errorWithMessage.message,
       token: token
     });
   }
