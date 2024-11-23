@@ -28,4 +28,4 @@ Discord bot for BUX DAO holder verification and token balance checking.
 
 ## Setup
 
-1. Clone the repository: 
+1. Clone the repository:
