@@ -1,4 +1,4 @@
-import { Client, GuildMember, Intents } from 'discord.js';
+import { Client, GuildMember, GatewayIntentBits } from 'discord.js';
 import { NFT_THRESHOLDS, BUX_THRESHOLDS, MAIN_COLLECTIONS, BUXDAO_5_ROLE_ID } from './roleConfig';
 
 interface CollectionCount {
@@ -32,8 +32,8 @@ const getAllManagedRoleIds = () => {
 
 const client = new Client({ 
   intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MEMBERS
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers
   ] 
 });
 
