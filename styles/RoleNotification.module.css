@@ -52,6 +52,7 @@
   justify-content: center;
   transition: all 0.2s ease;
   border-radius: 50%;
+  z-index: 2;
 }
 
 .closeButton:hover {
@@ -97,14 +98,5 @@
   .notification {
     margin: 1rem auto;
     max-height: 80vh;
-  }
-
-  .closeButton {
-    position: sticky;
-    top: 0;
-    float: right;
-    background: #2a1b3d;
-    padding: 1rem;
-    z-index: 2;
   }
 } 
