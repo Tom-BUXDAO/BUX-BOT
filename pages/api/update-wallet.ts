@@ -3,9 +3,14 @@ import { getToken } from 'next-auth/jwt';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyHolder } from '../../utils/verifyHolder';
 
+interface ErrorResponse {
+  message: string;
+  token?: any;
+}
+
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<any>
 ) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -43,11 +48,10 @@ export default async function handler(
     });
   } catch (err) {
     console.error('Error updating wallet address:', err);
-    const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-    return res.status(500).json({ 
+    const response: ErrorResponse = {
       message: 'Error updating wallet address',
-      error: errorMessage,
-      token: token
-    });
+      token
+    };
+    return res.status(500).json(response);
   }
 } 
