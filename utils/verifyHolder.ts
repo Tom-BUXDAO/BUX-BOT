@@ -54,15 +54,15 @@ export async function verifyHolder(walletAddress: string): Promise<{
       { name: 'celebcatz', mint_list: 'celebcatz.json' },
       { name: 'fcked_catz', mint_list: 'fcked_catz.json' },
       { name: 'ai_bitbots', mint_list: 'ai_bitbots.json' },
-      // Collab collections
+      // Collab collections in ai_collabs subfolder
       { name: 'MM_top10', mint_list: 'MM_top10.json' },
       { name: 'MM3D_top10', mint_list: 'MM3D_top10.json' },
-      { name: 'candy_bots', mint_list: 'candy_bots.json' },
-      { name: 'doodle_bot', mint_list: 'doodle_bot.json' },
-      { name: 'energy_apes', mint_list: 'energy_apes.json' },
-      { name: 'rjctd_bots', mint_list: 'rjctd_bots.json' },
-      { name: 'squirrels', mint_list: 'squirrels.json' },
-      { name: 'warriors', mint_list: 'warriors.json' }
+      { name: 'candy_bots', mint_list: 'ai_collabs/candy_bots.json' },
+      { name: 'doodle_bot', mint_list: 'ai_collabs/doodle_bot.json' },
+      { name: 'energy_apes', mint_list: 'ai_collabs/energy_apes.json' },
+      { name: 'rjctd_bots', mint_list: 'ai_collabs/rjctd_bots.json' },
+      { name: 'squirrels', mint_list: 'ai_collabs/squirrels.json' },
+      { name: 'warriors', mint_list: 'ai_collabs/warriors.json' }
     ];
 
     // Process each collection
@@ -84,7 +84,8 @@ export async function verifyHolder(walletAddress: string): Promise<{
           });
         }
       } catch (error) {
-        console.error(`Error checking collection ${collection.name}:`, error);
+        // Log specific error for each collection
+        console.error(`Error checking collection ${collection.name}:`, error.message);
       }
     }
 
