@@ -1,0 +1,84 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.visible {
+  opacity: 1;
+}
+
+.notification {
+  background: #2a1b3d;
+  border: 2px solid #FFD700;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 90%;
+  width: 400px;
+  position: relative;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.overlay.visible .notification {
+  transform: translateY(0);
+}
+
+.closeButton {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #FFD700;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.closeButton:hover {
+  background: rgba(255, 215, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.notification h3 {
+  color: #FFD700;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.content {
+  color: white;
+}
+
+.content p {
+  margin-bottom: 1rem;
+}
+
+.content ul {
+  list-style: none;
+  padding: 0;
+}
+
+.content li {
+  padding: 0.5rem 0;
+  color: #b8a7d9;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.content li:last-child {
+  border-bottom: none;
+} 

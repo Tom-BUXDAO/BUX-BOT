@@ -8,6 +8,7 @@ import styles from '../styles/Home.module.css';
 import { useRouter } from 'next/router';
 import UserProfile from '../components/UserProfile';
 import RoleInfo from '../components/RoleInfo';
+import RoleNotification from '../components/RoleNotification';
 
 interface CollectionCount {
   name: string;
@@ -18,6 +19,7 @@ interface WalletUpdateResponse {
   isHolder: boolean;
   collections: CollectionCount[];
   walletAddress: string;
+  assignedRoles?: string[];
 }
 
 export default function Home() {
@@ -32,6 +34,8 @@ export default function Home() {
     isHolder: boolean;
     collections: CollectionCount[];
   } | null>(null);
+  const [assignedRoles, setAssignedRoles] = useState<string[]>([]);
+  const [showNotification, setShowNotification] = useState(false);
 
   const updateWallet = useCallback(async (address: string) => {
     if (isUpdating || !session || address === lastUpdatedWallet) return;
@@ -61,6 +65,12 @@ export default function Home() {
         isHolder: data.isHolder,
         collections: data.collections
       });
+
+      const roles = data.assignedRoles ?? [];
+      if (roles.length > 0) {
+        setAssignedRoles(roles);
+        setShowNotification(true);
+      }
     } catch (error) {
       console.error('Error updating wallet address:', error);
       setWalletStatus('Error connecting wallet');
@@ -169,6 +179,12 @@ export default function Home() {
         
         <RoleInfo />
       </main>
+      {showNotification && (
+        <RoleNotification 
+          roles={assignedRoles} 
+          onClose={() => setShowNotification(false)} 
+        />
+      )}
     </div>
   );
 } 

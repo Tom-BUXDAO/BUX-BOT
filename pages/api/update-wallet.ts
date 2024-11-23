@@ -42,13 +42,14 @@ export default async function handler(
       },
     });
 
-    // Update Discord roles
-    await updateDiscordRoles(token.discordId as string, collections);
+    // Update Discord roles and get assigned roles
+    const assignedRoles = await updateDiscordRoles(token.discordId as string, collections);
 
     return res.status(200).json({
       ...user,
       isHolder,
-      collections
+      collections,
+      assignedRoles
     });
   } catch (err) {
     console.error('Error updating wallet address:', err);
