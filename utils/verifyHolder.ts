@@ -46,13 +46,15 @@ export async function verifyHolder(walletAddress: string): Promise<{
     const ownedNFTs = data.result as NFT[];
     const heldCollections: CollectionCount[] = [];
 
-    // Main collections and collab collections
-    const mainCollections = [
-      { name: 'fcked_catz', mint_list: 'fcked_catz.json' },
+    // All collections including main and collabs
+    const allCollections = [
+      // Main collections
       { name: 'money_monsters', mint_list: 'money_monsters.json' },
       { name: 'money_monsters3d', mint_list: 'money_monsters3d.json' },
       { name: 'celebcatz', mint_list: 'celebcatz.json' },
+      { name: 'fcked_catz', mint_list: 'fcked_catz.json' },
       { name: 'ai_bitbots', mint_list: 'ai_bitbots.json' },
+      // Collab collections
       { name: 'MM_top10', mint_list: 'MM_top10.json' },
       { name: 'MM3D_top10', mint_list: 'MM3D_top10.json' },
       { name: 'candy_bots', mint_list: 'candy_bots.json' },
@@ -64,7 +66,7 @@ export async function verifyHolder(walletAddress: string): Promise<{
     ];
 
     // Process each collection
-    for (const collection of mainCollections) {
+    for (const collection of allCollections) {
       const filePath = path.join(process.cwd(), 'hashlists', collection.mint_list);
       try {
         const data = await fs.readFile(filePath, 'utf8');

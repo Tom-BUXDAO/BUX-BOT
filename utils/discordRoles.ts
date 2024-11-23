@@ -63,6 +63,23 @@ export async function updateDiscordRoles(
 
     const assignedRoles: string[] = [];
 
+    // Check for BUXDAO 5 qualification
+    const mainCollectionHoldings = MAIN_COLLECTIONS.map(collectionName => 
+      collections.find(c => c.name === collectionName)
+    );
+    
+    const qualifiesForBuxdao5 = mainCollectionHoldings.every(holding => holding !== undefined);
+    
+    if (qualifiesForBuxdao5 && BUXDAO_5_ROLE_ID) {
+      console.log('Qualifies for BUXDAO 5 role');
+      const buxdao5Role = await guild.roles.fetch(BUXDAO_5_ROLE_ID);
+      if (buxdao5Role) {
+        await member.roles.add(buxdao5Role);
+        assignedRoles.push(buxdao5Role.name);
+        console.log(`Successfully added BUXDAO 5 role: ${buxdao5Role.name}`);
+      }
+    }
+
     // Get BUX balance
     try {
       const response = await fetch(
@@ -95,7 +112,7 @@ export async function updateDiscordRoles(
       console.error('Error checking BUX balance:', error);
     }
 
-    // Add NFT collection roles
+    // Add NFT collection roles (including collabs)
     for (const collection of collections) {
       const config = NFT_THRESHOLDS[collection.name as keyof typeof NFT_THRESHOLDS];
       if (!config) continue;
