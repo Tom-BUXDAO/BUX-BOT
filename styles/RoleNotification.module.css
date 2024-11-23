@@ -92,11 +92,21 @@
 @media (max-width: 768px) {
   .overlay {
     align-items: flex-start;
-    padding-top: 2rem;
+    padding: 1rem;
+    overflow-y: scroll;
   }
 
   .notification {
-    margin: 1rem auto;
-    max-height: 80vh;
+    margin: 2rem auto;
+    max-height: calc(100vh - 4rem);
+    width: calc(100% - 2rem);
+    transform: none;
+  }
+
+  .closeButton {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: #2a1b3d;
   }
 } 
