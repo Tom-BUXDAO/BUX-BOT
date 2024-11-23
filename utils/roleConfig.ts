@@ -1,4 +1,14 @@
-export const NFT_THRESHOLDS = {
+interface WhaleConfig {
+  threshold: number;
+  roleId: string | undefined;
+}
+
+interface CollectionConfig {
+  holder: string | undefined;
+  whale?: WhaleConfig;
+}
+
+export const NFT_THRESHOLDS: Record<string, CollectionConfig> = {
   'ai_bitbots': {
     holder: process.env.AI_BITBOTS_ROLE_ID,
     whale: {
@@ -16,14 +26,14 @@ export const NFT_THRESHOLDS = {
   'money_monsters': {
     holder: process.env.MONEY_MONSTERS_ROLE_ID,
     whale: {
-      threshold: 25,
+      threshold: Number(process.env.MONEY_MONSTERS_WHALE_THRESHOLD) || 25,
       roleId: process.env.MONEY_MONSTERS_WHALE_ROLE_ID
     }
   },
   'money_monsters3d': {
     holder: process.env.MONEY_MONSTERS3D_ROLE_ID,
     whale: {
-      threshold: 25,
+      threshold: Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD) || 25,
       roleId: process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID
     }
   },
