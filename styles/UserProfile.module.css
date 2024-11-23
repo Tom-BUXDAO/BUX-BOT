@@ -1,0 +1,79 @@
+.profileContainer {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+}
+
+.profileInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.profileSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profileImageWrapper {
+  position: relative;
+}
+
+.profileImage {
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.holderBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.holderBadge.verified {
+  color: #0fb344;
+  background: white;
+}
+
+.holderBadge.notVerified {
+  color: #ff6b6b;
+  background: white;
+}
+
+.balanceText {
+  color: #FFD700;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.logoutButton {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.logoutButton:hover {
+  background: rgba(255, 107, 107, 0.1);
+  transform: scale(1.1);
+} 

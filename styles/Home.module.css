@@ -1,0 +1,223 @@
+.container {
+  min-height: 100vh;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #2a1b3d 0%, #1a1033 100%);
+  color: white;
+}
+
+.main {
+  padding: 4rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  line-height: 1.15;
+  font-size: 2.5rem;
+  text-align: center;
+  background: linear-gradient(to right, #fff, #b8a7d9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 2rem;
+}
+
+.loginContainer {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem;
+  border-radius: 1rem;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.discordButton {
+  background: linear-gradient(45deg, #7289da, #5865f2);
+  color: white;
+  border: 2px solid white !important;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(114, 137, 218, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.discordButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(114, 137, 218, 0.3);
+  background: linear-gradient(45deg, #5865f2, #7289da);
+}
+
+.discordButton:active {
+  transform: translateY(0);
+}
+
+.discordIcon {
+  font-size: 1.4rem;
+}
+
+.loggedInText {
+  color: #FFD700;
+  font-weight: 500;
+}
+
+.logoContainer {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  width: 100px;
+  height: 100px;
+}
+
+.logoImage {
+  opacity: 0.6;
+  filter: blur(2px);
+  transition: all 0.3s ease;
+  border-radius: 50%;
+}
+
+.logoImage:hover {
+  opacity: 0.8;
+  filter: blur(1px);
+}
+
+.logoText {
+  position: absolute;
+  font-size: 3.6rem;
+  font-weight: 1000;
+  letter-spacing: -1px;
+  color: transparent;
+  -webkit-text-stroke: 2px #FFD700;
+  pointer-events: none;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow: none;
+  background: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.logoPlaceholder {
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+.walletButtonWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.walletButton {
+  background: linear-gradient(45deg, #0b9d3b, #0fb344) !important;
+  color: white !important;
+  border: 2px solid white !important;
+  padding: 1rem 2rem !important;
+  border-radius: 8px !important;
+  font-size: 1.1rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(11, 157, 59, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  width: auto !important;
+  min-width: 200px !important;
+  justify-content: center !important;
+  font-family: 'Poppins', sans-serif !important;
+  text-align: center !important;
+}
+
+.walletButton:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(11, 157, 59, 0.3) !important;
+  background: linear-gradient(45deg, #0fb344, #0b9d3b) !important;
+}
+
+.walletButton:active {
+  transform: translateY(0) !important;
+}
+
+.walletStatus {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #FFD700;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.walletStatus.connected {
+  color: #00b894;
+}
+
+.walletStatus.error {
+  color: #ff6b6b;
+}
+
+.holderStatus {
+  margin-top: 0.5rem;
+  text-align: center;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+.holderText {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+}
+
+.verified {
+  color: #0fb344;
+}
+
+.notVerified {
+  color: #ff6b6b;
+}
+
+.collections {
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.collections p {
+  margin: 0.1rem 0;
+}
+
+.collections ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.1rem 0;
+}
+
+.collections li {
+  color: #FFD700;
+  padding: 0.05rem 0;
+  font-size: 0.85rem;
+}
+ 

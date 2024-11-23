@@ -1,0 +1,171 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { FaDiscord } from 'react-icons/fa';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import Image from 'next/image';
+import styles from '../styles/Home.module.css';
+import { useRouter } from 'next/router';
+import UserProfile from '../components/UserProfile';
+
+interface CollectionCount {
+  name: string;
+  count: number;
+}
+
+interface WalletUpdateResponse {
+  isHolder: boolean;
+  collections: CollectionCount[];
+  walletAddress: string;
+}
+
+export default function Home() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [imageError, setImageError] = useState(false);
+  const { connected, connecting, publicKey, disconnect } = useWallet();
+  const [walletStatus, setWalletStatus] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [lastUpdatedWallet, setLastUpdatedWallet] = useState<string | null>(null);
+  const [holderStatus, setHolderStatus] = useState<{
+    isHolder: boolean;
+    collections: CollectionCount[];
+  } | null>(null);
+
+  const updateWallet = useCallback(async (address: string) => {
+    if (isUpdating || !session || address === lastUpdatedWallet) return;
+
+    setIsUpdating(true);
+    setWalletStatus('Updating wallet...');
+    
+    try {
+      const response = await fetch('/api/update-wallet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ walletAddress: address }),
+      });
+
+      const data: WalletUpdateResponse = await response.json();
+
+      if (!response.ok) {
+        throw new Error('Failed to update wallet address');
+      }
+
+      setWalletStatus('Wallet Connected');
+      setLastUpdatedWallet(address);
+      setHolderStatus({
+        isHolder: data.isHolder,
+        collections: data.collections
+      });
+    } catch (error) {
+      console.error('Error updating wallet address:', error);
+      setWalletStatus('Error connecting wallet');
+      setHolderStatus(null);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [session, isUpdating, lastUpdatedWallet]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (connected) {
+        disconnect();
+      }
+      if (session) {
+        signOut({ redirect: false });
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      }
+    };
+  }, [connected, disconnect, session]);
+
+  useEffect(() => {
+    if (connecting) {
+      setWalletStatus('Connecting...');
+    } else if (connected && publicKey) {
+      updateWallet(publicKey.toString());
+    } else {
+      setWalletStatus('');
+    }
+  }, [connected, connecting, publicKey, updateWallet]);
+
+  return (
+    <div className={styles.container}>
+      <UserProfile holderStatus={holderStatus} />
+      <main className={styles.main}>
+        <div className={styles.logoContainer}>
+          {!imageError ? (
+            <Image 
+              src="/logo.png"
+              alt="BUX DAO Logo"
+              width={100}
+              height={100}
+              className={styles.logoImage}
+              onError={() => setImageError(true)}
+              priority
+            />
+          ) : (
+            <div className={styles.logoPlaceholder} />
+          )}
+          <div className={styles.logoText}>BUX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DAO</div>
+        </div>
+        
+        <h1 className={styles.title}>
+          Holder Verification
+        </h1>
+
+        <div className={styles.loginContainer}>
+          {!session ? (
+            <button
+              className={styles.discordButton}
+              onClick={() => signIn('discord')}
+            >
+              <FaDiscord className={styles.discordIcon} />
+              Sign in
+            </button>
+          ) : (
+            <>
+              <p className={styles.loggedInText}>Signed in as {session.user?.name}</p>
+              <div className={styles.walletButtonWrapper}>
+                <WalletMultiButton className={styles.walletButton} />
+                {walletStatus && (
+                  <p className={`${styles.walletStatus} ${connected ? styles.connected : ''} ${walletStatus.includes('Error') ? styles.error : ''}`}>
+                    {walletStatus}
+                  </p>
+                )}
+                {holderStatus && (
+                  <div className={styles.holderStatus}>
+                    <p className={`${styles.holderText} ${holderStatus.isHolder ? styles.verified : styles.notVerified}`}>
+                      {holderStatus.isHolder ? '✓ Verified Holder' : '✗ Not a Holder'}
+                    </p>
+                    {holderStatus.isHolder && holderStatus.collections.length > 0 && (
+                      <div className={styles.collections}>
+                        <p>Collections:</p>
+                        <ul>
+                          {holderStatus.collections.map((collection) => (
+                            <li key={collection.name}>{collection.count} x {collection.name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+} 
