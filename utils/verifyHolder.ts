@@ -83,9 +83,9 @@ export async function verifyHolder(walletAddress: string): Promise<{
             count: nftsInCollection.length
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         // Log specific error for each collection
-        console.error(`Error checking collection ${collection.name}:`, error.message);
+        console.error(`Error checking collection ${collection.name}:`, error?.message || 'Unknown error');
       }
     }
 
@@ -95,8 +95,8 @@ export async function verifyHolder(walletAddress: string): Promise<{
       isHolder: heldCollections.length > 0,
       collections: heldCollections
     };
-  } catch (error) {
-    console.error('Error verifying holder:', error);
+  } catch (error: any) {
+    console.error('Error verifying holder:', error?.message || 'Unknown error');
     return {
       isHolder: false,
       collections: []
