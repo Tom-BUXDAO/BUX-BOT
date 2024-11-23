@@ -11,6 +11,8 @@
   z-index: 1000;
   opacity: 0;
   transition: opacity 0.3s ease;
+  padding: 1rem;
+  overflow-y: auto;
 }
 
 .overlay.visible {
@@ -27,6 +29,9 @@
   position: relative;
   transform: translateY(20px);
   transition: transform 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
 }
 
 .overlay.visible .notification {
@@ -81,4 +86,25 @@
 
 .content li:last-child {
   border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+
+  .notification {
+    margin: 1rem auto;
+    max-height: 80vh;
+  }
+
+  .closeButton {
+    position: sticky;
+    top: 0;
+    float: right;
+    background: #2a1b3d;
+    padding: 1rem;
+    z-index: 2;
+  }
 } 
