@@ -13,7 +13,7 @@ export default function RoleInfo() {
             Whale roles for:
             <ul>
               <li>10+ AI Bitbots</li>
-              <li>25+ FCKED CATZ</li>
+              <li>25+ Fcked Catz</li>
               <li>25+ Money Monsters</li>
               <li>25+ Money Monsters 3D</li>
             </ul>
@@ -39,8 +39,8 @@ export default function RoleInfo() {
             <ul>
               <li>Money Monsters</li>
               <li>Money Monsters 3D</li>
-              <li>CelebCatz</li>
-              <li>FCKED CATZ</li>
+              <li>Celeb Catz</li>
+              <li>Fcked Catz</li>
               <li>AI Bitbots</li>
             </ul>
           </li>
