@@ -16,7 +16,7 @@ const client = new Client({
   ] 
 });
 
-export async function updateDiscordRoles(discordId: string, collections: CollectionCount[]) {
+export async function updateDiscordRoles(discordId: string, collections: CollectionCount[]): Promise<string[]> {
   try {
     console.log('Starting role update for Discord ID:', discordId);
     console.log('Bot token available:', !!DISCORD_BOT_TOKEN);
@@ -55,22 +55,19 @@ export async function updateDiscordRoles(discordId: string, collections: Collect
       }
     }
 
-    // Add new roles
-    console.log('Collections to process:', collections);
+    const assignedRoles: string[] = [];
+
+    // Add holder roles
     for (const collection of collections) {
       const config = NFT_THRESHOLDS[collection.name as keyof typeof NFT_THRESHOLDS];
-      if (!config) {
-        console.log(`No config found for collection: ${collection.name}`);
-        continue;
-      }
+      if (!config) continue;
 
       if (config.holder) {
         try {
-          console.log(`Fetching holder role for ${collection.name}`);
           const role = await guild.roles.fetch(config.holder);
           if (role) {
-            console.log(`Adding holder role: ${role.name}`);
             await member.roles.add(role);
+            assignedRoles.push(role.name);
             console.log(`Successfully added holder role: ${role.name}`);
           }
         } catch (error) {
@@ -78,13 +75,13 @@ export async function updateDiscordRoles(discordId: string, collections: Collect
         }
       }
 
+      // Add whale role if applicable
       if (config.whale?.roleId && collection.count >= (config.whale?.threshold || 0)) {
         try {
-          console.log(`Fetching whale role for ${collection.name}`);
           const whaleRole = await guild.roles.fetch(config.whale.roleId);
           if (whaleRole) {
-            console.log(`Adding whale role: ${whaleRole.name}`);
             await member.roles.add(whaleRole);
+            assignedRoles.push(whaleRole.name);
             console.log(`Successfully added whale role: ${whaleRole.name}`);
           }
         } catch (error) {
@@ -94,10 +91,11 @@ export async function updateDiscordRoles(discordId: string, collections: Collect
     }
 
     console.log('Role update completed successfully');
-    return true;
+    console.log('Assigned roles:', assignedRoles);
+    return assignedRoles;
   } catch (error) {
     console.error('Error updating Discord roles:', error);
-    return false;
+    return [];
   }
 }
 
