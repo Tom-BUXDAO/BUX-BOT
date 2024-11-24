@@ -21,14 +21,24 @@ interface NFT {
 // Add delay function at the top level
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export async function verifyHolder(walletAddress: string): Promise<{
+// Add max retries to prevent infinite loops
+const MAX_RETRIES = 3;
+
+export async function verifyHolder(
+  walletAddress: string, 
+  retryCount = 0
+): Promise<{
   isHolder: boolean;
   collections: CollectionCount[];
 }> {
   try {
+    if (retryCount >= MAX_RETRIES) {
+      throw new Error('Max retry attempts reached');
+    }
+
     console.log('Starting verification for wallet:', walletAddress);
     
-    await delay(1000); // 1 second delay
+    await delay(1000 * (retryCount + 1)); // Increase delay with each retry
 
     const response = await fetch(
       `https://api.shyft.to/sol/v1/nft/read_all?network=mainnet-beta&address=${walletAddress}`,
@@ -43,9 +53,12 @@ export async function verifyHolder(walletAddress: string): Promise<{
 
     // Handle rate limiting
     if (response.status === 429) {
-      console.log('Rate limited by Shyft API, retrying after delay...');
-      await delay(2000); // Wait 2 seconds before retry
-      return verifyHolder(walletAddress); // Retry the request
+      console.log(`Rate limited by Shyft API (attempt ${retryCount + 1}), retrying after delay...`);
+      return verifyHolder(walletAddress, retryCount + 1);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Shyft API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -115,16 +128,10 @@ export async function verifyHolder(walletAddress: string): Promise<{
       collections: heldCollections
     };
   } catch (error: any) {
-    if (error.message?.includes('rate limit')) {
-      console.log('Rate limit error, retrying...');
-      await delay(2000);
-      return verifyHolder(walletAddress);
+    if (error.message?.includes('rate limit') && retryCount < MAX_RETRIES) {
+      console.log(`Rate limit error (attempt ${retryCount + 1}), retrying...`);
+      return verifyHolder(walletAddress, retryCount + 1);
     }
-    console.error('Error verifying holder:', error?.message || 'Unknown error');
-    console.error('Full error:', error);
-    return {
-      isHolder: false,
-      collections: []
-    };
+    throw error;
   }
 } 
