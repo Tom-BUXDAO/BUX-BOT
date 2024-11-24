@@ -9,6 +9,11 @@ interface ErrorResponse {
   token?: any;
 }
 
+interface VerifyResponse {
+  isHolder: boolean;
+  collections: { name: string; count: number; }[];
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<any>
@@ -35,11 +40,11 @@ export default async function handler(
   try {
     // Add timeout to verifyHolder
     const verifyPromise = verifyHolder(walletAddress);
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise<never>((_, reject) => 
       setTimeout(() => reject(new Error('Verification timed out')), 25000)
     );
 
-    const { isHolder, collections } = await Promise.race([
+    const { isHolder, collections } = await Promise.race<VerifyResponse>([
       verifyPromise,
       timeoutPromise
     ]);
