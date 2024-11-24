@@ -36,9 +36,11 @@ export async function verifyHolder(
       throw new Error('Max retry attempts reached');
     }
 
-    console.log('Starting verification for wallet:', walletAddress);
+    console.log(`Verification attempt ${retryCount + 1} for wallet:`, walletAddress);
     
-    await delay(1000 * (retryCount + 1)); // Increase delay with each retry
+    // Exponential backoff
+    const backoffDelay = Math.pow(2, retryCount) * 1000;
+    await delay(backoffDelay);
 
     const response = await fetch(
       `https://api.shyft.to/sol/v1/nft/read_all?network=mainnet-beta&address=${walletAddress}`,
@@ -48,20 +50,29 @@ export async function verifyHolder(
           'accept': 'application/json',
           'x-api-key': process.env.NEXT_PUBLIC_SHYFT_API_KEY || '',
         },
+        // Add timeout and retry options
+        signal: AbortSignal.timeout(30000),
+        cache: 'no-store',
       }
-    );
+    ).catch(error => {
+      console.error('Fetch error:', error);
+      throw new Error(`Network error: ${error.message}`);
+    });
 
-    // Handle rate limiting
     if (response.status === 429) {
-      console.log(`Rate limited by Shyft API (attempt ${retryCount + 1}), retrying after delay...`);
+      console.log(`Rate limited (attempt ${retryCount + 1}), retrying after ${backoffDelay}ms...`);
       return verifyHolder(walletAddress, retryCount + 1);
     }
 
     if (!response.ok) {
-      throw new Error(`Shyft API error: ${response.status} ${response.statusText}`);
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(error => {
+      console.error('JSON parse error:', error);
+      throw new Error('Failed to parse API response');
+    });
+
     console.log('Shyft API Response Status:', response.status);
     console.log('Shyft API Response:', JSON.stringify(data, null, 2));
 
@@ -128,10 +139,16 @@ export async function verifyHolder(
       collections: heldCollections
     };
   } catch (error: any) {
-    if (error.message?.includes('rate limit') && retryCount < MAX_RETRIES) {
-      console.log(`Rate limit error (attempt ${retryCount + 1}), retrying...`);
+    console.error(`Verification error (attempt ${retryCount + 1}):`, error);
+    
+    if ((error.message?.includes('rate limit') || 
+         error.message?.includes('Network error') ||
+         error.message?.includes('timeout')) && 
+        retryCount < MAX_RETRIES) {
+      console.log(`Retrying after error: ${error.message}`);
       return verifyHolder(walletAddress, retryCount + 1);
     }
+    
     throw error;
   }
 } 
