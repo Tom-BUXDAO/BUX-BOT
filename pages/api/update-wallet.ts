@@ -6,7 +6,7 @@ import { updateDiscordRoles } from '../../utils/discordRoles';
 
 interface ErrorResponse {
   message: string;
-  token?: any;
+  error?: any;
 }
 
 interface VerifyResponse {
@@ -20,7 +20,7 @@ export default async function handler(
 ) {
   // Increase timeout
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Keep-Alive', 'timeout=30');
+  res.setHeader('Keep-Alive', 'timeout=60');
 
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
@@ -38,34 +38,44 @@ export default async function handler(
   }
 
   try {
+    console.log('Starting wallet verification for:', walletAddress);
+
     // Add timeout to verifyHolder
     const verifyPromise = verifyHolder(walletAddress);
     const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Verification timed out')), 25000)
+      setTimeout(() => reject(new Error('Verification timed out')), 50000)
     );
 
-    const { isHolder, collections } = await Promise.race<VerifyResponse>([
+    const verifyResult = await Promise.race<VerifyResponse>([
       verifyPromise,
       timeoutPromise
     ]);
+
+    console.log('Verify result:', verifyResult);
 
     const user = await prisma.user.update({
       where: { discordId: token.discordId as string },
       data: { walletAddress, updatedAt: new Date() },
     });
 
-    const assignedRoles = await updateDiscordRoles(token.discordId as string, collections, walletAddress);
+    console.log('User updated:', user);
+
+    const assignedRoles = await updateDiscordRoles(token.discordId as string, verifyResult.collections, walletAddress);
+
+    console.log('Roles assigned:', assignedRoles);
 
     return res.status(200).json({
       ...user,
-      isHolder,
-      collections,
+      isHolder: verifyResult.isHolder,
+      collections: verifyResult.collections,
       assignedRoles
     });
   } catch (err) {
-    console.error('Error updating wallet address:', err);
-    return res.status(500).json({ 
-      message: err instanceof Error ? err.message : 'Error updating wallet address'
-    });
+    console.error('Detailed error:', err);
+    const errorResponse: ErrorResponse = {
+      message: err instanceof Error ? err.message : 'Error updating wallet address',
+      error: err
+    };
+    return res.status(500).json(errorResponse);
   }
 } 
