@@ -18,6 +18,9 @@ interface NFT {
   [key: string]: any;
 }
 
+// Add delay function at the top level
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function verifyHolder(walletAddress: string): Promise<{
   isHolder: boolean;
   collections: CollectionCount[];
@@ -25,8 +28,6 @@ export async function verifyHolder(walletAddress: string): Promise<{
   try {
     console.log('Starting verification for wallet:', walletAddress);
     
-    // Add delay between requests to avoid rate limiting
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     await delay(1000); // 1 second delay
 
     const response = await fetch(
