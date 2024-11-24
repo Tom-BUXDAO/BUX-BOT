@@ -5,6 +5,18 @@ import path from 'path';
 const prisma = new PrismaClient();
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+interface Collection {
+  id: string;
+  name: string;
+  symbol: string | null;
+  description: string | null;
+  isMain: boolean;
+  totalSupply: number;
+  createdAt: Date;
+  updatedAt: Date;
+  mint_list?: string;
+}
+
 async function fetchNFTMetadata(mint: string) {
   try {
     const response = await fetch(
@@ -57,7 +69,7 @@ async function populateNFTMetadata() {
           const metadata = await fetchNFTMetadata(mint);
           
           if (metadata) {
-            await prisma.nFT.create({
+            await prisma.NFT.create({
               data: {
                 mint,
                 name: metadata.name,
