@@ -5,17 +5,31 @@ import path from 'path';
 const prisma = new PrismaClient();
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-interface Collection {
-  id: string;
+interface CollectionData {
   name: string;
-  symbol: string | null;
-  description: string | null;
+  mint_list: string;
   isMain: boolean;
-  totalSupply: number;
-  createdAt: Date;
-  updatedAt: Date;
-  mint_list?: string;
+  symbol?: string;
+  description?: string;
 }
+
+const collections: CollectionData[] = [
+  // Main collections
+  { name: 'money_monsters', mint_list: 'money_monsters.json', isMain: true, symbol: 'MM' },
+  { name: 'money_monsters3d', mint_list: 'money_monsters3d.json', isMain: true, symbol: 'MM3D' },
+  { name: 'celebcatz', mint_list: 'celebcatz.json', isMain: true, symbol: 'CC' },
+  { name: 'fcked_catz', mint_list: 'fcked_catz.json', isMain: true, symbol: 'FC' },
+  { name: 'ai_bitbots', mint_list: 'ai_bitbots.json', isMain: true, symbol: 'AIBB' },
+  // Collab collections
+  { name: 'MM_top10', mint_list: 'MM_top10.json', isMain: false },
+  { name: 'MM3D_top10', mint_list: 'MM3D_top10.json', isMain: false },
+  { name: 'candy_bots', mint_list: 'ai_collabs/candy_bots.json', isMain: false },
+  { name: 'doodle_bot', mint_list: 'ai_collabs/doodle_bot.json', isMain: false },
+  { name: 'energy_apes', mint_list: 'ai_collabs/energy_apes.json', isMain: false },
+  { name: 'rjctd_bots', mint_list: 'ai_collabs/rjctd_bots.json', isMain: false },
+  { name: 'squirrels', mint_list: 'ai_collabs/squirrels.json', isMain: false },
+  { name: 'warriors', mint_list: 'ai_collabs/warriors.json', isMain: false }
+];
 
 async function fetchNFTMetadata(mint: string) {
   try {
@@ -48,8 +62,7 @@ async function fetchNFTMetadata(mint: string) {
 }
 
 async function populateNFTMetadata() {
-  const collections = await prisma.collection.findMany();
-  
+  // Process each collection directly from our array
   for (const collection of collections) {
     console.log(`Processing collection: ${collection.name}`);
     
@@ -69,7 +82,7 @@ async function populateNFTMetadata() {
           const metadata = await fetchNFTMetadata(mint);
           
           if (metadata) {
-            await prisma.NFT.create({
+            await prisma.nFT.create({
               data: {
                 mint,
                 name: metadata.name,
