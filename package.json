@@ -9,7 +9,13 @@
     "lint": "next lint",
     "postinstall": "prisma generate",
     "populate:collections": "ts-node scripts/populateNFTs.ts",
-    "fetch:metadata": "ts-node scripts/fetchNFTMetadata.ts"
+    "fetch:metadata": "ts-node scripts/fetchNFTMetadata.ts",
+    "check:data": "ts-node scripts/checkData.ts",
+    "update:ownership": "ts-node scripts/updateOwnership.ts",
+    "update:owners": "ts-node scripts/updateNFTOwners.ts",
+    "check:missing": "ts-node scripts/checkMissingOwners.ts",
+    "update:all": "ts-node scripts/updateAllOwners.ts",
+    "update:missing": "ts-node scripts/updateMissingOwners.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",

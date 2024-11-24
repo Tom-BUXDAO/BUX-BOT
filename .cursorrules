@@ -1,5 +1,60 @@
-We are building holder verification for Solana NFT projects.
+# BUX DAO NFT Verification Project Rules
 
-first we will make a discord log in page.
+## File Organization
+- Place React components in /components
+- Place API routes in /pages/api
+- Place page components in /pages
+- Place styles in /styles
+- Place utilities in /utils
+- Place database scripts in /scripts
+- Place types and interfaces in /types
+- Place environment variables in .env.local
 
-provide copy and paste git commit messages after each update so I can test without having to ask each DateTime
+## Naming Conventions
+- Use PascalCase for component files (UserProfile.tsx)
+- Use camelCase for utility files (verifyHolder.ts)
+- Use kebab-case for CSS modules (role-info.module.css)
+- Use SCREAMING_SNAKE_CASE for environment variables
+
+## Code Style
+- Use TypeScript for all .ts and .tsx files
+- Use CSS Modules for styling
+- Use async/await for asynchronous code
+- Use proper error handling with try/catch
+- Add type definitions for all props and functions
+
+## Database
+- Use Prisma for all database operations
+- Keep schema.prisma up to date
+- Use migrations for schema changes
+- Add comments for complex queries
+
+## API
+- Use rate limiting for external APIs
+- Add proper error handling
+- Use typed responses
+- Document API endpoints
+
+## Components
+- Keep components small and focused
+- Use proper prop typing
+- Add JSDoc comments for complex components
+- Follow React best practices
+
+## Scripts
+- Add descriptive console output
+- Include error handling
+- Add retry logic for API calls
+- Document usage in README.md
+
+## Environment Variables
+- Never commit .env files
+- Keep .env.example updated
+- Use strong typing for env vars
+- Document all required variables
+
+## Git
+- Use meaningful commit messages
+- Keep commits focused and atomic
+- Don't commit sensitive data
+- Update README.md for new features

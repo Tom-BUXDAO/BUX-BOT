@@ -5,6 +5,9 @@ import path from 'path';
 const prisma = new PrismaClient();
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+const DELAY_BETWEEN_REQUESTS = 1000; // 1 second between requests
+const MAX_RETRIES = 3;
+
 interface CollectionData {
   name: string;
   mint_list: string;
@@ -31,38 +34,84 @@ const collections: CollectionData[] = [
   { name: 'warriors', mint_list: 'ai_collabs/warriors.json', isMain: false }
 ];
 
-async function fetchNFTMetadata(mint: string) {
+function getCollectionPrefix(collectionName: string): string {
+  const prefixes: { [key: string]: string } = {
+    'money_monsters': 'Money Monster',
+    'money_monsters3d': 'Money Monster 3D',
+    'celebcatz': 'CelebCat',
+    'fcked_catz': 'FCKED Cat',
+    'ai_bitbots': 'A.I. BitBot',
+    'MM_top10': 'Money Monster Top 10',
+    'MM3D_top10': 'Money Monster 3D Top 10',
+    'candy_bots': 'Candy Bot',
+    'doodle_bot': 'Doodle Bot',
+    'energy_apes': 'A.I. Energy Ape',
+    'rjctd_bots': 'Rejected Bot',
+    'squirrels': 'A.I. Squirrel',
+    'warriors': 'A.I. Warrior'
+  };
+  return prefixes[collectionName] || 'Unknown';
+}
+
+async function fetchNFTMetadata(mint: string, collection: string, retryCount = 0): Promise<any> {
   try {
+    if (retryCount >= MAX_RETRIES) {
+      throw new Error(`Max retries (${MAX_RETRIES}) reached for ${mint}`);
+    }
+
+    await delay(DELAY_BETWEEN_REQUESTS * (retryCount + 1));
+
     const response = await fetch(
-      `https://api.shyft.to/sol/v1/nft/read?network=mainnet-beta&token_address=${mint}`,
+      `https://api-mainnet.magiceden.dev/v2/tokens/${mint}`,
       {
+        method: 'GET',
         headers: {
           'accept': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_SHYFT_API_KEY || '',
+          'User-Agent': 'BUX-DAO-Bot/1.0'
         },
+        cache: 'no-store'
       }
     );
 
     if (response.status === 429) {
-      console.log('Rate limited, waiting 2 seconds...');
-      await delay(2000);
-      return fetchNFTMetadata(mint);
+      console.log(`Rate limited (attempt ${retryCount + 1}), waiting ${DELAY_BETWEEN_REQUESTS * 2}ms...`);
+      await delay(DELAY_BETWEEN_REQUESTS * 2);
+      return fetchNFTMetadata(mint, collection, retryCount + 1);
+    }
+
+    if (!response.ok) {
+      throw new Error(`API returned ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
-    if (!data.success) {
-      throw new Error(`Failed to fetch metadata for ${mint}`);
+    console.log(`Successfully fetched metadata for ${mint}`);
+    
+    // Extract number from name or generate from mint
+    let number = '0';
+    if (data.name) {
+      const match = data.name.match(/#(\d+)/);
+      if (match) number = match[1];
+    } else {
+      number = mint.slice(0, 4); // Use first 4 chars of mint as fallback
     }
-
-    return data.result;
-  } catch (error) {
-    console.error(`Error fetching metadata for ${mint}:`, error);
-    return null;
+    
+    return {
+      name: data.name || `${getCollectionPrefix(collection)} #${number}`,
+      symbol: data.symbol,
+      image_uri: data.image,
+      attributes: data.attributes
+    };
+  } catch (error: any) {
+    if (retryCount < MAX_RETRIES) {
+      console.log(`Retrying ${mint} after error: ${error?.message || 'Unknown error'}`);
+      await delay(DELAY_BETWEEN_REQUESTS * (retryCount + 1));
+      return fetchNFTMetadata(mint, collection, retryCount + 1);
+    }
+    throw error;
   }
 }
 
 async function populateNFTMetadata() {
-  // Process each collection directly from our array
   for (const collection of collections) {
     console.log(`Processing collection: ${collection.name}`);
     
@@ -72,22 +121,21 @@ async function populateNFTMetadata() {
       const mints = JSON.parse(data);
       
       for (const mint of mints) {
-        // Check if NFT already exists
         const existingNFT = await prisma.nFT.findUnique({
           where: { mint }
         });
 
         if (!existingNFT) {
           console.log(`Fetching metadata for ${mint}`);
-          const metadata = await fetchNFTMetadata(mint);
+          const metadata = await fetchNFTMetadata(mint, collection.name);
           
           if (metadata) {
             await prisma.nFT.create({
               data: {
                 mint,
                 name: metadata.name,
-                symbol: metadata.symbol,
-                image: metadata.image_uri,
+                symbol: metadata.symbol || null,
+                image: metadata.image_uri || null,
                 collection: collection.name,
                 attributes: metadata.attributes || {},
               }
@@ -95,7 +143,6 @@ async function populateNFTMetadata() {
             console.log(`Added NFT: ${metadata.name}`);
           }
           
-          // Add delay to avoid rate limits
           await delay(500);
         }
       }
