@@ -1,81 +1,50 @@
-import { prisma } from '../../lib/prisma';
-import { getToken } from 'next-auth/jwt';
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { verifyHolder } from '../../utils/verifyHolder';
-import { updateDiscordRoles } from '../../utils/discordRoles';
+import { NextApiRequest, NextApiResponse } from 'next';
+import { prisma } from '@/lib/prisma';
+import { verifyHolder } from '@/utils/verifyHolder';
 
-interface ErrorResponse {
-  message: string;
-  error?: any;
-}
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-interface VerifyResponse {
-  isHolder: boolean;
-  collections: { name: string; count: number; }[];
-}
+    try {
+        const { walletAddress, discordId } = req.body;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<any>
-) {
-  // Increase timeout
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Keep-Alive', 'timeout=60');
+        if (!walletAddress) {
+            return res.status(400).json({ error: 'Wallet address is required' });
+        }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
+        console.log('Starting wallet verification for:', walletAddress);
 
-  const token = await getToken({ req });
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
+        // Verify the wallet
+        const verifyResult = await verifyHolder(walletAddress);
+        
+        if (discordId) {
+            // Get user
+            const user = await prisma.user.findUnique({
+                where: { discordId },
+                include: { wallets: true }
+            });
 
-  const { walletAddress } = req.body;
-  if (!walletAddress) {
-    return res.status(400).json({ message: 'Wallet address is required' });
-  }
+            if (user) {
+                // Add wallet to user if it doesn't exist
+                const existingWallet = user.wallets.find(w => w.address === walletAddress);
+                
+                if (!existingWallet) {
+                    await prisma.userWallet.create({
+                        data: {
+                            address: walletAddress,
+                            userId: user.id
+                        }
+                    });
+                }
+            }
+        }
 
-  try {
-    console.log('Starting wallet verification for:', walletAddress);
+        return res.status(200).json(verifyResult);
 
-    // Add timeout to verifyHolder
-    const verifyPromise = verifyHolder(walletAddress);
-    const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Verification timed out')), 50000)
-    );
-
-    const verifyResult = await Promise.race<VerifyResponse>([
-      verifyPromise,
-      timeoutPromise
-    ]);
-
-    console.log('Verify result:', verifyResult);
-
-    const user = await prisma.user.update({
-      where: { discordId: token.discordId as string },
-      data: { walletAddress, updatedAt: new Date() },
-    });
-
-    console.log('User updated:', user);
-
-    const assignedRoles = await updateDiscordRoles(token.discordId as string, verifyResult.collections, walletAddress);
-
-    console.log('Roles assigned:', assignedRoles);
-
-    return res.status(200).json({
-      ...user,
-      isHolder: verifyResult.isHolder,
-      collections: verifyResult.collections,
-      assignedRoles
-    });
-  } catch (err) {
-    console.error('Detailed error:', err);
-    const errorResponse: ErrorResponse = {
-      message: err instanceof Error ? err.message : 'Error updating wallet address',
-      error: err
-    };
-    return res.status(500).json(errorResponse);
-  }
+    } catch (error) {
+        console.error('Error verifying wallet:', error);
+        return res.status(500).json({ error: 'Failed to verify wallet' });
+    }
 } 

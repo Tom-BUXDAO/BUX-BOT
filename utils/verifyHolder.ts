@@ -1,6 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -13,13 +11,14 @@ interface CollectionCount {
 export async function verifyHolder(walletAddress: string): Promise<{
   isHolder: boolean;
   collections: CollectionCount[];
+  buxBalance: number;
 }> {
   try {
-    // First check NFTs in our database
+    // Check NFTs in database
     const ownedNFTs = await prisma.nFT.findMany({
       where: {
         ownerWallet: walletAddress,
-        image: { not: null } // Exclude burned NFTs
+        image: { not: null }
       },
       select: {
         mint: true,
@@ -28,9 +27,11 @@ export async function verifyHolder(walletAddress: string): Promise<{
       }
     });
 
-    console.log(`Found ${ownedNFTs.length} NFTs in database for wallet:`, walletAddress);
+    // Get BUX balance from database
+    const tokenBalance = await prisma.tokenBalance.findUnique({
+      where: { walletAddress }
+    });
 
-    // Group by collection and count
     const collectionCounts = ownedNFTs.reduce((acc, nft) => {
       if (!acc[nft.collection]) {
         acc[nft.collection] = {
@@ -47,7 +48,8 @@ export async function verifyHolder(walletAddress: string): Promise<{
     
     return {
       isHolder: collections.length > 0,
-      collections
+      collections,
+      buxBalance: tokenBalance?.balance || 0
     };
 
   } catch (error) {
