@@ -1,14 +1,30 @@
 import { PrismaClient } from '@prisma/client'
+import { rateLimit } from '@/utils/rateLimit'
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient }
+const globalForPrisma = global as unknown as { 
+    prisma: PrismaClient;
+    connectionPromise: Promise<void>;
+}
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
+const CONNECTION_POOL_SIZE = 10;
+
+const prismaClientOptions = {
+    log: ['info', 'warn', 'error'],
+    datasources: {
+        db: {
+            url: process.env.DATABASE_URL,
+            pooling: {
+                min: 2,
+                max: CONNECTION_POOL_SIZE
+            }
+        }
+    }
+};
 
 async function createPrismaClient() {
-    const client = new PrismaClient({
-        log: ['info', 'warn', 'error'],
-    });
+    const client = new PrismaClient(prismaClientOptions);
 
     // Test connection with retries
     for (let i = 0; i < MAX_RETRIES; i++) {
@@ -30,20 +46,40 @@ async function createPrismaClient() {
     return client;
 }
 
-export const prisma = 
-    globalForPrisma.prisma || 
-    new PrismaClient({
-        log: ['info', 'warn', 'error'],
-    });
+// Create singleton instance
+export const prisma = globalForPrisma.prisma || new PrismaClient(prismaClientOptions);
 
 if (process.env.NODE_ENV !== 'production') {
     globalForPrisma.prisma = prisma;
 }
 
-// Initialize connection on first use
-prisma.$connect().catch(error => {
-    console.error('Failed to connect to database:', error);
-    process.exit(1);
+// Initialize connection lazily
+if (!globalForPrisma.connectionPromise) {
+    globalForPrisma.connectionPromise = prisma.$connect().catch(error => {
+        console.error('Failed to connect to database:', error);
+        process.exit(1);
+    });
+}
+
+// Add connection pooling middleware
+prisma.$use(async (params, next) => {
+    // Apply rate limiting
+    await rateLimit();
+    
+    // Ensure connection is established
+    await globalForPrisma.connectionPromise;
+    
+    try {
+        return await next(params);
+    } catch (error) {
+        if (error.code === 'P1001' || error.code === 'P1002') {
+            // Connection error - retry
+            console.log('Reconnecting to database...');
+            await prisma.$connect();
+            return next(params);
+        }
+        throw error;
+    }
 });
 
 process.on('beforeExit', async () => {

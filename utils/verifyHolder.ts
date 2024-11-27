@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { Connection, PublicKey } from '@solana/web3.js';
 
 const prisma = new PrismaClient();
 
@@ -9,34 +8,59 @@ interface CollectionCount {
   mint: string;
 }
 
-export async function verifyHolder(walletAddress: string) {
+interface VerifyResult {
+  isHolder: boolean;
+  collections: CollectionCount[];
+  buxBalance: number;
+  totalNFTs: number;
+  totalValue: number;
+}
+
+export async function verifyHolder(walletAddress: string): Promise<VerifyResult> {
   try {
-    // Get NFTs owned by this wallet
-    const nfts = await prisma.nFT.findMany({
-      where: {
-        ownerWallet: walletAddress
-      },
-      select: {
-        collection: true,
-        mint: true
-      }
-    });
+    // Get NFTs and BUX balance in a single transaction
+    const [nfts, tokenBalance] = await prisma.$transaction([
+      // Get NFTs owned by this wallet with collection info
+      prisma.$queryRaw<{ collection: string; mint: string; price: number }[]>`
+        SELECT 
+          n."collection",
+          n."mint",
+          COALESCE(l."price", s."price", 0) as price
+        FROM "NFT" n
+        LEFT JOIN "NFTListing" l ON l."nftId" = n."id"
+        LEFT JOIN (
+          SELECT DISTINCT ON (s."nftId") 
+            s."nftId",
+            s."price"
+          FROM "NFTSale" s
+          ORDER BY s."nftId", s."timestamp" DESC
+        ) s ON s."nftId" = n."id"
+        WHERE n."ownerWallet" = ${walletAddress}
+      `,
+
+      // Get BUX balance
+      prisma.tokenBalance.findUnique({
+        where: { walletAddress }
+      })
+    ]);
 
     console.log(`Found ${nfts.length} NFTs in database for wallet: ${walletAddress}`);
 
     // Count NFTs by collection
-    const collectionCounts = new Map<string, { count: number; mint: string }>();
+    const collectionCounts = new Map<string, { count: number; mint: string; value: number }>();
     nfts.forEach(nft => {
       const current = collectionCounts.get(nft.collection);
       if (current) {
         collectionCounts.set(nft.collection, {
           count: current.count + 1,
-          mint: current.mint
+          mint: current.mint,
+          value: current.value + nft.price
         });
       } else {
         collectionCounts.set(nft.collection, {
           count: 1,
-          mint: nft.mint
+          mint: nft.mint,
+          value: nft.price
         });
       }
     });
@@ -48,23 +72,20 @@ export async function verifyHolder(walletAddress: string) {
       mint: data.mint
     }));
 
-    // Get BUX balance
-    const tokenBalance = await prisma.tokenBalance.findUnique({
-      where: {
-        walletAddress
-      }
-    });
+    // Calculate totals
+    const totalValue = Array.from(collectionCounts.values())
+      .reduce((sum, data) => sum + data.value, 0);
 
     return {
       isHolder: collections.length > 0,
       collections,
-      buxBalance: Number(tokenBalance?.balance || BigInt(0))
+      buxBalance: Number(tokenBalance?.balance || BigInt(0)),
+      totalNFTs: nfts.length,
+      totalValue
     };
 
   } catch (error) {
     console.error('Error verifying holder:', error);
     throw error;
-  } finally {
-    await prisma.$disconnect();
   }
 } 
