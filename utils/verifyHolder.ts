@@ -95,10 +95,13 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
     const linkedBalance = linkedWallets.reduce((sum, wallet) => sum + BigInt(wallet.balance || 0), BigInt(0));
     const totalBuxBalance = mainBalance + linkedBalance;
 
+    // Convert from raw balance (with 9 decimals) to actual BUX amount
+    const actualBuxBalance = Number(totalBuxBalance) / 1e9;
+
     console.log('BUX Balance:', {
-      mainBalance: Number(mainBalance),
-      linkedBalance: Number(linkedBalance),
-      totalBuxBalance: Number(totalBuxBalance),
+      mainBalance: Number(mainBalance) / 1e9,
+      linkedBalance: Number(linkedBalance) / 1e9,
+      totalBuxBalance: actualBuxBalance,
       walletAddress,
       discordId
     });
@@ -111,7 +114,7 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
           discordId, 
           collections, 
           walletAddress,
-          Number(totalBuxBalance)
+          actualBuxBalance
         );
       } catch (error) {
         console.error('Error updating Discord roles:', error);
@@ -121,7 +124,7 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
     return {
       isHolder: collections.length > 0,
       collections,
-      buxBalance: Number(totalBuxBalance),
+      buxBalance: actualBuxBalance,
       totalNFTs: nfts.length,
       totalValue,
       assignedRoles
