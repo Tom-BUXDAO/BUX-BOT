@@ -30,9 +30,21 @@ async function createPrismaClient() {
     return client;
 }
 
-export const prisma = globalForPrisma.prisma || await createPrismaClient();
+export const prisma = 
+    globalForPrisma.prisma || 
+    new PrismaClient({
+        log: ['info', 'warn', 'error'],
+    });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = prisma;
+}
+
+// Initialize connection on first use
+prisma.$connect().catch(error => {
+    console.error('Failed to connect to database:', error);
+    process.exit(1);
+});
 
 process.on('beforeExit', async () => {
     await prisma.$disconnect();
