@@ -10,6 +10,13 @@
 - Place types and interfaces in /types
 - Place environment variables in .env.local
 
+## Database Structure
+- Users can have multiple wallets
+- NFTs track full sales history
+- NFTs include rarity and rank data
+- Token balances are wallet-specific
+- All tables maintain audit timestamps
+
 ## Naming Conventions
 - Use PascalCase for component files (UserProfile.tsx)
 - Use camelCase for utility files (verifyHolder.ts)
@@ -28,12 +35,15 @@
 - Keep schema.prisma up to date
 - Use migrations for schema changes
 - Add comments for complex queries
+- Maintain data integrity with triggers
+- Track historical data changes
 
 ## API
 - Use rate limiting for external APIs
 - Add proper error handling
 - Use typed responses
 - Document API endpoints
+- Cache frequent queries
 
 ## Components
 - Keep components small and focused
@@ -46,6 +56,7 @@
 - Include error handling
 - Add retry logic for API calls
 - Document usage in README.md
+- Add data validation
 
 ## Environment Variables
 - Never commit .env files
