@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import { rateLimit } from '@/utils/rateLimit'
 
 const globalForPrisma = global as unknown as { 
@@ -10,15 +10,15 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 const CONNECTION_POOL_SIZE = 10;
 
-const prismaClientOptions = {
-    log: ['info', 'warn', 'error'],
+const prismaClientOptions: Prisma.PrismaClientOptions = {
+    log: [
+        { level: 'info', emit: 'event' },
+        { level: 'warn', emit: 'event' },
+        { level: 'error', emit: 'event' }
+    ],
     datasources: {
         db: {
             url: process.env.DATABASE_URL,
-            pooling: {
-                min: 2,
-                max: CONNECTION_POOL_SIZE
-            }
         }
     }
 };
@@ -80,6 +80,19 @@ prisma.$use(async (params, next) => {
         }
         throw error;
     }
+});
+
+// Log events
+prisma.$on('info', (e) => {
+    console.log(e);
+});
+
+prisma.$on('warn', (e) => {
+    console.warn(e);
+});
+
+prisma.$on('error', (e) => {
+    console.error(e);
 });
 
 process.on('beforeExit', async () => {
