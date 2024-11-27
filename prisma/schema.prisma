@@ -54,7 +54,7 @@ model Collection {
 
 model TokenBalance {
   walletAddress  String   @id
-  balance        Int      @default(0)
+  balance        BigInt   @default(0)
   ownerDiscordId String?
   lastUpdated    DateTime @default(now())
 } 
