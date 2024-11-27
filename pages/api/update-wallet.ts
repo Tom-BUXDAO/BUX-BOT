@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from './auth/[...nextauth]';
 import { verifyHolder } from '@/utils/verifyHolder';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -8,9 +9,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const session = await getSession({ req });
-    if (!session) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const session = await getServerSession(req, res, authOptions);
+    
+    if (!session?.user?.discordId) {
+      return res.status(401).json({ error: 'Unauthorized - No valid session' });
     }
 
     const { walletAddress } = req.body;
@@ -20,7 +22,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('Starting wallet verification for:', walletAddress);
 
-    // Pass discordId to verifyHolder
     const verifyResult = await verifyHolder(walletAddress, session.user.discordId);
     
     return res.status(200).json(verifyResult);

@@ -1,18 +1,8 @@
-import NextAuth, { DefaultSession, DefaultUser } from 'next-auth';
+import NextAuth, { NextAuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
-import { JWT } from 'next-auth/jwt';
-import { prisma } from '../../../lib/prisma';
+import { prisma } from '@/lib/prisma';
 
-declare module 'next-auth' {
-  interface Session extends DefaultSession {
-    user: DefaultSession['user'] & {
-      id: string;
-      discordId: string;
-    };
-  }
-}
-
-export default NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
@@ -30,7 +20,7 @@ export default NextAuth({
       }
       return token;
     },
-    async session({ session, token }: { session: any; token: JWT }) {
+    async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub;
         session.user.discordId = token.discordId;
@@ -62,4 +52,6 @@ export default NextAuth({
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-}); 
+};
+
+export default NextAuth(authOptions); 
