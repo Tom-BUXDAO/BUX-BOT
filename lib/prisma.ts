@@ -6,9 +6,9 @@ const globalForPrisma = global as unknown as {
     connectionPromise: Promise<void>;
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
-const CONNECTION_POOL_SIZE = 10;
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 2000;
+const MAX_TIMEOUT = 30000;
 
 const prismaClientOptions: Prisma.PrismaClientOptions = {
     log: [
@@ -22,27 +22,33 @@ const prismaClientOptions: Prisma.PrismaClientOptions = {
     }
 };
 
+async function waitForDatabase(client: PrismaClient, attempt = 1): Promise<void> {
+    try {
+        await client.$connect();
+        console.log('Successfully connected to database:', process.env.DATABASE_URL);
+    } catch (error) {
+        if (attempt >= MAX_RETRIES) {
+            console.error('Failed to connect after max retries:', error);
+            throw error;
+        }
+
+        const delay = Math.min(RETRY_DELAY * Math.pow(2, attempt - 1), MAX_TIMEOUT);
+        console.log(`Connection attempt ${attempt} failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return waitForDatabase(client, attempt + 1);
+    }
+}
+
 async function createPrismaClient() {
     const client = new PrismaClient(prismaClientOptions);
 
-    // Test connection with retries
-    for (let i = 0; i < MAX_RETRIES; i++) {
-        try {
-            await client.$connect();
-            console.log('Successfully connected to database:', process.env.DATABASE_URL);
-            return client;
-        } catch (error) {
-            console.error(`Connection attempt ${i + 1} failed:`, error);
-            if (i < MAX_RETRIES - 1) {
-                console.log(`Retrying connection... (${MAX_RETRIES - i - 1} attempts remaining)`);
-                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-            } else {
-                throw new Error('Failed to connect to database after multiple attempts');
-            }
-        }
+    try {
+        await waitForDatabase(client);
+        return client;
+    } catch (error) {
+        await client.$disconnect();
+        throw new Error('Failed to establish database connection');
     }
-
-    return client;
 }
 
 // Create singleton instance
@@ -52,10 +58,10 @@ if (process.env.NODE_ENV !== 'production') {
     globalForPrisma.prisma = prisma;
 }
 
-// Initialize connection lazily
+// Initialize connection lazily with retries
 if (!globalForPrisma.connectionPromise) {
-    globalForPrisma.connectionPromise = prisma.$connect().catch(error => {
-        console.error('Failed to connect to database:', error);
+    globalForPrisma.connectionPromise = waitForDatabase(prisma).catch(error => {
+        console.error('Fatal database connection error:', error);
         process.exit(1);
     });
 }
@@ -73,9 +79,8 @@ prisma.$use(async (params, next) => {
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError) {
             if (error.code === 'P1001' || error.code === 'P1002') {
-                // Connection error - retry
-                console.log('Reconnecting to database...');
-                await prisma.$connect();
+                console.log('Database connection lost, attempting to reconnect...');
+                await waitForDatabase(prisma);
                 return next(params);
             }
         }
@@ -83,13 +88,25 @@ prisma.$use(async (params, next) => {
     }
 });
 
-// Log events
-prisma.$on('warn', (e) => {
-    console.warn('Warning:', e);
+// Log events with proper types
+type LogEvent = {
+    timestamp: Date;
+    message: string;
+    target: string;
+};
+
+prisma.$on('warn' as never, (e: LogEvent) => {
+    console.warn('Database warning:', e.message, {
+        timestamp: e.timestamp,
+        target: e.target
+    });
 });
 
-prisma.$on('error', (e) => {
-    console.error('Error:', e);
+prisma.$on('error' as never, (e: LogEvent) => {
+    console.error('Database error:', e.message, {
+        timestamp: e.timestamp,
+        target: e.target
+    });
 });
 
 process.on('beforeExit', async () => {
