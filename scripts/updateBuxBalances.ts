@@ -1,5 +1,5 @@
+import { PrismaClient, Prisma } from '@prisma/client';
 import { PublicKey } from '@solana/web3.js';
-import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +16,15 @@ interface TokenHolder {
     owner: string;
     amount: string;
 }
+
+interface Wallet {
+    address: string;
+}
+
+type UserWithWallets = {
+    discordId: string;
+    wallets: Wallet[];
+};
 
 async function fetchTokenHolders(): Promise<TokenHolder[]> {
     try {
@@ -34,78 +43,67 @@ async function fetchTokenHolders(): Promise<TokenHolder[]> {
         );
 
         if (!response.ok) {
-            const text = await response.text();
-            throw new Error(`Helius API error: ${response.statusText}. Details: ${text}`);
+            throw new Error(`API error: ${response.statusText}`);
         }
 
         const data = await response.json();
-        return data.holders;
+        return data;
     } catch (error) {
-        console.error('Error fetching from Helius:', error);
+        console.error('Error fetching token holders:', error);
         throw error;
     }
 }
 
 async function updateBuxBalances() {
     try {
-        // Get all users with wallet addresses
-        const users = await prisma.user.findMany({
-            select: {
-                id: true,
-                discordId: true,
-                walletAddress: true
-            },
-            where: {
-                walletAddress: {
-                    not: null
-                }
+        // Get all users with their wallets
+        const users = await prisma.$queryRaw<UserWithWallets[]>`
+            SELECT u."discordId", json_agg(json_build_object('address', w."address")) as wallets
+            FROM "User" u
+            LEFT JOIN "UserWallet" w ON w."userId" = u.id
+            GROUP BY u."discordId"
+        `;
+
+        // Create a map of wallet addresses to discord IDs
+        const walletToDiscordId = new Map<string, string>();
+        users.forEach(user => {
+            if (Array.isArray(user.wallets)) {
+                user.wallets.forEach(wallet => {
+                    walletToDiscordId.set(wallet.address, user.discordId);
+                });
             }
         });
 
-        console.log(`Found ${users.length} users to check`);
-
-        // Get all token holders
         console.log('Fetching BUX token holders...');
         const holders = await fetchTokenHolders();
-        console.log(`Found ${holders.length} BUX holders`);
+        console.log(`Found ${holders.length} token holders`);
 
-        // Create a map of wallet addresses to balances
-        const balanceMap = new Map<string, bigint>();
+        // Update token balances
+        let updates = 0;
         for (const holder of holders) {
-            balanceMap.set(holder.owner, BigInt(holder.amount));
-        }
+            const balanceNumber = Number(BigInt(holder.amount));
+            const discordId = walletToDiscordId.get(holder.owner);
 
-        // Update user balances in batches
-        const batchSize = 25;
-        for (let i = 0; i < users.length; i += batchSize) {
-            const batch = users.slice(i, i + batchSize);
-            console.log(`Processing batch ${Math.floor(i/batchSize) + 1} (${batch.length} users)`);
-            console.log(`Progress: ${i + batch.length}/${users.length} (${Math.round(((i + batch.length)/users.length) * 100)}%)`);
-
-            await Promise.all(batch.map(async (user) => {
-                try {
-                    const balance = balanceMap.get(user.walletAddress!) || BigInt(0);
-                    
-                    if (balance > BigInt(0)) {
-                        console.log(`Wallet ${user.walletAddress} has ${balance.toString()} BUX`);
-                    }
-
-                    // Update user's token balance
-                    await prisma.$executeRaw`
-                        UPDATE "User"
-                        SET "tokenBalance" = ${balance}
-                        WHERE "discordId" = ${user.discordId}
-                    `;
-                } catch (error) {
-                    console.error(`Error processing user ${user.walletAddress}:`, error);
+            await prisma.tokenBalance.upsert({
+                where: {
+                    walletAddress: holder.owner
+                },
+                update: {
+                    balance: balanceNumber,
+                    lastUpdated: new Date()
+                },
+                create: {
+                    walletAddress: holder.owner,
+                    balance: balanceNumber,
+                    lastUpdated: new Date()
                 }
-            }));
-
-            // Small delay between batches
-            await new Promise(resolve => setTimeout(resolve, 100));
+            });
+            updates++;
         }
 
-        console.log('Finished updating BUX balances');
+        console.log(`Updated ${updates} token balances`);
+        console.log(`With Discord ID: ${holders.filter(h => walletToDiscordId.has(h.owner)).length}`);
+        console.log(`Without Discord ID: ${holders.filter(h => !walletToDiscordId.has(h.owner)).length}`);
 
     } catch (error) {
         console.error('Error updating BUX balances:', error);
