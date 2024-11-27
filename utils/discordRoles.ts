@@ -21,13 +21,16 @@ async function getClient(): Promise<Client> {
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildMessages
       ],
-      allowedMentions: { parse: ['users', 'roles'] }
+      allowedMentions: { parse: ['users', 'roles'] },
+      rest: {
+        timeout: 8000, // 8 second timeout
+        retries: 2
+      }
     });
 
-    // Add error handlers
     client.on('error', (error) => {
       console.error('Discord client error:', error);
-      client = null; // Reset client on error
+      client = null;
     });
 
     client.on('disconnect', () => {
@@ -38,10 +41,15 @@ async function getClient(): Promise<Client> {
     await client.login(DISCORD_BOT_TOKEN);
   }
 
-  // Wait for client to be ready
   if (!client.isReady()) {
     await new Promise<void>((resolve) => {
+      const timeout = setTimeout(() => {
+        client = null;
+        resolve();
+      }, 5000);
+
       client!.once('ready', () => {
+        clearTimeout(timeout);
         console.log('Discord client ready');
         resolve();
       });
@@ -63,15 +71,17 @@ export async function updateDiscordRoles(
 
     // Get all role IDs we manage
     const managedRoleIds = getAllManagedRoleIds();
+    const assignedRoles: string[] = [];
+
+    // Batch role updates
+    const rolesToAdd: string[] = [];
+    const rolesToRemove = member.roles.cache.filter(role => managedRoleIds.includes(role.id));
 
     // Remove all managed roles first
-    const rolesToRemove = member.roles.cache.filter(role => managedRoleIds.includes(role.id));
-    for (const role of rolesToRemove.values()) {
+    await Promise.all(Array.from(rolesToRemove.values()).map(async role => {
       await member.roles.remove(role);
       console.log(`Removed role: ${role.name}`);
-    }
-
-    const assignedRoles: string[] = [];
+    }));
 
     // Add NFT collection roles
     for (const collection of collections) {
@@ -79,22 +89,11 @@ export async function updateDiscordRoles(
       if (!config) continue;
 
       if (config.holder) {
-        const role = await guild.roles.fetch(config.holder);
-        if (role) {
-          await member.roles.add(role);
-          assignedRoles.push(role.name);
-          console.log(`Added holder role: ${role.name}`);
-        }
+        rolesToAdd.push(config.holder);
       }
 
-      // Add whale role if applicable
       if (config.whale?.roleId && collection.count >= config.whale.threshold) {
-        const whaleRole = await guild.roles.fetch(config.whale.roleId);
-        if (whaleRole) {
-          await member.roles.add(whaleRole);
-          assignedRoles.push(whaleRole.name);
-          console.log(`Added whale role: ${whaleRole.name}`);
-        }
+        rolesToAdd.push(config.whale.roleId);
       }
     }
 
@@ -104,20 +103,26 @@ export async function updateDiscordRoles(
     );
     
     if (mainCollectionHoldings.every(h => h) && BUXDAO_5_ROLE_ID) {
-      const buxdao5Role = await guild.roles.fetch(BUXDAO_5_ROLE_ID);
-      if (buxdao5Role) {
-        await member.roles.add(buxdao5Role);
-        assignedRoles.push(buxdao5Role.name);
-      }
+      rolesToAdd.push(BUXDAO_5_ROLE_ID);
     }
 
-    console.log('Role update completed successfully');
-    console.log('Assigned roles:', assignedRoles);
+    // Batch add roles
+    if (rolesToAdd.length > 0) {
+      await member.roles.add(rolesToAdd);
+      const addedRoles = await Promise.all(
+        rolesToAdd.map(async id => {
+          const role = await guild.roles.fetch(id);
+          if (role) assignedRoles.push(role.name);
+          return role?.name;
+        })
+      );
+      console.log('Added roles:', addedRoles.filter(Boolean));
+    }
+
     return assignedRoles;
 
   } catch (error) {
     console.error('Error updating Discord roles:', error);
-    // Reset client on error
     client = null;
     return [];
   }
