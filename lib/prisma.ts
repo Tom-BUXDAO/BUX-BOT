@@ -72,11 +72,13 @@ prisma.$use(async (params, next) => {
     try {
         return await next(params);
     } catch (error) {
-        if (error.code === 'P1001' || error.code === 'P1002') {
-            // Connection error - retry
-            console.log('Reconnecting to database...');
-            await prisma.$connect();
-            return next(params);
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P1001' || error.code === 'P1002') {
+                // Connection error - retry
+                console.log('Reconnecting to database...');
+                await prisma.$connect();
+                return next(params);
+            }
         }
         throw error;
     }
