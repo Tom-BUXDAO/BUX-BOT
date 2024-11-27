@@ -25,9 +25,10 @@ interface WalletUpdateResponse {
 export default function Home() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { publicKey } = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [imageError, setImageError] = useState(false);
-  const { connected, connecting, publicKey, disconnect } = useWallet();
+  const { connected, connecting, disconnect } = useWallet();
   const [walletStatus, setWalletStatus] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdatedWallet, setLastUpdatedWallet] = useState<string | null>(null);
@@ -37,6 +38,14 @@ export default function Home() {
   } | null>(null);
   const [assignedRoles, setAssignedRoles] = useState<string[]>([]);
   const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    if (publicKey) {
+      setWalletAddress(publicKey.toString());
+    } else {
+      setWalletAddress('');
+    }
+  }, [publicKey]);
 
   const updateWallet = useCallback(async (address: string) => {
     if (isUpdating || !session || address === lastUpdatedWallet) return;
