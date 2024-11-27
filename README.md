@@ -33,6 +33,8 @@ Discord bot and web app for BUX DAO holder verification and role management.
 - Users can connect multiple wallets
 - Each wallet tracks NFT ownership and token balances
 - Automatic Discord ID syncing across wallets
+- Real-time wallet verification
+- Historical wallet tracking
 
 ### NFT Tracking
 - Full NFT metadata storage
@@ -41,12 +43,33 @@ Discord bot and web app for BUX DAO holder verification and role management.
 - Rarity scores from HowRare.is
 - Real-time ownership updates
 - Historical ownership tracking
+- Burned NFT tracking
+- Collection statistics
 
 ### Token Balances
 - Real-time $BUX balance tracking
 - Historical balance records
 - Multi-wallet aggregation
 - Automatic updates
+- Balance verification
+- Transaction history
+
+### Verification System
+- Database-first verification
+- No external API calls for verification
+- Real-time data validation
+- Cross-reference checking
+- Data integrity enforcement
+- Automatic sync triggers
+- Performance optimized queries
+
+### Performance
+- Connection pooling
+- Rate limiting
+- Query optimization
+- Index management
+- Cache utilization
+- Transaction batching
 
 ## Tech Stack
 

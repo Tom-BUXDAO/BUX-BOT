@@ -16,6 +16,19 @@
 - NFTs include rarity and rank data
 - Token balances are wallet-specific
 - All tables maintain audit timestamps
+- All data changes are tracked
+- All relationships are properly indexed
+- All queries are optimized
+
+## Database Verification
+- Use database-first verification
+- Avoid external API calls when possible
+- Implement proper rate limiting
+- Use connection pooling
+- Add retry logic for failures
+- Maintain data integrity
+- Use transactions for atomic operations
+- Log all verification attempts
 
 ## Naming Conventions
 - Use PascalCase for component files (UserProfile.tsx)
@@ -37,6 +50,8 @@
 - Add comments for complex queries
 - Maintain data integrity with triggers
 - Track historical data changes
+- Use proper indexing
+- Optimize query performance
 
 ## API
 - Use rate limiting for external APIs
@@ -44,6 +59,8 @@
 - Use typed responses
 - Document API endpoints
 - Cache frequent queries
+- Validate all inputs
+- Log all requests
 
 ## Components
 - Keep components small and focused
@@ -57,6 +74,8 @@
 - Add retry logic for API calls
 - Document usage in README.md
 - Add data validation
+- Log all operations
+- Use batching for bulk operations
 
 ## Environment Variables
 - Never commit .env files
