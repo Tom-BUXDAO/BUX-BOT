@@ -1,8 +1,8 @@
 import { Client, GuildMember, GatewayIntentBits } from 'discord.js';
-import { NFT_THRESHOLDS, BUX_THRESHOLDS, MAIN_COLLECTIONS, BUXDAO_5_ROLE_ID } from './roleConfig';
+import { NFT_THRESHOLDS, BUX_THRESHOLDS, MAIN_COLLECTIONS, BUXDAO_5_ROLE_ID, CollectionName } from './roleConfig';
 
 interface CollectionCount {
-  name: string;
+  name: CollectionName;
   count: number;
 }
 
@@ -23,7 +23,7 @@ async function getClient(): Promise<Client> {
       ],
       allowedMentions: { parse: ['users', 'roles'] },
       rest: {
-        timeout: 8000, // 8 second timeout
+        timeout: 8000,
         retries: 2
       }
     });
@@ -62,7 +62,8 @@ async function getClient(): Promise<Client> {
 export async function updateDiscordRoles(
   discordId: string, 
   collections: CollectionCount[],
-  walletAddress: string
+  walletAddress: string,
+  buxBalance: number
 ): Promise<string[]> {
   try {
     const discord = await getClient();
@@ -92,8 +93,15 @@ export async function updateDiscordRoles(
         rolesToAdd.push(config.holder);
       }
 
-      if (config.whale?.roleId && collection.count >= config.whale.threshold) {
+      if ('whale' in config && config.whale?.roleId && collection.count >= config.whale.threshold) {
         rolesToAdd.push(config.whale.roleId);
+      }
+    }
+
+    // Add BUX balance roles
+    for (const threshold of BUX_THRESHOLDS) {
+      if (threshold.roleId && buxBalance >= threshold.threshold) {
+        rolesToAdd.push(threshold.roleId);
       }
     }
 
@@ -133,7 +141,9 @@ function getAllManagedRoleIds(): string[] {
 
   Object.values(NFT_THRESHOLDS).forEach(config => {
     if (config.holder) roleIds.add(config.holder);
-    if (config.whale?.roleId) roleIds.add(config.whale.roleId);
+    if ('whale' in config && config.whale?.roleId) {
+      roleIds.add(config.whale.roleId);
+    }
   });
 
   BUX_THRESHOLDS.forEach(threshold => {

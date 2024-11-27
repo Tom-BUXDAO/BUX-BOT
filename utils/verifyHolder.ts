@@ -1,11 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { updateDiscordRoles } from './discordRoles';
 import { TokenBalanceWithOwner } from '@/types/prisma';
+import { CollectionName, NFT_THRESHOLDS } from './roleConfig';
 
 const prisma = new PrismaClient();
 
 interface CollectionCount {
-  name: string;
+  name: CollectionName;
   count: number;
   mint: string;
 }
@@ -77,11 +78,13 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
     });
 
     // Format collections array
-    const collections: CollectionCount[] = Array.from(collectionCounts.entries()).map(([name, data]) => ({
-      name,
-      count: data.count,
-      mint: data.mint
-    }));
+    const collections: CollectionCount[] = Array.from(collectionCounts.entries())
+      .filter(([name]) => name in NFT_THRESHOLDS) // Only include known collections
+      .map(([name, data]) => ({
+        name: name as CollectionName, // Cast to known collection names
+        count: data.count,
+        mint: data.mint
+      }));
 
     // Calculate totals
     const totalValue = Array.from(collectionCounts.values())
@@ -99,7 +102,8 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
         assignedRoles = await updateDiscordRoles(
           discordId, 
           collections, 
-          walletAddress
+          walletAddress,
+          Number(totalBuxBalance)
         );
       } catch (error) {
         console.error('Error updating Discord roles:', error);
