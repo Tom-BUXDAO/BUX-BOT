@@ -40,6 +40,7 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
           ORDER BY s."nftId", s."timestamp" DESC
         ) s ON s."nftId" = n."id"
         WHERE n."ownerWallet" = ${walletAddress}
+        AND n."ownerDiscordId" = ${discordId}
       `,
 
       // Get BUX balance for this wallet

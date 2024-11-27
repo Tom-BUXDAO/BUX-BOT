@@ -24,7 +24,10 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
 
   useEffect(() => {
     async function verifyWallet() {
-      if (!walletAddress || !session?.user?.discordId) return;
+      if (!walletAddress) {
+        setVerifyResult(null);
+        return;
+      }
       
       setLoading(true);
       setError(null);
@@ -37,7 +40,7 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
           },
           body: JSON.stringify({
             walletAddress,
-            discordId: session.user.discordId
+            discordId: session?.user?.discordId
           }),
         });
 
@@ -52,6 +55,7 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
       } catch (err) {
         console.error('Error verifying wallet:', err);
         setError(err instanceof Error ? err.message : 'Failed to verify wallet');
+        setVerifyResult(null);
       } finally {
         setLoading(false);
       }
@@ -77,7 +81,10 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
         <div className={styles.details}>
           <div className={styles.name}>{session.user.name}</div>
           <div className={styles.balance}>
-            {verifyResult ? `${verifyResult.buxBalance.toLocaleString()} BUX` : 'Loading...'}
+            {loading ? 'Loading...' : 
+             error ? 'Error loading balance' :
+             verifyResult ? `${verifyResult.buxBalance.toLocaleString()} BUX` : 
+             'Connect wallet'}
           </div>
         </div>
       </div>
