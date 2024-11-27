@@ -9,7 +9,7 @@ interface CollectionCount {
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-// Create a singleton client
+// Create a singleton client with proper intents
 let client: Client | null = null;
 
 async function getClient(): Promise<Client> {
@@ -18,15 +18,33 @@ async function getClient(): Promise<Client> {
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences
-      ] 
+        GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.GuildMessages
+      ],
+      allowedMentions: { parse: ['users', 'roles'] }
     });
+
+    // Add error handlers
+    client.on('error', (error) => {
+      console.error('Discord client error:', error);
+      client = null; // Reset client on error
+    });
+
+    client.on('disconnect', () => {
+      console.log('Discord client disconnected');
+      client = null;
+    });
+
     await client.login(DISCORD_BOT_TOKEN);
   }
 
+  // Wait for client to be ready
   if (!client.isReady()) {
     await new Promise<void>((resolve) => {
-      client!.once('ready', () => resolve());
+      client!.once('ready', () => {
+        console.log('Discord client ready');
+        resolve();
+      });
     });
   }
 
@@ -39,22 +57,12 @@ export async function updateDiscordRoles(
   walletAddress: string
 ): Promise<string[]> {
   try {
-    console.log('Starting role update for Discord ID:', discordId);
-    console.log('Bot token available:', !!DISCORD_BOT_TOKEN);
-    console.log('Guild ID:', GUILD_ID);
-
     const discord = await getClient();
-    console.log('Client ready:', discord.isReady());
-
     const guild = await discord.guilds.fetch(GUILD_ID!);
-    console.log('Guild fetched:', guild.name);
-
     const member = await guild.members.fetch(discordId);
-    console.log('Member fetched:', member.user.tag);
 
     // Get all role IDs we manage
     const managedRoleIds = getAllManagedRoleIds();
-    console.log('Managed role IDs:', managedRoleIds);
 
     // Remove all managed roles first
     const rolesToRemove = member.roles.cache.filter(role => managedRoleIds.includes(role.id));
@@ -90,17 +98,31 @@ export async function updateDiscordRoles(
       }
     }
 
+    // Add BUXDAO 5 role if qualified
+    const mainCollectionHoldings = MAIN_COLLECTIONS.map(name => 
+      collections.find(c => c.name === name)
+    );
+    
+    if (mainCollectionHoldings.every(h => h) && BUXDAO_5_ROLE_ID) {
+      const buxdao5Role = await guild.roles.fetch(BUXDAO_5_ROLE_ID);
+      if (buxdao5Role) {
+        await member.roles.add(buxdao5Role);
+        assignedRoles.push(buxdao5Role.name);
+      }
+    }
+
     console.log('Role update completed successfully');
     console.log('Assigned roles:', assignedRoles);
     return assignedRoles;
 
   } catch (error) {
     console.error('Error updating Discord roles:', error);
+    // Reset client on error
+    client = null;
     return [];
   }
 }
 
-// Helper function to get all role IDs we manage
 function getAllManagedRoleIds(): string[] {
   const roleIds = new Set<string>();
 
