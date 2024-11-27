@@ -1,16 +1,17 @@
 import { PrismaClient } from '@prisma/client';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { UserWithWallets } from '@/types/prisma';
 
 const prisma = new PrismaClient();
 
 async function updateOwnership() {
     try {
         // Get all users with their wallets
-        const users = await prisma.user.findMany({
-            include: {
-                wallets: true
-            }
-        });
+        const users = await prisma.$queryRaw<UserWithWallets[]>`
+            SELECT u.*, json_agg(w.*) as wallets
+            FROM "User" u
+            LEFT JOIN "UserWallet" w ON w."userId" = u.id
+            GROUP BY u.id
+        `;
 
         console.log(`Found ${users.length} users`);
 

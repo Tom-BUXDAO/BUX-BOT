@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
+import { UserWithWallets } from '@/types/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -20,23 +21,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const verifyResult = await verifyHolder(walletAddress);
         
         if (discordId) {
-            // Get user
-            const user = await prisma.user.findUnique({
-                where: { discordId },
-                include: { wallets: true }
-            });
+            // Get user with wallets
+            const users = await prisma.$queryRaw<UserWithWallets[]>`
+                SELECT u.*, json_agg(w.*) as wallets
+                FROM "User" u
+                LEFT JOIN "UserWallet" w ON w."userId" = u.id
+                WHERE u."discordId" = ${discordId}
+                GROUP BY u.id
+            `;
 
+            const user = users[0];
             if (user) {
                 // Add wallet to user if it doesn't exist
-                const existingWallet = user.wallets.find(w => w.address === walletAddress);
+                const existingWallet = user.wallets?.find(w => w.address === walletAddress);
                 
                 if (!existingWallet) {
-                    await prisma.userWallet.create({
-                        data: {
-                            address: walletAddress,
-                            userId: user.id
-                        }
-                    });
+                    await prisma.$executeRaw`
+                        INSERT INTO "UserWallet" ("id", "address", "userId", "createdAt", "updatedAt")
+                        VALUES (gen_random_uuid()::text, ${walletAddress}, ${user.id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    `;
                 }
             }
         }

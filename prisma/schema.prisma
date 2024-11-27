@@ -11,10 +11,12 @@ model User {
   id            String         @id @default(cuid())
   discordId     String         @unique
   discordName   String
-  wallets       UserWallet[]   // One-to-many relationship with wallets
+  wallets       UserWallet[]
   ownedNFTs     NFT[]         @relation("Ownership")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@map("User")
 }
 
 model UserWallet {
@@ -24,6 +26,8 @@ model UserWallet {
   userId        String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@map("UserWallet")
 }
 
 model NFT {

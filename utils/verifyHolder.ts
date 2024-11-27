@@ -58,7 +58,7 @@ export async function verifyHolder(walletAddress: string) {
     return {
       isHolder: collections.length > 0,
       collections,
-      buxBalance: Number(tokenBalance?.balance || 0n)
+      buxBalance: Number(tokenBalance?.balance || BigInt(0))
     };
 
   } catch (error) {

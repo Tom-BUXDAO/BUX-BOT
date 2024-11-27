@@ -1,24 +1,28 @@
 import { PrismaClient } from '@prisma/client';
 import * as fs from 'fs';
 import * as csv from 'csv-parse';
+import { UserWithWallets } from '@/types/prisma';
 
 const prisma = new PrismaClient();
 
 async function importTokenBalances() {
     try {
-        // First get all users with their wallets
-        const users = await prisma.user.findMany({
-            include: {
-                wallets: true
-            }
-        });
+        // Get all users with their wallets
+        const users = await prisma.$queryRaw<UserWithWallets[]>`
+            SELECT u.*, json_agg(w.*) as wallets
+            FROM "User" u
+            LEFT JOIN "UserWallet" w ON w."userId" = u.id
+            GROUP BY u.id
+        `;
 
         // Create a map of wallet addresses to discord IDs
         const walletToDiscordId = new Map<string, string>();
         users.forEach(user => {
-            user.wallets.forEach(wallet => {
-                walletToDiscordId.set(wallet.address, user.discordId);
-            });
+            if (Array.isArray(user.wallets)) {
+                user.wallets.forEach(wallet => {
+                    walletToDiscordId.set(wallet.address, user.discordId);
+                });
+            }
         });
 
         // Read the CSV file
@@ -54,10 +58,13 @@ async function importTokenBalances() {
                     },
                     update: {
                         balance: record.balance,
-                        ownerDiscordId: record.ownerDiscordId,
                         lastUpdated: record.lastUpdated
                     },
-                    create: record
+                    create: {
+                        walletAddress: record.walletAddress,
+                        balance: record.balance,
+                        lastUpdated: record.lastUpdated
+                    }
                 });
             }));
 
