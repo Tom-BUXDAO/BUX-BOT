@@ -25,6 +25,7 @@ interface WalletUpdateResponse {
 export default function Home() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [walletAddress, setWalletAddress] = useState<string>('');
   const [imageError, setImageError] = useState(false);
   const { connected, connecting, publicKey, disconnect } = useWallet();
   const [walletStatus, setWalletStatus] = useState('');
@@ -113,7 +114,7 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <UserProfile holderStatus={holderStatus} />
+      <UserProfile walletAddress={walletAddress} />
       <main className={styles.main}>
         <div className={styles.logoContainer}>
           {!imageError ? (
