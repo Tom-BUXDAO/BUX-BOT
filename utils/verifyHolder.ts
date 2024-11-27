@@ -95,6 +95,14 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
     const linkedBalance = linkedWallets.reduce((sum, wallet) => sum + BigInt(wallet.balance || 0), BigInt(0));
     const totalBuxBalance = mainBalance + linkedBalance;
 
+    console.log('BUX Balance:', {
+      mainBalance: Number(mainBalance),
+      linkedBalance: Number(linkedBalance),
+      totalBuxBalance: Number(totalBuxBalance),
+      walletAddress,
+      discordId
+    });
+
     // Update Discord roles if discordId is provided
     let assignedRoles: string[] = [];
     if (discordId) {

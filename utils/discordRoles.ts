@@ -91,18 +91,30 @@ export async function updateDiscordRoles(
 
       if (config.holder) {
         rolesToAdd.push(config.holder);
+        console.log(`Adding holder role for ${collection.name}`);
       }
 
       if ('whale' in config && config.whale?.roleId && collection.count >= config.whale.threshold) {
         rolesToAdd.push(config.whale.roleId);
+        console.log(`Adding whale role for ${collection.name}`);
       }
     }
 
-    // Add BUX balance roles
-    for (const threshold of BUX_THRESHOLDS) {
+    // Add BUX balance roles in ascending order
+    const sortedBuxThresholds = [...BUX_THRESHOLDS].sort((a, b) => b.threshold - a.threshold);
+    let buxRoleAssigned = false;
+
+    for (const threshold of sortedBuxThresholds) {
       if (threshold.roleId && buxBalance >= threshold.threshold) {
         rolesToAdd.push(threshold.roleId);
+        console.log(`Adding BUX role for balance ${buxBalance} >= ${threshold.threshold}`);
+        buxRoleAssigned = true;
+        break; // Only assign the highest qualifying role
       }
+    }
+
+    if (!buxRoleAssigned) {
+      console.log(`No BUX roles assigned for balance: ${buxBalance}`);
     }
 
     // Add BUXDAO 5 role if qualified
