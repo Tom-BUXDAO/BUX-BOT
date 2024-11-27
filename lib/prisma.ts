@@ -12,7 +12,7 @@ const CONNECTION_POOL_SIZE = 10;
 
 const prismaClientOptions: Prisma.PrismaClientOptions = {
     log: [
-        { level: 'info', emit: 'event' },
+        { level: 'query', emit: 'event' },
         { level: 'warn', emit: 'event' },
         { level: 'error', emit: 'event' }
     ],
@@ -85,16 +85,16 @@ prisma.$use(async (params, next) => {
 });
 
 // Log events
-prisma.$on('info', (e) => {
-    console.log(e);
+prisma.$on('query', (e) => {
+    console.log('Query:', e);
 });
 
 prisma.$on('warn', (e) => {
-    console.warn(e);
+    console.warn('Warning:', e);
 });
 
 prisma.$on('error', (e) => {
-    console.error(e);
+    console.error('Error:', e);
 });
 
 process.on('beforeExit', async () => {
