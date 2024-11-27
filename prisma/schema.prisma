@@ -27,18 +27,59 @@ model UserWallet {
 }
 
 model NFT {
-  id               String   @id @default(cuid())
-  mint             String   @unique
+  id               String        @id @default(cuid())
+  mint             String        @unique
   name             String
   symbol           String?
   image            String?
   collection       String
   attributes       Json?
-  currentOwner     User?    @relation("Ownership", fields: [ownerDiscordId], references: [discordId])
+  currentOwner     User?         @relation("Ownership", fields: [ownerDiscordId], references: [discordId])
   ownerDiscordId   String?
   ownerWallet      String?
-  lastUpdated      DateTime @updatedAt
-  createdAt        DateTime @default(now())
+  rarity           NFTRarity?
+  salesHistory     NFTSale[]
+  currentListing   NFTListing?
+  lastUpdated      DateTime      @updatedAt
+  createdAt        DateTime      @default(now())
+}
+
+model NFTRarity {
+  id            String   @id @default(cuid())
+  nft           NFT      @relation(fields: [nftId], references: [id])
+  nftId         String   @unique
+  rank          Int
+  score         Float
+  attributes    Json
+  source        String   // e.g. "howrare.is"
+  lastUpdated   DateTime @updatedAt
+  createdAt     DateTime @default(now())
+}
+
+model NFTSale {
+  id            String   @id @default(cuid())
+  nft           NFT      @relation(fields: [nftId], references: [id])
+  nftId         String
+  price         Float
+  currency      String   // e.g. "SOL"
+  marketplace   String   // e.g. "magiceden"
+  signature     String   @unique
+  buyer         String
+  seller        String
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+}
+
+model NFTListing {
+  id            String   @id @default(cuid())
+  nft           NFT      @relation(fields: [nftId], references: [id])
+  nftId         String   @unique
+  price         Float
+  currency      String   // e.g. "SOL"
+  marketplace   String   // e.g. "magiceden"
+  seller        String
+  lastUpdated   DateTime @updatedAt
+  createdAt     DateTime @default(now())
 }
 
 model Collection {
