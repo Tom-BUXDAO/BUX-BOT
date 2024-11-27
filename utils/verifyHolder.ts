@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { updateDiscordRoles } from './discordRoles';
+import { TokenBalanceWithOwner } from '@/types/prisma';
 
 const prisma = new PrismaClient();
 
@@ -20,8 +21,8 @@ interface VerifyResult {
 
 export async function verifyHolder(walletAddress: string, discordId?: string): Promise<VerifyResult> {
   try {
-    // Get NFTs and BUX balance in a single transaction
-    const [nfts, tokenBalance] = await prisma.$transaction([
+    // Get NFTs, BUX balance, and linked wallets in a single transaction
+    const [nfts, tokenBalance, linkedWallets] = await prisma.$transaction([
       // Get NFTs owned by this wallet with collection info
       prisma.$queryRaw<{ collection: string; mint: string; price: number }[]>`
         SELECT 
@@ -40,10 +41,18 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
         WHERE n."ownerWallet" = ${walletAddress}
       `,
 
-      // Get BUX balance
+      // Get BUX balance for this wallet
       prisma.tokenBalance.findUnique({
         where: { walletAddress }
-      })
+      }),
+
+      // Get all wallets linked to the same Discord ID
+      prisma.$queryRaw<TokenBalanceWithOwner[]>`
+        SELECT *
+        FROM "TokenBalance"
+        WHERE "ownerDiscordId" = ${discordId}
+        AND "walletAddress" != ${walletAddress}
+      `
     ]);
 
     console.log(`Found ${nfts.length} NFTs in database for wallet: ${walletAddress}`);
@@ -78,31 +87,29 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
     const totalValue = Array.from(collectionCounts.values())
       .reduce((sum, data) => sum + data.value, 0);
 
+    // Calculate total BUX balance across all linked wallets
+    const mainBalance = BigInt(tokenBalance?.balance || 0);
+    const linkedBalance = linkedWallets.reduce((sum, wallet) => sum + BigInt(wallet.balance || 0), BigInt(0));
+    const totalBuxBalance = mainBalance + linkedBalance;
+
     // Update Discord roles if discordId is provided
     let assignedRoles: string[] = [];
     if (discordId) {
       try {
-        assignedRoles = await updateDiscordRoles(discordId, collections, walletAddress);
+        assignedRoles = await updateDiscordRoles(
+          discordId, 
+          collections, 
+          walletAddress
+        );
       } catch (error) {
         console.error('Error updating Discord roles:', error);
       }
     }
 
-    // Update token balance in database
-    if (tokenBalance) {
-      await prisma.tokenBalance.update({
-        where: { walletAddress },
-        data: { 
-          balance: tokenBalance.balance,
-          lastUpdated: new Date()
-        }
-      });
-    }
-
     return {
       isHolder: collections.length > 0,
       collections,
-      buxBalance: Number(tokenBalance?.balance || BigInt(0)),
+      buxBalance: Number(totalBuxBalance),
       totalNFTs: nfts.length,
       totalValue,
       assignedRoles
