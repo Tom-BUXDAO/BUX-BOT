@@ -1,5 +1,6 @@
-import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { FaSignOutAlt } from 'react-icons/fa';
 import styles from '@/styles/UserProfile.module.css';
 
 interface VerifyResult {
@@ -16,6 +17,7 @@ interface VerifyResult {
 
 export default function UserProfile({ walletAddress }: { walletAddress: string }) {
   const { data: session } = useSession();
+  const { disconnect } = useWallet();
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,12 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     verifyWallet();
   }, [walletAddress, session?.user?.discordId]);
 
-  if (!session?.user) return null;
+  const handleLogout = async () => {
+    await disconnect();
+    await signOut({ redirect: false });
+  };
+
+  if (!session) return null;
 
   return (
     <div className={styles.container}>
@@ -73,13 +80,17 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
         />
         <div className={styles.details}>
           <div className={styles.name}>{session.user.name}</div>
-          <div className={styles.balance}>
-            {loading ? 'Loading...' : 
-             error ? 'Error loading balance' :
-             verifyResult ? `${verifyResult.buxBalance.toLocaleString()} BUX` : 
-             'Connect wallet'}
+          <div className={styles.walletAddress}>
+            {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'No wallet connected'}
           </div>
         </div>
+        <button 
+          onClick={handleLogout}
+          className={styles.logoutButton}
+          title="Logout"
+        >
+          <FaSignOutAlt />
+        </button>
       </div>
     </div>
   );

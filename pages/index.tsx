@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { FaDiscord } from 'react-icons/fa';
+import { FaDiscord, FaWallet } from 'react-icons/fa';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import Image from 'next/image';
@@ -30,11 +30,10 @@ interface VerifyResult {
 
 export default function Home() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const { publicKey } = useWallet();
+  const { data: session } = useSession();
+  const { connected, connecting, publicKey, connect, disconnect } = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [imageError, setImageError] = useState(false);
-  const { connected, connecting, disconnect } = useWallet();
   const [walletStatus, setWalletStatus] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdatedWallet, setLastUpdatedWallet] = useState<string | null>(null);
@@ -127,7 +126,7 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <UserProfile walletAddress={walletAddress} />
+      {session && <UserProfile walletAddress={walletAddress} />}
       <main className={styles.main}>
         <div className={styles.logoContainer}>
           {!imageError ? (
@@ -151,20 +150,21 @@ export default function Home() {
         </h1>
 
         <div className={styles.loginContainer}>
-          {!session ? (
+          {!connected ? (
+            <button
+              className={styles.connectButton}
+              onClick={() => connect()}
+            >
+              <FaWallet className={styles.walletIcon} />
+              Connect Wallet
+            </button>
+          ) : !session ? (
             <button
               className={styles.discordButton}
               onClick={() => signIn('discord')}
             >
               <FaDiscord className={styles.discordIcon} />
-              Sign in
-            </button>
-          ) : !connected ? (
-            <button
-              className={styles.connectButton}
-              onClick={() => signIn('discord')}
-            >
-              Connect Wallet
+              Sign in with Discord
             </button>
           ) : (
             <>

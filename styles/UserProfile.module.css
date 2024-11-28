@@ -1,24 +1,21 @@
 .container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  padding: 1rem 2rem;
+  background: rgba(0, 0, 0, 0.2);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 100;
-  max-width: fit-content;
+  top: 0;
+  left: 0;
+  z-index: 10;
 }
 
 .userInfo {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .avatar {
@@ -40,7 +37,40 @@
   font-size: 0.875rem;
 }
 
-.balance {
+.walletAddress {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.8);
-} 
+}
+
+.logoutButton {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 8px;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.logoutButton:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.logoutButton:active {
+  transform: scale(0.95);
+}
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+  .container {
+    background: rgba(0, 0, 0, 0.85);
+  }
+}
+ 
