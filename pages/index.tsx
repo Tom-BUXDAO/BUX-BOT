@@ -22,6 +22,12 @@ interface WalletUpdateResponse {
   assignedRoles?: string[];
 }
 
+interface VerifyResult {
+  isHolder: boolean;
+  collections: CollectionCount[];
+  assignedRoles?: string[];
+}
+
 export default function Home() {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -38,6 +44,8 @@ export default function Home() {
   } | null>(null);
   const [assignedRoles, setAssignedRoles] = useState<string[]>([]);
   const [showNotification, setShowNotification] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [showRoleNotification, setShowRoleNotification] = useState(false);
 
   useEffect(() => {
     if (publicKey) {
@@ -63,7 +71,8 @@ export default function Home() {
         body: JSON.stringify({ walletAddress: address }),
       });
 
-      const data: WalletUpdateResponse = await response.json();
+      const data = await response.json();
+      console.log('Verify result:', data);
 
       if (!response.ok) {
         throw new Error('Failed to update wallet address');
@@ -71,20 +80,15 @@ export default function Home() {
 
       setWalletStatus('Wallet Connected');
       setLastUpdatedWallet(address);
-      setHolderStatus({
-        isHolder: data.isHolder,
-        collections: data.collections
-      });
-
-      const roles = data.assignedRoles ?? [];
-      if (roles.length > 0) {
-        setAssignedRoles(roles);
-        setShowNotification(true);
+      setVerifyResult(data);
+      
+      if (data.assignedRoles?.length > 0) {
+        setShowRoleNotification(true);
       }
     } catch (error) {
       console.error('Error updating wallet address:', error);
       setWalletStatus('Error connecting wallet');
-      setHolderStatus(null);
+      setVerifyResult(null);
     } finally {
       setIsUpdating(false);
     }
@@ -189,10 +193,10 @@ export default function Home() {
         
         <RoleInfo />
       </main>
-      {showNotification && (
+      {verifyResult?.assignedRoles && showRoleNotification && (
         <RoleNotification 
-          roles={assignedRoles} 
-          onClose={() => setShowNotification(false)} 
+          roles={verifyResult.assignedRoles}
+          onClose={() => setShowRoleNotification(false)}
         />
       )}
     </div>

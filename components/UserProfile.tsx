@@ -1,7 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import styles from '@/styles/UserProfile.module.css';
-import RoleNotification from './RoleNotification';
 
 interface VerifyResult {
   isHolder: boolean;
@@ -20,7 +19,6 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showRoles, setShowRoles] = useState(true);
 
   useEffect(() => {
     async function verifyWallet() {
@@ -51,7 +49,6 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
         const result = await response.json();
         console.log('Verify result:', result);
         setVerifyResult(result);
-        setShowRoles(true);
       } catch (err) {
         console.error('Error verifying wallet:', err);
         setError(err instanceof Error ? err.message : 'Failed to verify wallet');
@@ -63,10 +60,6 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
 
     verifyWallet();
   }, [walletAddress, session?.user?.discordId]);
-
-  const handleCloseRoles = () => {
-    setShowRoles(false);
-  };
 
   if (!session?.user) return null;
 
@@ -88,12 +81,6 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
           </div>
         </div>
       </div>
-      {verifyResult?.assignedRoles && showRoles && (
-        <RoleNotification 
-          roles={verifyResult.assignedRoles} 
-          onClose={handleCloseRoles}
-        />
-      )}
     </div>
   );
 } 
