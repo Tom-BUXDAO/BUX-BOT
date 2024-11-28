@@ -27,7 +27,20 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
       // Get NFTs owned by this wallet with collection info
       prisma.$queryRaw<{ collection: string; mint: string; price: number }[]>`
         SELECT 
-          n."collection",
+          CASE 
+            WHEN n."collection" = 'money_monsters3d' THEN 'Money Monsters 3D'
+            WHEN n."collection" = 'money_monsters' THEN 'Money Monsters'
+            WHEN n."collection" = 'fcked_catz' THEN 'FCKED CATZ'
+            WHEN n."collection" = 'ai_bitbots' THEN 'AI BitBots'
+            WHEN n."collection" = 'celebcatz' THEN 'CelebCatz'
+            WHEN n."collection" = 'candy_bots' THEN 'Candy Bots'
+            WHEN n."collection" = 'doodle_bots' THEN 'Doodle Bots'
+            WHEN n."collection" = 'energy_apes' THEN 'Energy Apes'
+            WHEN n."collection" = 'rjctd_bots' THEN 'RJCTD Bots'
+            WHEN n."collection" = 'squirrels' THEN 'Squirrels'
+            WHEN n."collection" = 'warriors' THEN 'Warriors'
+            ELSE n."collection"
+          END as collection,
           n."mint",
           COALESCE(l."price", s."price", 0) as price
         FROM "NFT" n
