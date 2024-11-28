@@ -124,6 +124,17 @@ export default function Home() {
     }
   }, [connected, connecting, publicKey, updateWallet]);
 
+  const handleConnect = async () => {
+    try {
+      await connect();
+      if (publicKey) {
+        await updateWallet(publicKey.toString());
+      }
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+    }
+  };
+
   return (
     <div className={styles.container}>
       {session && <UserProfile walletAddress={walletAddress} />}
@@ -156,12 +167,12 @@ export default function Home() {
               onClick={() => signIn('discord')}
             >
               <FaDiscord className={styles.discordIcon} />
-              Sign in with Discord
+              Log in
             </button>
           ) : !connected ? (
             <button
               className={styles.connectButton}
-              onClick={() => connect()}
+              onClick={handleConnect}
             >
               <FaWallet className={styles.walletIcon} />
               Connect Wallet
