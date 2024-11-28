@@ -150,15 +150,7 @@ export default function Home() {
         </h1>
 
         <div className={styles.loginContainer}>
-          {!connected ? (
-            <button
-              className={styles.connectButton}
-              onClick={() => connect()}
-            >
-              <FaWallet className={styles.walletIcon} />
-              Connect Wallet
-            </button>
-          ) : !session ? (
+          {!session ? (
             <button
               className={styles.discordButton}
               onClick={() => signIn('discord')}
@@ -166,9 +158,16 @@ export default function Home() {
               <FaDiscord className={styles.discordIcon} />
               Sign in with Discord
             </button>
+          ) : !connected ? (
+            <button
+              className={styles.connectButton}
+              onClick={() => connect()}
+            >
+              <FaWallet className={styles.walletIcon} />
+              Connect Wallet
+            </button>
           ) : (
             <>
-              <p className={styles.loggedInText}>Signed in as {session.user?.name}</p>
               <div className={styles.walletButtonWrapper}>
                 <WalletMultiButton className={styles.walletButton} />
                 {walletStatus && (
