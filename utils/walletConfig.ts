@@ -21,11 +21,7 @@ export const getWalletAdapters = () => {
     new CloverWalletAdapter(),
     new Coin98WalletAdapter(),
     new SolongWalletAdapter(),
-  ].map(adapter => {
-    adapter.connecting = false;
-    adapter.connected = false;
-    return adapter;
-  });
+  ];
 };
 
 export const walletConfig = {
@@ -35,5 +31,11 @@ export const walletConfig = {
   walletConnectTimeout: 10000,
   onError: (error: Error) => {
     console.error('Wallet error:', error);
+  },
+  onConnect: () => {
+    console.log('Wallet connected');
+  },
+  onDisconnect: () => {
+    console.log('Wallet disconnected');
   }
 }; 
