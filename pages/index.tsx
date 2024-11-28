@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { FaDiscord, FaWallet } from 'react-icons/fa';
-import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton, WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { WalletError } from '@solana/wallet-adapter-base';
+import { WalletError, Adapter } from '@solana/wallet-adapter-base';
 import Image from 'next/image';
 import styles from '../styles/Home.module.css';
 import UserProfile from '../components/UserProfile';
@@ -109,11 +109,15 @@ export default function Home() {
       setWalletStatus('Error: ' + error.message);
     };
 
-    wallet.on('error', onError);
-    return () => {
-      wallet.off('error', onError);
-    };
-  }, [wallet]);
+    if (wallet.wallet?.adapter) {
+      const adapter = wallet.wallet.adapter as Adapter;
+      adapter.on('error', onError);
+      
+      return () => {
+        adapter.off('error', onError);
+      };
+    }
+  }, [wallet.wallet]);
 
   return (
     <div className={styles.container}>
