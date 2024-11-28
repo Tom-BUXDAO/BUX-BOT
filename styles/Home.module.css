@@ -43,29 +43,33 @@
 }
 
 .discordButton {
-  background: linear-gradient(45deg, #7289da, #5865f2);
-  color: white;
-  border: 2px solid white !important;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(114, 137, 218, 0.2);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #7289DA, #4E5D94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .discordButton:hover {
+  background: linear-gradient(135deg, #98FB98, #32CD32);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(114, 137, 218, 0.3);
-  background: linear-gradient(45deg, #5865f2, #7289da);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .discordButton:active {
   transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .discordIcon {
@@ -219,5 +223,35 @@
   color: #FFD700;
   padding: 0.05rem 0;
   font-size: 0.85rem;
+}
+
+.connectButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #32CD32, #98FB98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 200px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.connectButton:hover {
+  background: linear-gradient(135deg, #98FB98, #32CD32);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.connectButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
  
