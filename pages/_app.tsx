@@ -8,8 +8,9 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
-  // Add other wallet adapters as needed
+  TorusWalletAdapter,
+  LedgerWalletAdapter,
+  SlopeWalletAdapter
 } from '@solana/wallet-adapter-wallets';
 import { useMemo } from 'react';
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -23,8 +24,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter(),
-    new BackpackWalletAdapter(),
-    // Add other wallet adapters here
+    new TorusWalletAdapter(),
+    new LedgerWalletAdapter(),
+    new SlopeWalletAdapter()
   ], []);
 
   return (
