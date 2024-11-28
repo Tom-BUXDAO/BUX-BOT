@@ -159,6 +159,13 @@ export default function Home() {
               <FaDiscord className={styles.discordIcon} />
               Sign in
             </button>
+          ) : !connected ? (
+            <button
+              className={styles.connectButton}
+              onClick={() => signIn('discord')}
+            >
+              Connect Wallet
+            </button>
           ) : (
             <>
               <p className={styles.loggedInText}>Signed in as {session.user?.name}</p>
