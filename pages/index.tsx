@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { FaDiscord, FaWallet } from 'react-icons/fa';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
+import { WalletMultiButton, WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { WalletError } from '@solana/wallet-adapter-base';
 import Image from 'next/image';
 import styles from '../styles/Home.module.css';
 import UserProfile from '../components/UserProfile';
@@ -11,7 +12,7 @@ import RoleNotification from '../components/RoleNotification';
 
 export default function Home() {
   const { data: session } = useSession();
-  const { connected, connecting, publicKey, connect } = useWallet();
+  const wallet = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [imageError, setImageError] = useState(false);
   const [walletStatus, setWalletStatus] = useState('');
@@ -22,14 +23,15 @@ export default function Home() {
     assignedRoles?: string[];
   } | null>(null);
   const [showRoleNotification, setShowRoleNotification] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (publicKey) {
-      setWalletAddress(publicKey.toString());
+    if (wallet.publicKey) {
+      setWalletAddress(wallet.publicKey.toString());
     } else {
       setWalletAddress('');
     }
-  }, [publicKey]);
+  }, [wallet.publicKey]);
 
   const updateWallet = useCallback(async (address: string) => {
     if (isUpdating || !session) return;
@@ -70,23 +72,48 @@ export default function Home() {
   }, [session, isUpdating]);
 
   useEffect(() => {
-    if (connecting) {
+    if (wallet.connecting) {
       setWalletStatus('Connecting...');
-    } else if (connected && publicKey) {
-      updateWallet(publicKey.toString());
+    } else if (wallet.connected && wallet.publicKey) {
+      updateWallet(wallet.publicKey.toString());
     } else {
       setWalletStatus('');
     }
-  }, [connected, connecting, publicKey, updateWallet]);
+  }, [wallet, updateWallet]);
 
   const handleConnect = async () => {
     try {
-      await connect();
+      setWalletError(null);
+      setWalletStatus('Connecting...');
+
+      if (!wallet.connected && wallet.wallet) {
+        await wallet.connect();
+      } else if (!wallet.wallet) {
+        // If no wallet is selected, open the wallet modal
+        const walletModal = document.querySelector('.wallet-adapter-modal-trigger');
+        if (walletModal instanceof HTMLElement) {
+          walletModal.click();
+        }
+      }
     } catch (error) {
       console.error('Error connecting wallet:', error);
+      setWalletError(error instanceof Error ? error.message : 'Failed to connect wallet');
       setWalletStatus('Error connecting wallet');
     }
   };
+
+  useEffect(() => {
+    const onError = (error: WalletError) => {
+      console.error('Wallet error:', error);
+      setWalletError(error.message);
+      setWalletStatus('Error: ' + error.message);
+    };
+
+    wallet.on('error', onError);
+    return () => {
+      wallet.off('error', onError);
+    };
+  }, [wallet]);
 
   return (
     <div className={styles.container}>
@@ -122,20 +149,21 @@ export default function Home() {
               <FaDiscord className={styles.discordIcon} />
               Log in
             </button>
-          ) : !connected ? (
+          ) : !wallet.connected ? (
             <button
               className={styles.connectButton}
               onClick={handleConnect}
+              disabled={wallet.connecting}
             >
               <FaWallet className={styles.walletIcon} />
-              Connect Wallet
+              {wallet.connecting ? 'Connecting...' : 'Connect Wallet'}
             </button>
           ) : (
             <div className={styles.walletButtonWrapper}>
               <WalletMultiButton className={styles.walletButton} />
               {walletStatus && (
-                <p className={`${styles.walletStatus} ${connected ? styles.connected : ''}`}>
-                  {walletStatus}
+                <p className={`${styles.walletStatus} ${wallet.connected ? styles.connected : ''} ${walletError ? styles.error : ''}`}>
+                  {walletError || walletStatus}
                 </p>
               )}
               {verifyResult && (
