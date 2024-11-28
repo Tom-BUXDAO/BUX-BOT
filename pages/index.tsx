@@ -90,15 +90,19 @@ export default function Home() {
         throw new Error('Please install a Solana wallet extension');
       }
 
-      if (!wallet.connected) {
+      if (wallet.connected) {
+        await wallet.disconnect();
+      }
+
+      try {
+        await wallet.select('phantom' as WalletName);
+        await wallet.connect();
+      } catch (err) {
         const modalButton = document.querySelector('.wallet-adapter-modal-trigger');
         if (modalButton instanceof HTMLElement) {
           modalButton.click();
         } else {
-          await wallet.select('phantom' as WalletName);
-          await wallet.connect().catch((err) => {
-            throw new Error(err.message || 'Failed to connect wallet');
-          });
+          throw new Error('No wallet adapter found');
         }
       }
     } catch (error) {

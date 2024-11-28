@@ -10,7 +10,7 @@ import {
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 export const NETWORK = (process.env.NEXT_PUBLIC_SOLANA_NETWORK as WalletAdapterNetwork) || WalletAdapterNetwork.Mainnet;
-export const ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+export const ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://solana-mainnet.g.alchemy.com/v2/your-api-key';
 
 export const getWalletAdapters = () => {
   return [
@@ -21,11 +21,19 @@ export const getWalletAdapters = () => {
     new CloverWalletAdapter(),
     new Coin98WalletAdapter(),
     new SolongWalletAdapter(),
-  ];
+  ].map(adapter => {
+    adapter.connecting = false;
+    adapter.connected = false;
+    return adapter;
+  });
 };
 
 export const walletConfig = {
-  autoConnect: process.env.NEXT_PUBLIC_WALLET_AUTOCONNECT === 'true',
+  autoConnect: true,
   network: NETWORK,
   endpoint: ENDPOINT,
+  walletConnectTimeout: 10000,
+  onError: (error: Error) => {
+    console.error('Wallet error:', error);
+  }
 }; 
