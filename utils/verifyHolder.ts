@@ -22,8 +22,12 @@ interface VerifyResult {
 
 export async function verifyHolder(walletAddress: string, discordId?: string): Promise<VerifyResult> {
   try {
+    if (!discordId) {
+      throw new Error('Discord ID is required for verification');
+    }
+
     // Get NFTs, BUX balance, and linked wallets in a single transaction
-    const [nfts, tokenBalance, , , , linkedWallets] = await prisma.$transaction([
+    const [nfts, tokenBalance] = await prisma.$transaction([
       // Get NFTs owned by this wallet with collection info
       prisma.$queryRaw<{ collection: string; mint: string; price: number }[]>`
         SELECT 
@@ -58,42 +62,43 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
       // Get BUX balance for this wallet
       prisma.tokenBalance.findUnique({
         where: { walletAddress }
+      })
+    ]);
+
+    // Update Discord IDs in a separate transaction
+    await prisma.$transaction([
+      // Update TokenBalance Discord ID
+      prisma.tokenBalance.update({
+        where: { walletAddress },
+        data: { ownerDiscordId: discordId }
       }),
 
-      // Update TokenBalance Discord ID
-      prisma.$executeRaw`
-        UPDATE "TokenBalance"
-        SET "ownerDiscordId" = ${discordId}
-        WHERE "walletAddress" = ${walletAddress}
-      `,
-
       // Update NFT ownership Discord IDs
-      prisma.$executeRaw`
-        UPDATE "NFT"
-        SET "ownerDiscordId" = ${discordId}
-        WHERE "ownerWallet" = ${walletAddress}
-      `,
+      prisma.nFT.updateMany({
+        where: { ownerWallet: walletAddress },
+        data: { ownerDiscordId: discordId }
+      }),
 
       // Add wallet to UserWallet if not exists
-      prisma.$executeRaw`
-        INSERT INTO "UserWallet" ("id", "address", "userId")
-        SELECT 
-          gen_random_uuid(),
-          ${walletAddress},
-          u.id
-        FROM "User" u
-        WHERE u."discordId" = ${discordId}
-        ON CONFLICT ("address") DO NOTHING
-      `,
-
-      // Get linked wallets
-      prisma.$queryRaw<TokenBalanceWithOwner[]>`
-        SELECT *
-        FROM "TokenBalance"
-        WHERE "ownerDiscordId" = ${discordId}
-        AND "walletAddress" != ${walletAddress}
-      `
+      prisma.userWallet.upsert({
+        where: { address: walletAddress },
+        create: {
+          address: walletAddress,
+          user: {
+            connect: { discordId }
+          }
+        },
+        update: {} // No update needed
+      })
     ]);
+
+    // Get linked wallets
+    const linkedWallets = await prisma.tokenBalance.findMany({
+      where: {
+        ownerDiscordId: discordId,
+        walletAddress: { not: walletAddress }
+      }
+    });
 
     console.log('NFT Query Result:', nfts);
 
