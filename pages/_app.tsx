@@ -10,7 +10,9 @@ import {
   SolflareWalletAdapter,
   TorusWalletAdapter,
   LedgerWalletAdapter,
-  SlopeWalletAdapter
+  CloverWalletAdapter,
+  Coin98WalletAdapter,
+  SolongWalletAdapter
 } from '@solana/wallet-adapter-wallets';
 import { useMemo } from 'react';
 import '@solana/wallet-adapter-react-ui/styles.css';
@@ -26,7 +28,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
     new SolflareWalletAdapter(),
     new TorusWalletAdapter(),
     new LedgerWalletAdapter(),
-    new SlopeWalletAdapter()
+    new CloverWalletAdapter(),
+    new Coin98WalletAdapter(),
+    new SolongWalletAdapter()
   ], []);
 
   return (
