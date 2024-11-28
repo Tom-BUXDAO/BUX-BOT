@@ -3,7 +3,7 @@ import { signIn, signOut, useSession } from 'next-auth/react';
 import { FaDiscord, FaWallet } from 'react-icons/fa';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton, WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { WalletError, Adapter } from '@solana/wallet-adapter-base';
+import { WalletError, Adapter, WalletName } from '@solana/wallet-adapter-base';
 import Image from 'next/image';
 import styles from '../styles/Home.module.css';
 import UserProfile from '../components/UserProfile';
@@ -95,7 +95,7 @@ export default function Home() {
         if (modalButton instanceof HTMLElement) {
           modalButton.click();
         } else {
-          await wallet.select('Phantom');
+          await wallet.select('phantom' as WalletName);
           await wallet.connect().catch((err) => {
             throw new Error(err.message || 'Failed to connect wallet');
           });
