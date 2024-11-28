@@ -72,12 +72,20 @@
 
 .connectButton {
   background: linear-gradient(135deg, #32CD32, #98FB98);
+  border: 2px solid white;
 }
 
 .connectButton:hover {
   background: linear-gradient(135deg, #98FB98, #32CD32);
   transform: translateY(-2px);
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.connectButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid white;
 }
 
 .discordIcon, .walletIcon {
@@ -247,7 +255,7 @@
   font-weight: 600;
   color: white;
   background: linear-gradient(135deg, #32CD32, #98FB98);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid white;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -261,11 +269,12 @@
   background: linear-gradient(135deg, #98FB98, #32CD32);
   transform: translateY(-2px);
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid white;
 }
 
 .connectButton:active {
   transform: translateY(0);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid white;
 }
  
