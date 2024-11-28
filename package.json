@@ -17,7 +17,8 @@
     "update:all": "ts-node scripts/updateAllOwners.ts",
     "update:missing": "ts-node scripts/updateMissingOwners.ts",
     "update:bux": "ts-node scripts/updateBuxBalances.ts",
-    "update:bux:all": "ts-node scripts/updateAllBuxHolders.ts"
+    "update:bux:all": "ts-node scripts/updateAllBuxHolders.ts",
+    "sync-discord-ids": "DATABASE_URL=\"postgresql://bux_dao_owner:vEShINmdr61J@ep-purple-wave-a2nm1276.eu-central-1.aws.neon.tech/bux_dao?sslmode=require\" NODE_ENV=development ts-node scripts/syncOwnerDiscordIds.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0",

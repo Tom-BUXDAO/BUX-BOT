@@ -23,7 +23,7 @@ interface VerifyResult {
 export async function verifyHolder(walletAddress: string, discordId?: string): Promise<VerifyResult> {
   try {
     // Get NFTs, BUX balance, and linked wallets in a single transaction
-    const [nfts, tokenBalance, linkedWallets] = await prisma.$transaction([
+    const [nfts, tokenBalance, , , , linkedWallets] = await prisma.$transaction([
       // Get NFTs owned by this wallet with collection info
       prisma.$queryRaw<{ collection: string; mint: string; price: number }[]>`
         SELECT 
@@ -60,7 +60,33 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
         where: { walletAddress }
       }),
 
-      // Get all wallets linked to the same Discord ID
+      // Update TokenBalance Discord ID
+      prisma.$executeRaw`
+        UPDATE "TokenBalance"
+        SET "ownerDiscordId" = ${discordId}
+        WHERE "walletAddress" = ${walletAddress}
+      `,
+
+      // Update NFT ownership Discord IDs
+      prisma.$executeRaw`
+        UPDATE "NFT"
+        SET "ownerDiscordId" = ${discordId}
+        WHERE "ownerWallet" = ${walletAddress}
+      `,
+
+      // Add wallet to UserWallet if not exists
+      prisma.$executeRaw`
+        INSERT INTO "UserWallet" ("id", "address", "userId")
+        SELECT 
+          gen_random_uuid(),
+          ${walletAddress},
+          u.id
+        FROM "User" u
+        WHERE u."discordId" = ${discordId}
+        ON CONFLICT ("address") DO NOTHING
+      `,
+
+      // Get linked wallets
       prisma.$queryRaw<TokenBalanceWithOwner[]>`
         SELECT *
         FROM "TokenBalance"
@@ -105,7 +131,10 @@ export async function verifyHolder(walletAddress: string, discordId?: string): P
 
     // Calculate total BUX balance across all linked wallets
     const mainBalance = BigInt(tokenBalance?.balance || 0);
-    const linkedBalance = linkedWallets.reduce((sum, wallet) => sum + BigInt(wallet.balance || 0), BigInt(0));
+    const linkedBalance = linkedWallets.reduce(
+      (sum: bigint, wallet: TokenBalanceWithOwner) => sum + BigInt(wallet.balance || 0), 
+      BigInt(0)
+    );
     const totalBuxBalance = mainBalance + linkedBalance;
 
     // Convert from raw balance (with 9 decimals) to actual BUX amount
