@@ -1,32 +1,36 @@
 import { SessionProvider } from 'next-auth/react';
 import type { AppProps } from 'next/app';
-import React, { useMemo } from 'react';
-import '../styles/globals.css';
 import {
   ConnectionProvider,
   WalletProvider
 } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import {
-  SolflareWalletAdapter,
-  LedgerWalletAdapter,
-} from '@solana/wallet-adapter-wallets';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  BackpackWalletAdapter,
+  // Add other wallet adapters as needed
+} from '@solana/wallet-adapter-wallets';
+import { useMemo } from 'react';
 import '@solana/wallet-adapter-react-ui/styles.css';
+import '../styles/globals.css';
 
-function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
-  const network = WalletAdapterNetwork.Mainnet;
-  const endpoint = "https://api.mainnet-beta.solana.com";
-  
+// Default RPC endpoint
+const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+
+export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
+  // Initialize wallet adapters
   const wallets = useMemo(() => [
+    new PhantomWalletAdapter(),
     new SolflareWalletAdapter(),
-    new LedgerWalletAdapter(),
+    new BackpackWalletAdapter(),
+    // Add other wallet adapters here
   ], []);
 
   return (
-    <SessionProvider session={session} refetchInterval={0}>
+    <SessionProvider session={session}>
       <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect={false}>
+        <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
             <Component {...pageProps} />
           </WalletModalProvider>
@@ -34,6 +38,4 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }: AppProps) {
       </ConnectionProvider>
     </SessionProvider>
   );
-}
-
-export default MyApp; 
+} 
