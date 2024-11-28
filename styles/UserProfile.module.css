@@ -7,9 +7,10 @@
   border-radius: 50px;
   border: 2px solid rgba(255, 255, 255, 0.1);
   margin: 1rem;
-  position: absolute;
+  position: fixed;
   top: 1rem;
   right: 1rem;
+  z-index: 1000;
 }
 
 .userInfo {
