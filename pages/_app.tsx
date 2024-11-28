@@ -5,38 +5,18 @@ import {
   WalletProvider
 } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TorusWalletAdapter,
-  LedgerWalletAdapter,
-  CloverWalletAdapter,
-  Coin98WalletAdapter,
-  SolongWalletAdapter
-} from '@solana/wallet-adapter-wallets';
 import { useMemo } from 'react';
+import { getWalletAdapters, walletConfig } from '@/utils/walletConfig';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import '../styles/globals.css';
 
-// Default RPC endpoint
-const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
-
 export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
-  // Initialize wallet adapters
-  const wallets = useMemo(() => [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-    new TorusWalletAdapter(),
-    new LedgerWalletAdapter(),
-    new CloverWalletAdapter(),
-    new Coin98WalletAdapter(),
-    new SolongWalletAdapter()
-  ], []);
+  const wallets = useMemo(() => getWalletAdapters(), []);
 
   return (
     <SessionProvider session={session}>
-      <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect>
+      <ConnectionProvider endpoint={walletConfig.endpoint}>
+        <WalletProvider wallets={wallets} autoConnect={walletConfig.autoConnect}>
           <WalletModalProvider>
             <Component {...pageProps} />
           </WalletModalProvider>

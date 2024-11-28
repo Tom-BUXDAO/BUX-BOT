@@ -86,19 +86,20 @@ export default function Home() {
       setWalletError(null);
       setWalletStatus('Connecting...');
 
-      if (!wallet.wallet) {
-        // If no wallet is selected, trigger wallet selection modal
-        const modalTrigger = document.querySelector('.wallet-adapter-button');
-        if (modalTrigger instanceof HTMLElement) {
-          modalTrigger.click();
+      if (!window.solana) {
+        throw new Error('Please install a Solana wallet extension');
+      }
+
+      if (!wallet.connected) {
+        const modalButton = document.querySelector('.wallet-adapter-modal-trigger');
+        if (modalButton instanceof HTMLElement) {
+          modalButton.click();
         } else {
-          throw new Error('No wallet adapter found');
+          await wallet.select('Phantom');
+          await wallet.connect().catch((err) => {
+            throw new Error(err.message || 'Failed to connect wallet');
+          });
         }
-      } else {
-        // If wallet is selected but not connected, connect it
-        await wallet.connect().catch((err) => {
-          throw new Error(err.message || 'Failed to connect wallet');
-        });
       }
     } catch (error) {
       console.error('Error connecting wallet:', error);
@@ -206,4 +207,10 @@ export default function Home() {
       )}
     </div>
   );
+} 
+
+declare global {
+  interface Window {
+    solana?: any;
+  }
 } 
