@@ -152,7 +152,7 @@
 .walletButton {
   background: linear-gradient(45deg, #0b9d3b, #0fb344) !important;
   color: white !important;
-  border: 2px solid white !important;
+  border: none !important;
   padding: 1rem 2rem !important;
   border-radius: 8px !important;
   font-size: 1.1rem !important;
@@ -166,8 +166,10 @@
   width: auto !important;
   min-width: 200px !important;
   justify-content: center !important;
-  font-family: 'Poppins', sans-serif !important;
+  font-family: inherit !important;
   text-align: center !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
 .walletButton:hover {

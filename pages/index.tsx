@@ -86,7 +86,7 @@ export default function Home() {
       setWalletError(null);
       setWalletStatus('Connecting...');
 
-      const modalButton = document.querySelector('.wallet-adapter-button');
+      const modalButton = document.querySelector('.wallet-adapter-button-trigger');
       if (modalButton instanceof HTMLElement) {
         modalButton.click();
       } else {
