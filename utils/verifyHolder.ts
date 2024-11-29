@@ -1,8 +1,7 @@
-import { prisma } from '@/lib/prisma';
 import { VerifyResult } from '@/types/verification';
 import { NFTHoldingWithCollection } from '@/types/wallet';
-import { createRateLimit } from '@/utils/rateLimit';
 import { Prisma, NFT } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 // Cache verification results for 5 minutes
 const verificationCache = new Map<string, { result: VerifyResult; timestamp: number }>();
@@ -22,11 +21,6 @@ const THRESHOLDS = {
   MONEY_MONSTERS3D_WHALE: Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD || 25),
 };
 
-/**
- * Verifies if a wallet address holds any NFTs or tokens in our collections
- * @param walletAddress The wallet address to verify
- * @returns VerifyResult containing holder status and collection details
- */
 export async function verifyHolder(walletAddress: string): Promise<VerifyResult> {
   // Check cache first
   const cached = verificationCache.get(walletAddress);
@@ -37,9 +31,7 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
   const startTime = Date.now();
   
   try {
-    // Single database transaction for all queries
     const result = await prisma.$transaction(async (tx) => {
-      // Get NFTs and token balance in parallel
       const [nfts, tokenBalance] = await Promise.all([
         tx.nFT.findMany({
           where: { ownerWallet: walletAddress },
@@ -56,8 +48,9 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
           collections: [],
           buxBalance: 0,
           totalNFTs: 0,
-          totalValue: 0
-        };
+          totalValue: 0,
+          assignedRoles: []
+        } as VerifyResult;
       }
 
       // Aggregate collection data
@@ -109,22 +102,23 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
         }
       });
 
-      const result = {
+      // Create result object with all required properties
+      const verifyResult = {
         isHolder: collections.length > 0 || buxBalance > 0,
         collections,
         buxBalance,
         totalNFTs: nfts.length,
         totalValue: 0,
-        assignedRoles: assignedRoles.filter(Boolean) // Remove any undefined roles
-      };
+        assignedRoles: assignedRoles.filter(Boolean)
+      } as VerifyResult;
 
       // Cache the result
       verificationCache.set(walletAddress, {
-        result,
+        result: verifyResult,
         timestamp: Date.now()
       });
 
-      return result;
+      return verifyResult;
     });
 
     return result;
@@ -135,7 +129,6 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
       error: error instanceof Error ? error.message : 'Unknown error',
       duration: Date.now() - startTime
     });
-
     throw error;
   }
 } 

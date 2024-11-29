@@ -3,10 +3,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { verifyHolder } from '@/utils/verifyHolder';
 import { updateDiscordRoles } from '@/utils/discordRoles';
+import { VerifyResult, RoleUpdate } from '@/types/verification';
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<VerifyResult | { error: string; details?: string }>
 ) {
   try {
     const session = await getServerSession(req, res, authOptions);
@@ -24,7 +25,7 @@ export default async function handler(
     // Update Discord roles
     const roleUpdate = await updateDiscordRoles(
       session.user.id,
-      result.assignedRoles || []
+      result.assignedRoles
     );
 
     return res.status(200).json({

@@ -20,6 +20,7 @@ export default function Home() {
   const { verifyResult, loading, error, verifyWallet } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [roleUpdate, setRoleUpdate] = useState<{ added: string[]; removed: string[] } | null>(null);
 
   useEffect(() => {
     if (wallet.publicKey) {
@@ -41,7 +42,8 @@ export default function Home() {
   }, [wallet.connecting, wallet.connected, wallet.publicKey, verifyWallet]);
 
   useEffect(() => {
-    if (verifyResult?.assignedRoles && verifyResult.assignedRoles.length > 0) {
+    if (verifyResult?.roleUpdate) {
+      setRoleUpdate(verifyResult.roleUpdate);
       setShowRoleNotification(true);
     }
   }, [verifyResult]);
@@ -157,9 +159,9 @@ export default function Home() {
         
         <RoleInfo />
       </main>
-      {verifyResult?.assignedRoles && showRoleNotification && (
+      {roleUpdate && showRoleNotification && (
         <RoleNotification 
-          roles={verifyResult.assignedRoles}
+          roleUpdate={roleUpdate}
           onClose={() => setShowRoleNotification(false)}
         />
       )}

@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
+interface RoleUpdate {
+  added: string[];
+  removed: string[];
+}
+
 interface VerifyResult {
   isHolder: boolean;
   collections: Array<{
@@ -11,6 +16,7 @@ interface VerifyResult {
   totalNFTs: number;
   totalValue: number;
   assignedRoles?: string[];
+  roleUpdate?: RoleUpdate;
 }
 
 interface WalletVerificationContextType {
