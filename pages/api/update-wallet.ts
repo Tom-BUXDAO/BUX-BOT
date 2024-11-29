@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { createRateLimit } from '@/utils/rateLimit';
 import { verifyHolder } from '@/utils/verifyHolder';
 import { VerifyResult, WalletVerification } from '@/types/verification';
+import { Prisma } from '@prisma/client';
 
 interface SessionUser {
   id: string;
@@ -42,7 +43,7 @@ export default async function handler(
         walletAddress,
         userId: session.user.id,
         status: 'pending',
-        result: null
+        result: Prisma.JsonNull
       }
     });
 
@@ -52,7 +53,7 @@ export default async function handler(
       where: { id: verification.id },
       data: {
         status: 'completed',
-        result: verificationResult as unknown as Prisma.JsonValue
+        result: verificationResult as Prisma.JsonValue
       }
     });
 
