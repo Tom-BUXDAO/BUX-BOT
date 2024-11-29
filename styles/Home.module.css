@@ -61,13 +61,32 @@
 }
 
 .discordButton {
-  background: linear-gradient(135deg, #7289DA, #4E5D94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #5865F2;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .discordButton:hover {
-  background: linear-gradient(135deg, #4E5D94, #7289DA);
+  background: #4752C4;
   transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+}
+
+.discordButton:active {
+  transform: translateY(0);
+}
+
+.icon {
+  font-size: 1.25rem;
 }
 
 .connectButton {

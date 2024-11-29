@@ -93,39 +93,40 @@ export default function Home() {
     }
   }, [wallet.connected]);
 
+  const handleDiscordLogin = async () => {
+    try {
+      await signIn('discord', { 
+        callbackUrl: '/',
+        scope: 'identify guilds'
+      });
+    } catch (error) {
+      console.error('Discord login error:', error);
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {session && <UserProfile walletAddress={walletAddress} />}
       <main className={styles.main}>
-        <div className={styles.logoContainer}>
-          {!imageError ? (
-            <Image 
-              src="/logo.png"
-              alt="BUX DAO Logo"
-              width={100}
-              height={100}
-              className={styles.logoImage}
-              onError={() => setImageError(true)}
-              priority
-            />
-          ) : (
-            <div className={styles.logoPlaceholder} />
-          )}
-          <div className={styles.logoText}>BUX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DAO</div>
+        <div className={styles.header}>
+          <Image
+            src="/logo.png"
+            alt="BUX DAO Logo"
+            width={128}
+            height={128}
+            priority
+            onError={() => setImageError(true)}
+          />
+          <h1 className={styles.title}>BUX DAO Role Verification</h1>
         </div>
-        
-        <h1 className={styles.title}>
-          Holder Verification
-        </h1>
 
-        <div className={styles.loginContainer}>
+        <div className={styles.buttonContainer}>
           {!session ? (
-            <button
-              className={styles.discordButton}
-              onClick={() => signIn('discord')}
+            <button 
+              onClick={handleDiscordLogin}
+              className={`${styles.discordButton} ${styles.button}`}
             >
-              <FaDiscord className={styles.discordIcon} />
-              Log in
+              <FaDiscord className={styles.icon} />
+              Login with Discord
             </button>
           ) : !wallet.connected ? (
             <WalletMultiButton className={styles.walletButton}>
