@@ -43,8 +43,11 @@ export default function Home() {
 
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
-      setRoleUpdate(verifyResult.roleUpdate);
-      setShowRoleNotification(true);
+      const { added, removed } = verifyResult.roleUpdate;
+      if (added.length > 0 || removed.length > 0) {
+        setRoleUpdate(verifyResult.roleUpdate);
+        setShowRoleNotification(true);
+      }
     }
   }, [verifyResult]);
 
@@ -162,7 +165,10 @@ export default function Home() {
       {roleUpdate && showRoleNotification && (
         <RoleNotification 
           roleUpdate={roleUpdate}
-          onClose={() => setShowRoleNotification(false)}
+          onClose={() => {
+            setShowRoleNotification(false);
+            setRoleUpdate(null);
+          }}
         />
       )}
     </div>
