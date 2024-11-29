@@ -18,15 +18,14 @@ interface VerifyResult {
 }
 
 export default function UserProfile({ walletAddress }: { walletAddress: string }) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { disconnect } = useWallet();
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Memoize the verify function to prevent unnecessary re-renders
   const verifyWallet = useCallback(async () => {
-    if (!walletAddress || !session?.user?.id) return;
+    if (!walletAddress || !session?.user?.id || status !== 'authenticated') return;
     
     setLoading(true);
     setError(null);
@@ -40,8 +39,14 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
         body: JSON.stringify({ walletAddress }),
       });
 
+      if (response.status === 401) {
+        // Force re-authentication
+        await signOut({ redirect: true });
+        return;
+      }
+
       if (!response.ok) {
-        throw new Error(response.status === 401 ? 'Please log in again' : 'Failed to verify wallet');
+        throw new Error('Failed to verify wallet');
       }
 
       const result = await response.json();
@@ -52,18 +57,22 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     } finally {
       setLoading(false);
     }
-  }, [walletAddress, session?.user?.id]);
+  }, [walletAddress, session?.user?.id, status]);
 
-  // Initial verification
+  // Only verify when session is authenticated
   useEffect(() => {
-    verifyWallet();
-  }, [verifyWallet]);
+    if (status === 'authenticated') {
+      verifyWallet();
+    }
+  }, [verifyWallet, status]);
 
-  // Set up periodic refresh (every 5 minutes)
+  // Set up periodic refresh only when authenticated
   useEffect(() => {
+    if (status !== 'authenticated') return;
+    
     const interval = setInterval(verifyWallet, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [verifyWallet]);
+  }, [verifyWallet, status]);
 
   const handleLogout = async () => {
     await disconnect();

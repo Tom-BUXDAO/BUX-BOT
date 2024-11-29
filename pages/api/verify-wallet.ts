@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from './auth/[...nextauth]';
 import { verifyHolder } from '@/utils/verifyHolder';
 
 export default async function handler(
@@ -7,7 +8,8 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    const session = await getSession({ req });
+    // Get server-side session
+    const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
