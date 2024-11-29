@@ -12,54 +12,87 @@
 
 .container {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.9);
-  padding: 2rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   z-index: 1000;
-  max-width: 90vw;
-  width: auto;
-  text-align: center;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+}
+
+.content {
+  background: var(--background-secondary);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  max-width: 90%;
+  width: 400px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.title {
+.content h3 {
+  margin: 0 0 1.5rem;
+  color: var(--text-primary);
+  text-align: center;
   font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
 }
 
-.roles {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.section {
   margin-bottom: 1.5rem;
 }
 
-.role {
+.section h4 {
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem;
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
-  padding: 0.5rem;
+  font-weight: 500;
+}
+
+.roleList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.role {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.role:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
+}
+
+.removed {
+  text-decoration: line-through;
+  opacity: 0.7;
 }
 
 .closeButton {
-  background: rgba(255, 255, 255, 0.1);
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--primary);
   border: none;
-  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   color: white;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .closeButton:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.closeButton:active {
+  transform: translateY(0);
 } 
