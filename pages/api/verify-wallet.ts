@@ -4,6 +4,7 @@ import { authOptions } from './auth/[...nextauth]';
 import { verifyHolder } from '@/utils/verifyHolder';
 import { updateDiscordRoles } from '@/utils/discordRoles';
 import { VerifyResult, RoleUpdate } from '@/types/verification';
+import { prisma } from '@/lib/prisma';
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,7 +21,22 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    const result = await verifyHolder(walletAddress);
+    // Add wallet to user's wallets if not exists
+    await prisma.userWallet.upsert({
+      where: {
+        address: walletAddress,
+      },
+      update: {
+        userId: session.user.id,
+      },
+      create: {
+        address: walletAddress,
+        userId: session.user.id,
+      },
+    });
+
+    // Pass Discord ID to verifyHolder to check all wallets
+    const result = await verifyHolder(walletAddress, session.user.id);
     
     // Update Discord roles and get role changes
     const roleUpdate = await updateDiscordRoles(
@@ -34,7 +50,6 @@ export default async function handler(
       roleUpdate
     });
 
-    // Return the verification result with role update information
     const response: VerifyResult = {
       ...result,
       roleUpdate: {

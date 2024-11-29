@@ -21,52 +21,51 @@ const THRESHOLDS = {
   MONEY_MONSTERS3D_WHALE: Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD || 25),
 };
 
-export async function verifyHolder(walletAddress: string): Promise<VerifyResult> {
-  console.log(`Verifying wallet ${walletAddress}...`);
+export async function verifyHolder(walletAddress: string, discordId?: string): Promise<VerifyResult> {
+  console.log(`Verifying wallet ${walletAddress} for Discord ID ${discordId}...`);
   const startTime = Date.now();
-
-  // Check cache first
-  const cached = verificationCache.get(walletAddress);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log(`Using cached result for ${walletAddress}`);
-    return cached.result;
-  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const [nfts, tokenBalance] = await Promise.all([
+      // Get all wallets for this Discord user if discordId is provided
+      const wallets = discordId ? 
+        (await tx.userWallet.findMany({
+          where: { 
+            user: { discordId }
+          },
+          select: { address: true }
+        })).map(w => w.address) : 
+        [walletAddress];
+
+      console.log(`Found ${wallets.length} wallets for user:`, wallets);
+
+      // Get NFTs and token balances for all wallets
+      const [nfts, tokenBalances] = await Promise.all([
         tx.nFT.findMany({
-          where: { ownerWallet: walletAddress },
+          where: { 
+            ownerWallet: { 
+              in: wallets 
+            }
+          },
           include: { currentOwner: true }
         }),
-        tx.tokenBalance.findUnique({
-          where: { walletAddress }
+        tx.tokenBalance.findMany({
+          where: { 
+            walletAddress: { 
+              in: wallets 
+            }
+          }
         })
       ]);
 
-      // Log NFT details for debugging
-      console.log('NFTs found:', nfts.map(nft => ({
-        name: nft.name,
-        collection: nft.collection,
-        mint: nft.mint
-      })));
+      // Calculate total BUX balance
+      const totalBuxBalance = tokenBalances.reduce(
+        (sum, tb) => sum + Number(tb.balance), 
+        0
+      );
+      const standardBuxBalance = totalBuxBalance / Math.pow(10, BUX_DECIMALS);
 
-      // Calculate BUX balance in standard units
-      const buxBalance = Number(tokenBalance?.balance ?? 0);
-      const standardBuxBalance = buxBalance / Math.pow(10, BUX_DECIMALS);
-
-      console.log(`Found ${nfts.length} NFTs and ${buxBalance} BUX (${standardBuxBalance} standard) for ${walletAddress}`);
-
-      if (!nfts.length && !tokenBalance?.balance) {
-        return {
-          isHolder: false,
-          collections: [],
-          buxBalance: 0,
-          totalNFTs: 0,
-          totalValue: 0,
-          assignedRoles: []
-        } as VerifyResult;
-      }
+      console.log(`Found ${nfts.length} total NFTs and ${totalBuxBalance} BUX (${standardBuxBalance} standard) across all wallets`);
 
       // Aggregate collection data
       const collections = nfts.reduce((acc: Array<{ name: string; count: number }>, nft) => {
@@ -191,9 +190,9 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
       });
 
       const verifyResult = {
-        isHolder: collections.length > 0 || buxBalance > 0,
+        isHolder: collections.length > 0 || totalBuxBalance > 0,
         collections,
-        buxBalance,
+        buxBalance: totalBuxBalance,
         totalNFTs: nfts.length,
         totalValue: 0,
         assignedRoles: assignedRoles.filter(Boolean)
@@ -214,6 +213,7 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
   } catch (error) {
     console.error('Error verifying holder:', {
       walletAddress,
+      discordId,
       error: error instanceof Error ? error.message : 'Unknown error',
       duration: Date.now() - startTime
     });
