@@ -35,76 +35,55 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     error: null
   });
 
+  const [lastVerified, setLastVerified] = useState<number>(0);
+  const VERIFY_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
   useEffect(() => {
     async function verifyWallet() {
-      if (!walletAddress) {
-        setVerifyResult(null);
-        return;
-      }
+      if (!walletAddress || !session?.user?.id) return;
+      
+      const now = Date.now();
+      if (now - lastVerified < VERIFY_INTERVAL) return;
       
       setLoading(true);
       setError(null);
       
       try {
-        const response = await fetch('/api/update-wallet', {
+        const response = await fetch('/api/verify-wallet', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            walletAddress,
-            discordId: session?.user?.discordId
-          }),
+          body: JSON.stringify({ walletAddress }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to verify wallet');
+          throw new Error(response.status === 401 ? 'Please log in again' : 'Failed to verify wallet');
         }
 
         const result = await response.json();
-        console.log('Verify result:', result);
         setVerifyResult(result);
+        setLastVerified(now);
       } catch (err) {
         console.error('Error verifying wallet:', err);
         setError(err instanceof Error ? err.message : 'Failed to verify wallet');
-        setVerifyResult(null);
       } finally {
         setLoading(false);
       }
     }
 
     verifyWallet();
-  }, [walletAddress, session?.user?.discordId]);
+  }, [walletAddress, session?.user?.id, lastVerified]);
 
   useEffect(() => {
-    const fetchBuxBalance = async () => {
-      if (!walletAddress) return;
-      
-      try {
-        setBuxBalance(prev => ({ ...prev, loading: true, error: null }));
-        const response = await fetch(`/api/balance?wallet=${walletAddress}`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch BUX balance');
-        }
-
-        const data = await response.json();
-        setBuxBalance({
-          balance: data.balance,
-          loading: false,
-          error: null
-        });
-      } catch (error) {
-        setBuxBalance(prev => ({
-          ...prev,
-          loading: false,
-          error: error instanceof Error ? error.message : 'Failed to fetch balance'
-        }));
-      }
-    };
-
-    fetchBuxBalance();
-  }, [walletAddress]);
+    if (verifyResult) {
+      setBuxBalance({
+        balance: verifyResult.buxBalance,
+        loading: false,
+        error: null
+      });
+    }
+  }, [verifyResult]);
 
   const handleLogout = async () => {
     await disconnect();
@@ -128,12 +107,12 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
         <div className={styles.info}>
           <p className={styles.name}>{session.user.name}</p>
           <p className={styles.balance}>
-            {buxBalance.loading ? (
-              'Loading BUX balance...'
-            ) : buxBalance.error ? (
-              <span className={styles.error}>{buxBalance.error}</span>
+            {loading ? (
+              'Verifying...'
+            ) : error ? (
+              <span className={styles.error}>{error}</span>
             ) : (
-              `${buxBalance.balance.toLocaleString()} BUX`
+              `${verifyResult?.buxBalance.toLocaleString() ?? 0} BUX`
             )}
           </p>
         </div>
