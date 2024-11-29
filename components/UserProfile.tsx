@@ -17,6 +17,8 @@ interface VerifyResult {
   assignedRoles?: string[];
 }
 
+const BUX_DECIMALS = 9; // BUX token has 9 decimals
+
 export default function UserProfile({ walletAddress }: { walletAddress: string }) {
   const { data: session, status } = useSession();
   const { disconnect } = useWallet();
@@ -79,6 +81,10 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     await signOut({ redirect: false });
   };
 
+  const formatBuxBalance = (rawBalance: number) => {
+    return (rawBalance / Math.pow(10, BUX_DECIMALS)).toLocaleString();
+  };
+
   if (!session) return null;
 
   return (
@@ -101,7 +107,7 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
             ) : error ? (
               <span className={styles.error}>{error}</span>
             ) : (
-              `${verifyResult?.buxBalance.toLocaleString() ?? 0} BUX`
+              `${formatBuxBalance(verifyResult?.buxBalance ?? 0)} BUX`
             )}
           </p>
         </div>
