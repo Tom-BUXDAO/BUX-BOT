@@ -19,80 +19,94 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.85);
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: 1000;
 }
 
 .content {
-  background: var(--background-secondary);
-  border-radius: 1rem;
-  padding: 1.5rem;
+  background: #2f3136;
+  border-radius: 8px;
+  padding: 20px;
   max-width: 90%;
   width: 400px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
 }
 
 .content h3 {
-  margin: 0 0 1.5rem;
-  color: var(--text-primary);
+  margin: 0 0 20px;
+  color: #fff;
   text-align: center;
-  font-size: 1.25rem;
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 20px;
 }
 
 .section h4 {
-  color: var(--text-secondary);
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
-  font-weight: 500;
+  color: #b9bbbe;
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .roleList {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 4px;
 }
 
 .role {
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.25rem;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  transition: all 0.2s;
+  padding: 6px 8px;
+  background: #36393f;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 18px;
+  color: #fff;
+  display: flex;
+  align-items: center;
 }
 
-.role:hover {
-  background: rgba(255, 255, 255, 0.1);
+.roleText {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.roleEmoji {
+  font-size: 16px;
+}
+
+.roleName {
+  font-weight: 500;
 }
 
 .removed {
+  opacity: 0.5;
   text-decoration: line-through;
-  opacity: 0.7;
 }
 
 .closeButton {
   width: 100%;
-  padding: 0.75rem;
-  background: var(--primary);
+  padding: 10px;
+  background: #5865f2;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 4px;
   color: white;
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s;
 }
 
 .closeButton:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
+  background: #4752c4;
 }
 
 .closeButton:active {
-  transform: translateY(0);
+  background: #3c45a5;
 } 
