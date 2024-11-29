@@ -3,6 +3,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { FaSignOutAlt } from 'react-icons/fa';
 import styles from '@/styles/UserProfile.module.css';
+import Image from 'next/image';
 
 interface VerifyResult {
   isHolder: boolean;
@@ -16,12 +17,23 @@ interface VerifyResult {
   assignedRoles?: string[];
 }
 
+interface BuxBalance {
+  balance: number;
+  loading: boolean;
+  error: string | null;
+}
+
 export default function UserProfile({ walletAddress }: { walletAddress: string }) {
   const { data: session } = useSession();
   const { disconnect } = useWallet();
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [buxBalance, setBuxBalance] = useState<BuxBalance>({
+    balance: 0,
+    loading: false,
+    error: null
+  });
 
   useEffect(() => {
     async function verifyWallet() {
@@ -64,6 +76,36 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     verifyWallet();
   }, [walletAddress, session?.user?.discordId]);
 
+  useEffect(() => {
+    const fetchBuxBalance = async () => {
+      if (!walletAddress) return;
+      
+      try {
+        setBuxBalance(prev => ({ ...prev, loading: true, error: null }));
+        const response = await fetch(`/api/balance?wallet=${walletAddress}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch BUX balance');
+        }
+
+        const data = await response.json();
+        setBuxBalance({
+          balance: data.balance,
+          loading: false,
+          error: null
+        });
+      } catch (error) {
+        setBuxBalance(prev => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Failed to fetch balance'
+        }));
+      }
+    };
+
+    fetchBuxBalance();
+  }, [walletAddress]);
+
   const handleLogout = async () => {
     await disconnect();
     await signOut({ redirect: false });
@@ -73,26 +115,36 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
 
   return (
     <div className={styles.container}>
-      <div className={styles.userInfo}>
-        <img
-          src={session.user.image || '/default-avatar.png'}
-          alt={session.user.name || 'User'}
-          className={styles.avatar}
-        />
-        <div className={styles.details}>
-          <div className={styles.name}>{session.user.name}</div>
-          <div className={styles.walletAddress}>
-            {walletAddress ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}` : 'No wallet connected'}
-          </div>
+      <div className={styles.profile}>
+        {session.user.image && (
+          <Image
+            src={session.user.image}
+            alt={session.user.name || 'User avatar'}
+            width={40}
+            height={40}
+            className={styles.avatar}
+          />
+        )}
+        <div className={styles.info}>
+          <p className={styles.name}>{session.user.name}</p>
+          <p className={styles.balance}>
+            {buxBalance.loading ? (
+              'Loading BUX balance...'
+            ) : buxBalance.error ? (
+              <span className={styles.error}>{buxBalance.error}</span>
+            ) : (
+              `${buxBalance.balance.toLocaleString()} BUX`
+            )}
+          </p>
         </div>
-        <button 
-          onClick={handleLogout}
-          className={styles.logoutButton}
-          title="Logout"
-        >
-          <FaSignOutAlt />
-        </button>
       </div>
+      <button 
+        onClick={handleLogout}
+        className={styles.logoutButton}
+        title="Logout"
+      >
+        <FaSignOutAlt />
+      </button>
     </div>
   );
 } 
