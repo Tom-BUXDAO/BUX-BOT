@@ -1,20 +1,19 @@
 .container {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 10;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: var(--background-secondary);
+  border-radius: 0.5rem;
+  margin: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .profile {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .avatar {
@@ -28,38 +27,76 @@
 }
 
 .name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #fff;
-  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .balance {
-  font-size: 0.8rem;
-  color: #0b9d3b;
-  margin: 0;
-  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.menuButton,
+.logoutButton {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menuButton:hover,
+.logoutButton:hover {
+  color: var(--text-primary);
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: var(--background-secondary);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  z-index: 100;
+  min-width: 200px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  border-radius: 0.25rem;
+}
+
+.menuItem:hover {
+  background: var(--background-hover);
+  color: var(--text-primary);
+}
+
+.menuIcon {
+  font-size: 1.1rem;
 }
 
 .error {
-  color: #ff4444;
-  font-size: 0.8rem;
-}
-
-.logoutButton {
-  position: absolute;
-  top: 50%;
-  right: -2.5rem;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  cursor: pointer;
-  padding: 0.5rem;
-  transition: color 0.2s ease;
-}
-
-.logoutButton:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--error);
 }
  

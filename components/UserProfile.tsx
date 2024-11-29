@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { FaSignOutAlt } from 'react-icons/fa';
+import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush } from 'react-icons/fa';
 import styles from '@/styles/UserProfile.module.css';
 import Image from 'next/image';
 
@@ -17,7 +17,13 @@ interface VerifyResult {
   assignedRoles?: string[];
 }
 
-const BUX_DECIMALS = 9; // BUX token has 9 decimals
+interface MenuItem {
+  label: string;
+  icon: JSX.Element;
+  onClick: () => void;
+}
+
+const BUX_DECIMALS = 9;
 
 export default function UserProfile({ walletAddress }: { walletAddress: string }) {
   const { data: session, status } = useSession();
@@ -25,6 +31,37 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+
+  // Menu items configuration
+  const menuItems: MenuItem[] = [
+    {
+      label: 'Verify Holder',
+      icon: <FaWallet className={styles.menuIcon} />,
+      onClick: () => {
+        verifyWallet();
+        setShowMenu(false);
+      }
+    },
+    {
+      label: 'BUX Token Info',
+      icon: <FaCoins className={styles.menuIcon} />,
+      onClick: () => {
+        // TODO: Implement BUX token info modal
+        console.log('Show BUX token info');
+        setShowMenu(false);
+      }
+    },
+    {
+      label: 'NFT Holdings',
+      icon: <FaPaintBrush className={styles.menuIcon} />,
+      onClick: () => {
+        // TODO: Implement NFT holdings modal
+        console.log('Show NFT holdings');
+        setShowMenu(false);
+      }
+    }
+  ];
 
   const verifyWallet = useCallback(async () => {
     if (!walletAddress || !session?.user?.id || status !== 'authenticated') return;
@@ -42,7 +79,6 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
       });
 
       if (response.status === 401) {
-        // Force re-authentication
         await signOut({ redirect: true });
         return;
       }
@@ -61,14 +97,12 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     }
   }, [walletAddress, session?.user?.id, status]);
 
-  // Only verify when session is authenticated
   useEffect(() => {
     if (status === 'authenticated') {
       verifyWallet();
     }
   }, [verifyWallet, status]);
 
-  // Set up periodic refresh only when authenticated
   useEffect(() => {
     if (status !== 'authenticated') return;
     
@@ -84,6 +118,19 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
   const formatBuxBalance = (rawBalance: number) => {
     return (rawBalance / Math.pow(10, BUX_DECIMALS)).toLocaleString();
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const menu = document.getElementById('profile-menu');
+      if (menu && !menu.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!session) return null;
 
@@ -112,13 +159,38 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
           </p>
         </div>
       </div>
-      <button 
-        onClick={handleLogout}
-        className={styles.logoutButton}
-        title="Logout"
-      >
-        <FaSignOutAlt />
-      </button>
+
+      <div className={styles.actions}>
+        <button 
+          onClick={() => setShowMenu(!showMenu)}
+          className={styles.menuButton}
+          title="Menu"
+        >
+          <FaBars />
+        </button>
+        <button 
+          onClick={handleLogout}
+          className={styles.logoutButton}
+          title="Logout"
+        >
+          <FaSignOutAlt />
+        </button>
+      </div>
+
+      {showMenu && (
+        <div id="profile-menu" className={styles.menu}>
+          {menuItems.map((item, index) => (
+            <button
+              key={index}
+              onClick={item.onClick}
+              className={styles.menuItem}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 
