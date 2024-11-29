@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { verifyHolder } from '@/utils/verifyHolder';
 import { updateDiscordRoles } from '@/utils/discordRoles';
-import { VerifyResult, RoleUpdate } from '@/types/verification';
+import { VerifyResult } from '@/types/verification';
 import { prisma } from '@/lib/prisma';
 
 export default async function handler(
@@ -21,8 +21,8 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // Ensure user exists in database
-    await prisma.user.upsert({
+    // First ensure user exists and get their database ID
+    const user = await prisma.user.upsert({
       where: {
         discordId: session.user.id,
       },
@@ -33,19 +33,22 @@ export default async function handler(
         discordId: session.user.id,
         discordName: session.user.name || 'Unknown',
       },
+      select: {
+        id: true,
+      }
     });
 
-    // Add wallet to user's wallets if not exists
+    // Then add wallet to user's wallets using the database ID
     await prisma.userWallet.upsert({
       where: {
         address: walletAddress,
       },
       update: {
-        userId: session.user.id,
+        userId: user.id, // Use database ID here
       },
       create: {
         address: walletAddress,
-        userId: session.user.id,
+        userId: user.id, // Use database ID here
       },
     });
 
@@ -60,6 +63,7 @@ export default async function handler(
 
     console.log('Role update result:', {
       userId: session.user.id,
+      dbUserId: user.id,
       assignedRoles: result.assignedRoles,
       roleUpdate
     });
