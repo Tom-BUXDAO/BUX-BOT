@@ -22,16 +22,28 @@ export default async function handler(
 
     const result = await verifyHolder(walletAddress);
     
-    // Update Discord roles
+    // Update Discord roles and get role changes
     const roleUpdate = await updateDiscordRoles(
       session.user.id,
       result.assignedRoles
     );
 
-    return res.status(200).json({
-      ...result,
+    console.log('Role update result:', {
+      userId: session.user.id,
+      assignedRoles: result.assignedRoles,
       roleUpdate
     });
+
+    // Return the verification result with role update information
+    const response: VerifyResult = {
+      ...result,
+      roleUpdate: {
+        added: roleUpdate.added,
+        removed: roleUpdate.removed
+      }
+    };
+
+    return res.status(200).json(response);
 
   } catch (error) {
     console.error('Error verifying wallet:', error);
