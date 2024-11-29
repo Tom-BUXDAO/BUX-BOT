@@ -49,11 +49,23 @@ export default async function handler(
 
     const verificationResult = await verifyHolder(walletAddress);
 
+    // Convert to plain object for Prisma JSON storage
+    const jsonResult = {
+      isHolder: verificationResult.isHolder,
+      collections: verificationResult.collections.map(c => ({
+        name: c.name,
+        count: c.count
+      })),
+      buxBalance: verificationResult.buxBalance,
+      totalNFTs: verificationResult.totalNFTs,
+      totalValue: verificationResult.totalValue
+    };
+
     await prisma.walletVerification.update({
       where: { id: verification.id },
       data: {
         status: 'completed',
-        result: verificationResult as Prisma.InputJsonValue
+        result: jsonResult as Prisma.InputJsonValue
       }
     });
 
