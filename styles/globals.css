@@ -40,4 +40,10 @@ body {
 
 .wallet-adapter-button:active {
   transform: translateY(0) !important;
+}
+
+:root {
+  /* ... other variables ... */
+  --background-secondary-rgb: 30, 35, 45;
+  --background-hover-rgb: 40, 45, 55;
 } 
