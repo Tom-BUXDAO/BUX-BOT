@@ -4,6 +4,13 @@ import { prisma } from '@/lib/prisma';
 import { createRateLimit } from '@/utils/rateLimit';
 import { verifyHolder } from '@/utils/verifyHolder';
 
+interface SessionUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}
+
 const limiter = createRateLimit({
   interval: 60 * 1000, // 60 seconds
   uniqueTokenPerInterval: 500
@@ -19,7 +26,7 @@ export default async function handler(
     if (!isAllowed) return;
 
     const session = await getSession({ req });
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
