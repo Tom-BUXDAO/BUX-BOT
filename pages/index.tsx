@@ -9,6 +9,7 @@ import styles from '../styles/Home.module.css';
 import UserProfile from '../components/UserProfile';
 import RoleInfo from '../components/RoleInfo';
 import RoleNotification from '../components/RoleNotification';
+import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
 export default function Home() {
   const { data: session } = useSession();
@@ -16,12 +17,7 @@ export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [imageError, setImageError] = useState(false);
   const [walletStatus, setWalletStatus] = useState('');
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [verifyResult, setVerifyResult] = useState<{
-    isHolder: boolean;
-    collections: Array<{ name: string; count: number }>;
-    assignedRoles?: string[];
-  } | null>(null);
+  const { verifyResult, loading, error, verifyWallet } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
 
@@ -33,50 +29,22 @@ export default function Home() {
     }
   }, [wallet.publicKey]);
 
-  const updateWallet = useCallback(async (address: string) => {
-    if (isUpdating || !session) return;
-
-    setIsUpdating(true);
-    setWalletStatus('Verifying wallet...');
-    
-    try {
-      const response = await fetch('/api/verify-wallet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ walletAddress: address }),
-      });
-
-      if (!response.ok) {
-        throw new Error(response.status === 401 ? 'Please log in again' : 'Failed to verify wallet');
-      }
-
-      const data = await response.json();
-      setVerifyResult(data);
-      setWalletStatus('Wallet Verified');
-      
-      if (data.assignedRoles?.length > 0) {
-        setShowRoleNotification(true);
-      }
-    } catch (error) {
-      console.error('Error verifying wallet:', error);
-      setWalletStatus('Error verifying wallet');
-      setVerifyResult(null);
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [session, isUpdating]);
-
   useEffect(() => {
     if (wallet.connecting) {
       setWalletStatus('Connecting...');
     } else if (wallet.connected && wallet.publicKey) {
-      updateWallet(wallet.publicKey.toString());
+      verifyWallet(wallet.publicKey.toString());
+      setWalletStatus('Verifying...');
     } else {
       setWalletStatus('');
     }
-  }, [wallet, updateWallet]);
+  }, [wallet.connecting, wallet.connected, wallet.publicKey, verifyWallet]);
+
+  useEffect(() => {
+    if (verifyResult?.assignedRoles && verifyResult.assignedRoles.length > 0) {
+      setShowRoleNotification(true);
+    }
+  }, [verifyResult]);
 
   const handleConnect = async () => {
     try {

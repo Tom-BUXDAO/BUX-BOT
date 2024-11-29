@@ -9,6 +9,7 @@ import { clusterApiUrl } from '@solana/web3.js';
 import { useMemo } from 'react';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import '../styles/globals.css';
+import { WalletVerificationProvider } from '@/contexts/WalletVerificationContext';
 
 export default function App({ Component, pageProps: { session, ...pageProps } }: AppProps) {
   // Use mainnet-beta by default
@@ -22,7 +23,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={[]} autoConnect>
           <WalletModalProvider>
-            <Component {...pageProps} />
+            <WalletVerificationProvider>
+              <Component {...pageProps} />
+            </WalletVerificationProvider>
           </WalletModalProvider>
         </WalletProvider>
       </ConnectionProvider>
