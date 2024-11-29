@@ -53,7 +53,7 @@ export default async function handler(
       where: { id: verification.id },
       data: {
         status: 'completed',
-        result: verificationResult as Prisma.JsonValue
+        result: verificationResult as Prisma.InputJsonValue
       }
     });
 
