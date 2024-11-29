@@ -37,34 +37,31 @@ export default function Home() {
     if (isUpdating || !session) return;
 
     setIsUpdating(true);
-    setWalletStatus('Updating wallet...');
+    setWalletStatus('Verifying wallet...');
     
     try {
-      const response = await fetch('/api/update-wallet', {
+      const response = await fetch('/api/verify-wallet', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          walletAddress: address,
-          discordId: session?.user?.id 
-        }),
+        body: JSON.stringify({ walletAddress: address }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update wallet');
+        throw new Error(response.status === 401 ? 'Please log in again' : 'Failed to verify wallet');
       }
 
       const data = await response.json();
       setVerifyResult(data);
-      setWalletStatus('Wallet Connected');
+      setWalletStatus('Wallet Verified');
       
       if (data.assignedRoles?.length > 0) {
         setShowRoleNotification(true);
       }
     } catch (error) {
-      console.error('Error updating wallet:', error);
-      setWalletStatus('Error connecting wallet');
+      console.error('Error verifying wallet:', error);
+      setWalletStatus('Error verifying wallet');
       setVerifyResult(null);
     } finally {
       setIsUpdating(false);
