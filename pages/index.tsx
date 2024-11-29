@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { FaDiscord, FaWallet } from 'react-icons/fa';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { WalletMultiButton, WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { WalletError, Adapter, WalletName } from '@solana/wallet-adapter-base';
 import Image from 'next/image';
 import styles from '../styles/Home.module.css';
@@ -116,6 +116,13 @@ export default function Home() {
     }
   }, [wallet.wallet]);
 
+  useEffect(() => {
+    if (wallet.connected) {
+      setWalletStatus('Connected');
+      setWalletError(null);
+    }
+  }, [wallet.connected]);
+
   return (
     <div className={styles.container}>
       {session && <UserProfile walletAddress={walletAddress} />}
@@ -151,14 +158,9 @@ export default function Home() {
               Log in
             </button>
           ) : !wallet.connected ? (
-            <button
-              className={styles.connectButton}
-              onClick={handleConnect}
-              disabled={wallet.connecting}
-            >
-              <FaWallet className={styles.walletIcon} />
-              {wallet.connecting ? 'Connecting...' : 'Connect Wallet'}
-            </button>
+            <WalletMultiButton className={styles.walletButton}>
+              Connect Wallet
+            </WalletMultiButton>
           ) : (
             <div className={styles.walletButtonWrapper}>
               <WalletMultiButton className={styles.walletButton} />
