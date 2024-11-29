@@ -66,10 +66,9 @@ async function getClient(): Promise<Client> {
 }
 
 export async function updateDiscordRoles(discordId: string, newRoles: string[]): Promise<RoleUpdate> {
-  // Get current roles
+  // Get current roles from user
   const user = await prisma.user.findUnique({
-    where: { discordId },
-    select: { roles: true }
+    where: { discordId }
   });
 
   const currentRoles = user?.roles || [];

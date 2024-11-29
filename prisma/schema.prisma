@@ -15,6 +15,7 @@ model User {
   updatedAt   DateTime     @updatedAt
   ownedNFTs   NFT[]        @relation("Ownership")
   wallets     UserWallet[]
+  roles       String[]     @default([])
 
   @@map("User")
 }
