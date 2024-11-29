@@ -110,7 +110,9 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
 
       // NFT collection roles
       collections.forEach(collection => {
-        const normalizedName = collection.name.trim().toLowerCase();
+        const normalizedName = collection.name.trim().toLowerCase()
+          .replace(/[\s_-]+/g, ''); // Remove all spaces, underscores, and hyphens
+        
         console.log('Checking collection:', {
           original: collection.name,
           normalized: normalizedName,
@@ -118,7 +120,6 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
         });
 
         switch (normalizedName) {
-          case 'ai bitbots':
           case 'aibitbots':
             console.log('Assigning AI BitBots role');
             assignedRoles.push(process.env.AI_BITBOTS_ROLE_ID!);
@@ -126,7 +127,6 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
               assignedRoles.push(process.env.AI_BITBOTS_WHALE_ROLE_ID!);
             }
             break;
-          case 'money monsters':
           case 'moneymonsters':
             console.log('Assigning Money Monsters role');
             assignedRoles.push(process.env.MONEY_MONSTERS_ROLE_ID!);
@@ -134,37 +134,42 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
               assignedRoles.push(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!);
             }
             break;
-          case 'money monsters 3d':
           case 'moneymonsters3d':
-          case 'money monsters3d':
             console.log('Assigning Money Monsters 3D role');
             assignedRoles.push(process.env.MONEY_MONSTERS3D_ROLE_ID!);
             if (collection.count >= THRESHOLDS.MONEY_MONSTERS3D_WHALE) {
               assignedRoles.push(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!);
             }
             break;
-          case 'fcked catz':
+          case 'fckedcatz':
+            console.log('Assigning FCKED CATZ role');
             assignedRoles.push(process.env.FCKED_CATZ_ROLE_ID!);
             if (collection.count >= THRESHOLDS.FCKED_CATZ_WHALE) {
               assignedRoles.push(process.env.FCKED_CATZ_WHALE_ROLE_ID!);
             }
             break;
-          case 'candy bots':
+          case 'candybots':
+            console.log('Assigning Candy Bots role');
             assignedRoles.push(process.env.CANDY_BOTS_ROLE_ID!);
             break;
-          case 'doodle bots':
+          case 'doodlebots':
+            console.log('Assigning Doodle Bots role');
             assignedRoles.push(process.env.DOODLE_BOTS_ROLE_ID!);
             break;
-          case 'energy apes':
+          case 'energyapes':
+            console.log('Assigning Energy Apes role');
             assignedRoles.push(process.env.ENERGY_APES_ROLE_ID!);
             break;
-          case 'rjctd bots':
+          case 'rjctdbots':
+            console.log('Assigning RJCTD Bots role');
             assignedRoles.push(process.env.RJCTD_BOTS_ROLE_ID!);
             break;
           case 'squirrels':
+            console.log('Assigning Squirrels role');
             assignedRoles.push(process.env.SQUIRRELS_ROLE_ID!);
             break;
           case 'warriors':
+            console.log('Assigning Warriors role');
             assignedRoles.push(process.env.WARRIORS_ROLE_ID!);
             break;
         }
