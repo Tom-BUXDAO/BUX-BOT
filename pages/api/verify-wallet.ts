@@ -12,7 +12,10 @@ export default async function handler(
 ) {
   try {
     const session = await getServerSession(req, res, authOptions);
-    if (!session?.user?.id) {
+    const discordId = session?.user?.id;
+    const discordName = session?.user?.name;
+
+    if (!discordId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -26,14 +29,14 @@ export default async function handler(
       // First ensure user exists and get their database ID
       const user = await tx.user.upsert({
         where: {
-          discordId: session.user.id,
+          discordId,
         },
         update: {
-          discordName: session.user.name || 'Unknown',
+          discordName: discordName || 'Unknown',
         },
         create: {
-          discordId: session.user.id,
-          discordName: session.user.name || 'Unknown',
+          discordId,
+          discordName: discordName || 'Unknown',
         },
         select: {
           id: true,
@@ -77,16 +80,16 @@ export default async function handler(
       });
 
       // Verify holder status
-      const verifyResult = await verifyHolder(walletAddress, session.user.id);
+      const verifyResult = await verifyHolder(walletAddress, discordId);
       
       // Update Discord roles
       const roleUpdate = await updateDiscordRoles(
-        session.user.id,
+        discordId,
         verifyResult.assignedRoles
       );
 
       console.log('Role update result:', {
-        userId: session.user.id,
+        userId: discordId,
         dbUserId: user.id,
         assignedRoles: verifyResult.assignedRoles,
         roleUpdate
