@@ -22,14 +22,16 @@ const THRESHOLDS = {
 };
 
 export async function verifyHolder(walletAddress: string): Promise<VerifyResult> {
+  console.log(`Verifying wallet ${walletAddress}...`);
+  const startTime = Date.now();
+
   // Check cache first
   const cached = verificationCache.get(walletAddress);
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log(`Using cached result for ${walletAddress}`);
     return cached.result;
   }
 
-  const startTime = Date.now();
-  
   try {
     const result = await prisma.$transaction(async (tx) => {
       const [nfts, tokenBalance] = await Promise.all([
@@ -41,6 +43,8 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
           where: { walletAddress }
         })
       ]);
+
+      console.log(`Found ${nfts.length} NFTs and ${tokenBalance?.balance || 0} BUX for ${walletAddress}`);
 
       if (!nfts.length && !tokenBalance?.balance) {
         return {
@@ -85,24 +89,63 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
 
       // NFT collection roles
       collections.forEach(collection => {
-        switch (collection.name) {
-          case 'AI BitBots':
+        switch (collection.name.toLowerCase()) {
+          case 'ai bitbots':
             assignedRoles.push(process.env.AI_BITBOTS_ROLE_ID!);
             if (collection.count >= THRESHOLDS.AI_BITBOTS_WHALE) {
               assignedRoles.push(process.env.AI_BITBOTS_WHALE_ROLE_ID!);
             }
             break;
-          case 'FCKED CATZ':
+          case 'fcked catz':
             assignedRoles.push(process.env.FCKED_CATZ_ROLE_ID!);
             if (collection.count >= THRESHOLDS.FCKED_CATZ_WHALE) {
               assignedRoles.push(process.env.FCKED_CATZ_WHALE_ROLE_ID!);
             }
             break;
-          // Add other collections...
+          case 'money monsters':
+            assignedRoles.push(process.env.MONEY_MONSTERS_ROLE_ID!);
+            if (collection.count >= THRESHOLDS.MONEY_MONSTERS_WHALE) {
+              assignedRoles.push(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!);
+            }
+            break;
+          case 'money monsters 3d':
+            assignedRoles.push(process.env.MONEY_MONSTERS3D_ROLE_ID!);
+            if (collection.count >= THRESHOLDS.MONEY_MONSTERS3D_WHALE) {
+              assignedRoles.push(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!);
+            }
+            break;
+          case 'candy bots':
+            assignedRoles.push(process.env.CANDY_BOTS_ROLE_ID!);
+            break;
+          case 'doodle bots':
+            assignedRoles.push(process.env.DOODLE_BOTS_ROLE_ID!);
+            break;
+          case 'energy apes':
+            assignedRoles.push(process.env.ENERGY_APES_ROLE_ID!);
+            break;
+          case 'rjctd bots':
+            assignedRoles.push(process.env.RJCTD_BOTS_ROLE_ID!);
+            break;
+          case 'squirrels':
+            assignedRoles.push(process.env.SQUIRRELS_ROLE_ID!);
+            break;
+          case 'warriors':
+            assignedRoles.push(process.env.WARRIORS_ROLE_ID!);
+            break;
         }
       });
 
-      // Create result object with all required properties
+      // Check for BUXDAO 5 role (hold at least 1 NFT from each main collection)
+      const mainCollections = ['money monsters', 'money monsters 3d', 'celeb catz', 'fcked catz', 'ai bitbots'];
+      const hasAllMainCollections = mainCollections.every(name => 
+        collections.some(c => c.name.toLowerCase() === name)
+      );
+      if (hasAllMainCollections) {
+        assignedRoles.push(process.env.BUXDAO_5_ROLE_ID!);
+      }
+
+      console.log(`Assigned roles for ${walletAddress}:`, assignedRoles);
+
       const verifyResult = {
         isHolder: collections.length > 0 || buxBalance > 0,
         collections,
@@ -121,6 +164,7 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
       return verifyResult;
     });
 
+    console.log(`Verification completed for ${walletAddress} in ${Date.now() - startTime}ms`);
     return result;
 
   } catch (error) {
