@@ -1,10 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 import { prisma } from '@/lib/prisma';
-import { rateLimit } from '@/utils/rateLimit';
+import { createRateLimit } from '@/utils/rateLimit';
 import { verifyHolder } from '@/utils/verifyHolder';
 
-const limiter = rateLimit({
+const limiter = createRateLimit({
   interval: 60 * 1000, // 60 seconds
   uniqueTokenPerInterval: 500
 });
@@ -15,7 +15,8 @@ export default async function handler(
 ) {
   try {
     // Rate limiting
-    await limiter.check(res, 10, 'CACHE_TOKEN');
+    const isAllowed = await limiter.check(res, 10, 'WALLET_UPDATE');
+    if (!isAllowed) return;
 
     const session = await getSession({ req });
     if (!session?.user) {
