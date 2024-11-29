@@ -21,62 +21,87 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // First ensure user exists and get their database ID
-    const user = await prisma.user.upsert({
-      where: {
-        discordId: session.user.id,
-      },
-      update: {
-        discordName: session.user.name || 'Unknown',
-      },
-      create: {
-        discordId: session.user.id,
-        discordName: session.user.name || 'Unknown',
-      },
-      select: {
-        id: true,
-      }
+    // Use a transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // First ensure user exists and get their database ID
+      const user = await tx.user.upsert({
+        where: {
+          discordId: session.user.id,
+        },
+        update: {
+          discordName: session.user.name || 'Unknown',
+        },
+        create: {
+          discordId: session.user.id,
+          discordName: session.user.name || 'Unknown',
+        },
+        select: {
+          id: true,
+          discordId: true,
+        }
+      });
+
+      // Add wallet to user's wallets
+      await tx.userWallet.upsert({
+        where: {
+          address: walletAddress,
+        },
+        update: {
+          userId: user.id,
+        },
+        create: {
+          address: walletAddress,
+          userId: user.id,
+        },
+      });
+
+      // Update NFTs ownership
+      await tx.nFT.updateMany({
+        where: {
+          ownerWallet: walletAddress,
+          ownerDiscordId: null,
+        },
+        data: {
+          ownerDiscordId: user.discordId,
+        },
+      });
+
+      // Update token balances
+      await tx.tokenBalance.update({
+        where: {
+          walletAddress: walletAddress,
+        },
+        data: {
+          ownerDiscordId: user.discordId,
+        },
+      });
+
+      // Verify holder status
+      const verifyResult = await verifyHolder(walletAddress, session.user.id);
+      
+      // Update Discord roles
+      const roleUpdate = await updateDiscordRoles(
+        session.user.id,
+        verifyResult.assignedRoles
+      );
+
+      console.log('Role update result:', {
+        userId: session.user.id,
+        dbUserId: user.id,
+        assignedRoles: verifyResult.assignedRoles,
+        roleUpdate
+      });
+
+      return {
+        ...verifyResult,
+        roleUpdate: {
+          added: roleUpdate.added,
+          removed: roleUpdate.removed
+        }
+      };
     });
 
-    // Then add wallet to user's wallets using the database ID
-    await prisma.userWallet.upsert({
-      where: {
-        address: walletAddress,
-      },
-      update: {
-        userId: user.id, // Use database ID here
-      },
-      create: {
-        address: walletAddress,
-        userId: user.id, // Use database ID here
-      },
-    });
-
-    // Pass Discord ID to verifyHolder to check all wallets
-    const result = await verifyHolder(walletAddress, session.user.id);
-    
-    // Update Discord roles and get role changes
-    const roleUpdate = await updateDiscordRoles(
-      session.user.id,
-      result.assignedRoles
-    );
-
-    console.log('Role update result:', {
-      userId: session.user.id,
-      dbUserId: user.id,
-      assignedRoles: result.assignedRoles,
-      roleUpdate
-    });
-
-    const response: VerifyResult = {
-      ...result,
-      roleUpdate: {
-        added: roleUpdate.added,
-        removed: roleUpdate.removed
-      }
-    };
-
-    return res.status(200).json(response);
+    return res.status(200).json(result);
 
   } catch (error) {
     console.error('Error verifying wallet:', error);
