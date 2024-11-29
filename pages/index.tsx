@@ -96,8 +96,7 @@ export default function Home() {
   const handleDiscordLogin = async () => {
     try {
       await signIn('discord', { 
-        callbackUrl: '/',
-        scope: 'identify guilds'
+        callbackUrl: process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || '/',
       });
     } catch (error) {
       console.error('Discord login error:', error);
@@ -108,56 +107,35 @@ export default function Home() {
     <div className={styles.container}>
       <main className={styles.main}>
         <div className={styles.header}>
-          <Image
-            src="/logo.png"
-            alt="BUX DAO Logo"
-            width={128}
-            height={128}
-            priority
-            onError={() => setImageError(true)}
-          />
+          <div className={styles.logoContainer}>
+            <Image
+              src="/logo.png"
+              alt="BUX DAO Logo"
+              width={128}
+              height={128}
+              priority
+              className={styles.logoImage}
+              onError={() => setImageError(true)}
+            />
+          </div>
           <h1 className={styles.title}>BUX DAO Role Verification</h1>
         </div>
 
-        <div className={styles.buttonContainer}>
+        <div className={styles.loginContainer}>
           {!session ? (
             <button 
               onClick={handleDiscordLogin}
-              className={`${styles.discordButton} ${styles.button}`}
+              className={styles.discordButton}
             >
-              <FaDiscord className={styles.icon} />
+              <FaDiscord className={styles.discordIcon} />
               Login with Discord
             </button>
           ) : !wallet.connected ? (
-            <WalletMultiButton className={styles.walletButton}>
+            <WalletMultiButton className={styles.connectButton}>
               Connect Wallet
             </WalletMultiButton>
           ) : (
-            <div className={styles.walletButtonWrapper}>
-              <WalletMultiButton className={styles.walletButton} />
-              {walletStatus && (
-                <p className={`${styles.walletStatus} ${wallet.connected ? styles.connected : ''} ${walletError ? styles.error : ''}`}>
-                  {walletError || walletStatus}
-                </p>
-              )}
-              {verifyResult && (
-                <div className={styles.holderStatus}>
-                  <p className={`${styles.holderText} ${verifyResult.isHolder ? styles.verified : styles.notVerified}`}>
-                    {verifyResult.isHolder ? '✓ Verified Holder' : '✗ Not a Holder'}
-                  </p>
-                  {verifyResult.isHolder && verifyResult.collections.length > 0 && (
-                    <div className={styles.collections}>
-                      <p>Collections:</p>
-                      <ul>
-                        {verifyResult.collections.map((collection) => (
-                          <li key={collection.name}>{collection.count} x {collection.name}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <UserProfile walletAddress={walletAddress} />
           )}
         </div>
         
