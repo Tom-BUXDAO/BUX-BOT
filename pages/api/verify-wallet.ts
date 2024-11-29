@@ -21,6 +21,20 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
+    // Ensure user exists in database
+    await prisma.user.upsert({
+      where: {
+        discordId: session.user.id,
+      },
+      update: {
+        discordName: session.user.name || 'Unknown',
+      },
+      create: {
+        discordId: session.user.id,
+        discordName: session.user.name || 'Unknown',
+      },
+    });
+
     // Add wallet to user's wallets if not exists
     await prisma.userWallet.upsert({
       where: {
