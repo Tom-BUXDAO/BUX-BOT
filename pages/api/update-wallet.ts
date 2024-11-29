@@ -3,6 +3,7 @@ import { getSession } from 'next-auth/react';
 import { prisma } from '@/lib/prisma';
 import { createRateLimit } from '@/utils/rateLimit';
 import { verifyHolder } from '@/utils/verifyHolder';
+import { VerifyResult, WalletVerification } from '@/types/verification';
 
 interface SessionUser {
   id: string;
@@ -12,7 +13,7 @@ interface SessionUser {
 }
 
 const limiter = createRateLimit({
-  interval: 60 * 1000, // 60 seconds
+  interval: 60 * 1000,
   uniqueTokenPerInterval: 500
 });
 
@@ -21,7 +22,6 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    // Rate limiting
     const isAllowed = await limiter.check(res, 10, 'WALLET_UPDATE');
     if (!isAllowed) return;
 
@@ -37,24 +37,22 @@ export default async function handler(
 
     console.log('Starting wallet verification for:', walletAddress);
 
-    // Create verification record
     const verification = await prisma.walletVerification.create({
       data: {
         walletAddress,
         userId: session.user.id,
-        status: 'pending'
+        status: 'pending',
+        result: null
       }
     });
 
-    // Verify holder status
     const verificationResult = await verifyHolder(walletAddress);
 
-    // Update verification record
     await prisma.walletVerification.update({
       where: { id: verification.id },
       data: {
         status: 'completed',
-        result: verificationResult
+        result: verificationResult as unknown as Prisma.JsonValue
       }
     });
 
