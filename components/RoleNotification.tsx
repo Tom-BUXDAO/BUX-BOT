@@ -1,29 +1,46 @@
 import styles from '@/styles/RoleNotification.module.css';
 
-interface RoleNotificationProps {
-  roles: string[];
+interface RoleUpdate {
+  added: string[];
+  removed: string[];
+}
+
+interface Props {
+  roleUpdate: RoleUpdate;
   onClose: () => void;
 }
 
-export default function RoleNotification({ roles, onClose }: RoleNotificationProps) {
-  if (!roles.length) return null;
+export default function RoleNotification({ roleUpdate, onClose }: Props) {
+  const { added, removed } = roleUpdate;
 
   return (
-    <>
-      <div className={styles.backdrop} onClick={onClose} />
-      <div className={styles.container}>
-        <h2 className={styles.title}>The following roles have been assigned:</h2>
-        <div className={styles.roles}>
-          {roles.map((role, index) => (
-            <div key={index} className={styles.role}>
-              {role}
-            </div>
-          ))}
-        </div>
-        <button className={styles.closeButton} onClick={onClose}>
+    <div className={styles.container}>
+      <div className={styles.content}>
+        <h3>Role Updates</h3>
+        {added.length > 0 && (
+          <div className={styles.section}>
+            <h4>Added Roles:</h4>
+            <ul>
+              {added.map(role => (
+                <li key={role} className={styles.added}>{role}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {removed.length > 0 && (
+          <div className={styles.section}>
+            <h4>Removed Roles:</h4>
+            <ul>
+              {removed.map(role => (
+                <li key={role} className={styles.removed}>{role}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <button onClick={onClose} className={styles.closeButton}>
           Close
         </button>
       </div>
-    </>
+    </div>
   );
 } 

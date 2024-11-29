@@ -2,13 +2,13 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { verifyHolder } from '@/utils/verifyHolder';
+import { updateDiscordRoles } from '@/utils/discordRoles';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   try {
-    // Get server-side session
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -20,7 +20,17 @@ export default async function handler(
     }
 
     const result = await verifyHolder(walletAddress);
-    return res.status(200).json(result);
+    
+    // Update Discord roles
+    const roleUpdate = await updateDiscordRoles(
+      session.user.id,
+      result.assignedRoles || []
+    );
+
+    return res.status(200).json({
+      ...result,
+      roleUpdate
+    });
 
   } catch (error) {
     console.error('Error verifying wallet:', error);
