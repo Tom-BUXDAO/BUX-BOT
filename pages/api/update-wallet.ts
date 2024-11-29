@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 import { rateLimit } from '@/utils/rateLimit';
 import { verifyHolder } from '@/utils/verifyHolder';
 
