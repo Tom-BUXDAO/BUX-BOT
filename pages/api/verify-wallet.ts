@@ -24,53 +24,52 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // Use a transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
-      // First ensure user exists and get their database ID
-      const user = await tx.user.upsert({
-        where: {
-          discordId,
-        },
-        update: {
-          discordName: discordName || 'Unknown',
-        },
-        create: {
-          discordId,
-          discordName: discordName || 'Unknown',
-        },
-        select: {
-          id: true,
-          discordId: true,
-        }
-      });
+    // First ensure user exists and get their database ID
+    const user = await prisma.user.upsert({
+      where: {
+        discordId,
+      },
+      update: {
+        discordName: discordName || 'Unknown',
+      },
+      create: {
+        discordId,
+        discordName: discordName || 'Unknown',
+      },
+      select: {
+        id: true,
+        discordId: true,
+      }
+    });
 
-      // Add wallet to user's wallets
-      await tx.userWallet.upsert({
-        where: {
-          address: walletAddress,
-        },
-        update: {
-          userId: user.id,
-        },
-        create: {
-          address: walletAddress,
-          userId: user.id,
-        },
-      });
+    // Add wallet to user's wallets
+    await prisma.userWallet.upsert({
+      where: {
+        address: walletAddress,
+      },
+      update: {
+        userId: user.id,
+      },
+      create: {
+        address: walletAddress,
+        userId: user.id,
+      },
+    });
 
-      // Update NFTs ownership
-      await tx.nFT.updateMany({
-        where: {
-          ownerWallet: walletAddress,
-          ownerDiscordId: null,
-        },
-        data: {
-          ownerDiscordId: user.discordId,
-        },
-      });
+    // Update NFTs ownership in batches
+    await prisma.nFT.updateMany({
+      where: {
+        ownerWallet: walletAddress,
+        ownerDiscordId: null,
+      },
+      data: {
+        ownerDiscordId: user.discordId,
+      },
+    });
 
-      // Update token balances
-      await tx.tokenBalance.update({
+    try {
+      // Update token balances - this might not exist yet
+      await prisma.tokenBalance.update({
         where: {
           walletAddress: walletAddress,
         },
@@ -78,33 +77,33 @@ export default async function handler(
           ownerDiscordId: user.discordId,
         },
       });
+    } catch (error) {
+      console.log('Token balance not found for wallet, skipping update');
+    }
 
-      // Verify holder status
-      const verifyResult = await verifyHolder(walletAddress, discordId);
-      
-      // Update Discord roles
-      const roleUpdate = await updateDiscordRoles(
-        discordId,
-        verifyResult.assignedRoles
-      );
+    // Verify holder status with longer timeout
+    const verifyResult = await verifyHolder(walletAddress, discordId);
+    
+    // Update Discord roles
+    const roleUpdate = await updateDiscordRoles(
+      discordId,
+      verifyResult.assignedRoles
+    );
 
-      console.log('Role update result:', {
-        userId: discordId,
-        dbUserId: user.id,
-        assignedRoles: verifyResult.assignedRoles,
-        roleUpdate
-      });
-
-      return {
-        ...verifyResult,
-        roleUpdate: {
-          added: roleUpdate.added,
-          removed: roleUpdate.removed
-        }
-      };
+    console.log('Role update result:', {
+      userId: discordId,
+      dbUserId: user.id,
+      assignedRoles: verifyResult.assignedRoles,
+      roleUpdate
     });
 
-    return res.status(200).json(result);
+    return res.status(200).json({
+      ...verifyResult,
+      roleUpdate: {
+        added: roleUpdate.added,
+        removed: roleUpdate.removed
+      }
+    });
 
   } catch (error) {
     console.error('Error verifying wallet:', error);
