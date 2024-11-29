@@ -102,4 +102,16 @@ model TokenBalance {
   balance        BigInt   @default(0)
   ownerDiscordId String?
   lastUpdated    DateTime @default(now())
+}
+
+model WalletVerification {
+  id            String   @id @default(uuid())
+  walletAddress String
+  userId        String
+  createdAt     DateTime @default(now())
+  status        String   @default("pending")
+  result        Json?    // Optional result field
+  
+  @@index([walletAddress])
+  @@index([userId])
 } 
