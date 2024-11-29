@@ -33,14 +33,14 @@ async function getClient(): Promise<Client> {
   }
 
   if (!client.isReady()) {
-    await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => {
+    await new Promise<void>((resolve, reject) => {
+      const timeoutId = global.setTimeout(() => {
         client = null;
         resolve();
       }, 30000); // 30 second connection timeout
 
       client!.once('ready', () => {
-        clearTimeout(timeout);
+        global.clearTimeout(timeoutId);
         resolve();
       });
     });
