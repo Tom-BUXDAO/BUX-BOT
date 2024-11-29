@@ -1,167 +1,145 @@
-import { PrismaClient, User } from '@prisma/client';
-import { updateDiscordRoles } from './discordRoles';
-import { TokenBalanceWithOwner } from '@/types/prisma';
-import { CollectionName, NFT_THRESHOLDS } from './roleConfig';
+import { prisma } from '@/lib/prisma';
+import { VerifyResult } from '@/types/verification';
+import { NFTHoldingWithCollection } from '@/types/wallet';
+import { createRateLimit } from '@/utils/rateLimit';
+import { Prisma, NFT, PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Create rate limiter instance
+const rateLimiter = createRateLimit({
+  interval: 60000, // 1 minute
+  uniqueTokenPerInterval: 100
+});
 
-interface CollectionCount {
-  name: CollectionName;
-  count: number;
-  mint: string;
-}
+type NFTListingAggregate = {
+  _sum: {
+    price: number | null;
+  };
+};
 
-interface VerifyResult {
-  isHolder: boolean;
-  collections: CollectionCount[];
-  buxBalance: number;
-  totalNFTs: number;
-  totalValue: number;
-  assignedRoles?: string[];
-}
+type NFTWithOwner = NFT & {
+  currentOwner: {
+    discordId: string;
+    discordName: string;
+  } | null;
+};
 
-export async function verifyHolder(walletAddress: string, discordId?: string): Promise<VerifyResult> {
+// Get the type of the Prisma client
+type PrismaType = typeof prisma;
+
+/**
+ * Verifies if a wallet address holds any NFTs or tokens in our collections
+ * @param walletAddress The wallet address to verify
+ * @returns VerifyResult containing holder status and collection details
+ */
+export async function verifyHolder(walletAddress: string): Promise<VerifyResult> {
+  const startTime = Date.now();
+  
   try {
-    if (!discordId) {
-      throw new Error('Discord ID is required for verification');
-    }
+    // Log verification attempt
+    console.log(`Verifying holder status for wallet: ${walletAddress}`);
 
-    // First, add the new wallet to User's wallets using raw SQL
-    await prisma.$executeRaw`
-      INSERT INTO "UserWallet" (id, address, "userId")
-      SELECT 
-        gen_random_uuid(),
-        ${walletAddress},
-        u.id
-      FROM "User" u
-      WHERE u."discordId" = ${discordId}
-      ON CONFLICT (address) DO NOTHING
-    `;
-
-    // Update ownership in TokenBalance and NFT tables
-    await prisma.$transaction([
-      // Update TokenBalance Discord ID
-      prisma.$executeRaw`
-        UPDATE "TokenBalance"
-        SET "ownerDiscordId" = ${discordId}
-        WHERE "walletAddress" = ${walletAddress}
-      `,
-
-      // Update NFT ownership Discord IDs
-      prisma.$executeRaw`
-        UPDATE "NFT"
-        SET "ownerDiscordId" = ${discordId}
-        WHERE "ownerWallet" = ${walletAddress}
-      `
-    ]);
-
-    // Get all NFTs across all user's wallets
-    const userWallets = await prisma.$queryRaw<{ address: string }[]>`
-      SELECT w.address
-      FROM "UserWallet" w
-      JOIN "User" u ON u.id = w."userId"
-      WHERE u."discordId" = ${discordId}
-    `;
-
-    const walletAddresses = userWallets.map(w => w.address);
-
-    // Get NFTs from all user's wallets
-    const nfts = await prisma.$queryRaw<{ collection: string; mint: string; price: number }[]>`
-      SELECT 
-        CASE 
-          WHEN n."collection" = 'money_monsters3d' THEN 'Money Monsters 3D'
-          WHEN n."collection" = 'money_monsters' THEN 'Money Monsters'
-          WHEN n."collection" = 'fcked_catz' THEN 'FCKED CATZ'
-          WHEN n."collection" = 'ai_bitbots' THEN 'AI BitBots'
-          WHEN n."collection" = 'celebcatz' THEN 'CelebCatz'
-          WHEN n."collection" = 'candy_bots' THEN 'Candy Bots'
-          WHEN n."collection" = 'doodle_bots' THEN 'Doodle Bots'
-          WHEN n."collection" = 'energy_apes' THEN 'Energy Apes'
-          WHEN n."collection" = 'rjctd_bots' THEN 'RJCTD Bots'
-          WHEN n."collection" = 'squirrels' THEN 'Squirrels'
-          WHEN n."collection" = 'warriors' THEN 'Warriors'
-          ELSE n."collection"
-        END as collection,
-        n."mint",
-        COALESCE(l."price", s."price", 0) as price
-      FROM "NFT" n
-      LEFT JOIN "NFTListing" l ON l."nftId" = n."id"
-      LEFT JOIN (
-        SELECT DISTINCT ON (s."nftId") 
-          s."nftId",
-          s."price"
-        FROM "NFTSale" s
-        ORDER BY s."nftId", s."timestamp" DESC
-      ) s ON s."nftId" = n."id"
-      WHERE n."ownerWallet" = ANY(${walletAddresses}::text[])
-    `;
-
-    // Get BUX balance across all wallets
-    const tokenBalances = await prisma.tokenBalance.findMany({
-      where: {
-        walletAddress: { in: walletAddresses }
-      }
+    // First check our database using proper Prisma select types
+    const nfts = await prisma.$transaction(async (tx) => {
+      return await tx.nFT.findMany({
+        where: {
+          ownerWallet: walletAddress
+        },
+        include: {
+          currentOwner: true
+        }
+      });
     });
 
-    // Calculate total BUX balance
-    const totalBuxBalance = tokenBalances.reduce(
-      (sum, tb) => sum + BigInt(tb.balance || 0),
-      BigInt(0)
-    );
+    if (!nfts.length) {
+      console.log(`No NFTs found for wallet: ${walletAddress}`);
+      return {
+        isHolder: false,
+        collections: [],
+        buxBalance: 0,
+        totalNFTs: 0,
+        totalValue: 0
+      };
+    }
 
-    // Convert from raw balance (with 9 decimals) to actual BUX amount
-    const actualBuxBalance = Number(totalBuxBalance) / 1e9;
+    // Aggregate collection data
+    const collections = nfts.reduce((acc: Array<{ name: string; count: number }>, nft: NFTWithOwner) => {
+      const collectionName = nft.collection;
+      if (!collectionName) return acc;
 
-    // Group NFTs by collection and count
-    const collectionCounts = nfts.reduce<CollectionCount[]>((acc, nft) => {
-      const existingCollection = acc.find(c => c.name === nft.collection as CollectionName);
-      if (existingCollection) {
-        existingCollection.count++;
+      const existing = acc.find(c => c.name === collectionName);
+      if (existing) {
+        existing.count += 1;
       } else {
         acc.push({
-          name: nft.collection as CollectionName,
-          count: 1,
-          mint: nft.mint
+          name: collectionName,
+          count: 1
         });
       }
       return acc;
     }, []);
 
-    // Calculate total value
-    const totalValue = nfts.reduce((sum, nft) => sum + (nft.price || 0), 0);
-
-    console.log('BUX Balance:', {
-      totalBuxBalance: actualBuxBalance,
-      walletAddress,
-      discordId
+    // Get BUX balance
+    const tokenBalance = await prisma.tokenBalance.findUnique({
+      where: {
+        walletAddress: walletAddress
+      }
     });
 
-    // Update Discord roles if discordId is provided
-    let assignedRoles: string[] = [];
-    if (discordId) {
-      try {
-        assignedRoles = await updateDiscordRoles(
-          discordId, 
-          collectionCounts, 
-          walletAddress,
-          actualBuxBalance
-        );
-      } catch (error) {
-        console.error('Error updating Discord roles:', error);
+    const buxBalance = Number(tokenBalance?.balance ?? 0);
+    
+    // Calculate total value from NFT listings if available
+    const totalValue = await (prisma as PrismaType & { NFTListing: any }).NFTListing.aggregate({
+      where: {
+        nftId: {
+          in: nfts.map((nft: NFTWithOwner) => nft.id)
+        }
+      },
+      _sum: {
+        price: true
       }
-    }
+    }).then((result: NFTListingAggregate) => Number(result._sum.price ?? 0));
 
-    return {
-      isHolder: collectionCounts.length > 0,
-      collections: collectionCounts,
-      buxBalance: actualBuxBalance,
+    const result = {
+      isHolder: collections.length > 0 || buxBalance > 0,
+      collections,
+      buxBalance,
       totalNFTs: nfts.length,
-      totalValue,
-      assignedRoles
+      totalValue
     };
 
+    // Log successful verification
+    console.log(`Verification completed for ${walletAddress} in ${Date.now() - startTime}ms`, {
+      isHolder: result.isHolder,
+      collectionsCount: collections.length,
+      totalNFTs: result.totalNFTs
+    });
+
+    return result;
+
   } catch (error) {
-    console.error('Error verifying holder:', error);
+    // Log detailed error information
+    console.error('Error verifying holder:', {
+      walletAddress,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      duration: Date.now() - startTime
+    });
+
+    // Create verification record with error
+    await (prisma as PrismaType & { WalletVerification: any }).WalletVerification.create({
+      data: {
+        walletAddress,
+        userId: 'system',
+        status: 'error',
+        result: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        }
+      }
+    }).catch((err: Error) => {
+      console.error('Failed to log verification error:', err);
+    });
+
     throw error;
   }
 } 

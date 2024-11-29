@@ -1,4 +1,3 @@
-import rateLimit from 'express-rate-limit';
 import { NextApiResponse } from 'next';
 
 interface RateLimitConfig {
@@ -6,31 +5,62 @@ interface RateLimitConfig {
   uniqueTokenPerInterval: number;
 }
 
+interface RateLimitStore {
+  [key: string]: {
+    timestamps: number[];
+    lastCleanup: number;
+  };
+}
+
 export const createRateLimit = (config: RateLimitConfig) => {
-  const limiter = new Map();
-  
+  const store: RateLimitStore = {};
+
+  const cleanup = (token: string, now: number) => {
+    const data = store[token];
+    if (!data) return;
+
+    // Only cleanup once per interval
+    if (now - data.lastCleanup < config.interval) return;
+
+    const windowStart = now - config.interval;
+    data.timestamps = data.timestamps.filter(ts => ts > windowStart);
+    data.lastCleanup = now;
+
+    // Remove empty entries
+    if (data.timestamps.length === 0) {
+      delete store[token];
+    }
+  };
+
   return {
-    check: async (res: NextApiResponse, limit: number, token: string) => {
+    check: async (res: NextApiResponse, limit: number, token: string): Promise<boolean> => {
       const now = Date.now();
-      const windowStart = now - config.interval;
-      
-      const tokenCount = limiter.get(token) || [];
-      const validRequests = tokenCount.filter(timestamp => timestamp > windowStart);
-      
-      if (validRequests.length >= limit) {
-        res.status(429).json({ error: 'Rate limit exceeded' });
+
+      // Initialize or get token data
+      if (!store[token]) {
+        store[token] = {
+          timestamps: [],
+          lastCleanup: now
+        };
+      }
+
+      // Clean up old timestamps
+      cleanup(token, now);
+
+      const data = store[token];
+      if (!data) return true;
+
+      // Check limit
+      if (data.timestamps.length >= limit) {
+        res.status(429).json({
+          error: 'Rate limit exceeded',
+          retryAfter: Math.ceil((data.timestamps[0] + config.interval - now) / 1000)
+        });
         return false;
       }
-      
-      validRequests.push(now);
-      limiter.set(token, validRequests);
-      
-      // Cleanup old entries
-      if (limiter.size > config.uniqueTokenPerInterval) {
-        const oldestToken = [...limiter.keys()][0];
-        limiter.delete(oldestToken);
-      }
-      
+
+      // Add new timestamp
+      data.timestamps.push(now);
       return true;
     }
   };
