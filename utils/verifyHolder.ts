@@ -44,7 +44,18 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
         })
       ]);
 
-      console.log(`Found ${nfts.length} NFTs and ${tokenBalance?.balance || 0} BUX for ${walletAddress}`);
+      // Log NFT details for debugging
+      console.log('NFTs found:', nfts.map(nft => ({
+        name: nft.name,
+        collection: nft.collection,
+        mint: nft.mint
+      })));
+
+      // Calculate BUX balance in standard units
+      const buxBalance = Number(tokenBalance?.balance ?? 0);
+      const standardBuxBalance = buxBalance / Math.pow(10, BUX_DECIMALS);
+
+      console.log(`Found ${nfts.length} NFTs and ${buxBalance} BUX (${standardBuxBalance} standard) for ${walletAddress}`);
 
       if (!nfts.length && !tokenBalance?.balance) {
         return {
@@ -60,7 +71,9 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
       // Aggregate collection data
       const collections = nfts.reduce((acc: Array<{ name: string; count: number }>, nft) => {
         if (!nft.collection) return acc;
-        const existing = acc.find(c => c.name === nft.collection);
+        // Normalize collection name
+        const normalizedName = nft.collection.trim().toLowerCase();
+        const existing = acc.find(c => c.name.toLowerCase() === normalizedName);
         if (existing) {
           existing.count += 1;
         } else {
@@ -69,14 +82,22 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
         return acc;
       }, []);
 
-      // Calculate BUX balance in standard units
-      const buxBalance = Number(tokenBalance?.balance ?? 0);
-      const standardBuxBalance = buxBalance / Math.pow(10, BUX_DECIMALS);
+      console.log('Aggregated collections:', collections);
 
       // Determine roles based on holdings
       const assignedRoles: string[] = [];
 
-      // BUX balance roles
+      // BUX balance roles - check in descending order
+      console.log('Checking BUX balance roles:', {
+        balance: standardBuxBalance,
+        thresholds: {
+          banker: THRESHOLDS.BUX_BANKER,
+          saver: THRESHOLDS.BUX_SAVER,
+          builder: THRESHOLDS.BUX_BUILDER,
+          beginner: THRESHOLDS.BUX_BEGINNER
+        }
+      });
+
       if (standardBuxBalance >= THRESHOLDS.BUX_BANKER) {
         assignedRoles.push(process.env.BUX_BANKER_ROLE_ID!);
       } else if (standardBuxBalance >= THRESHOLDS.BUX_SAVER) {
@@ -89,29 +110,43 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
 
       // NFT collection roles
       collections.forEach(collection => {
-        switch (collection.name.toLowerCase()) {
+        const normalizedName = collection.name.trim().toLowerCase();
+        console.log('Checking collection:', {
+          original: collection.name,
+          normalized: normalizedName,
+          count: collection.count
+        });
+
+        switch (normalizedName) {
           case 'ai bitbots':
+          case 'aibitbots':
+            console.log('Assigning AI BitBots role');
             assignedRoles.push(process.env.AI_BITBOTS_ROLE_ID!);
             if (collection.count >= THRESHOLDS.AI_BITBOTS_WHALE) {
               assignedRoles.push(process.env.AI_BITBOTS_WHALE_ROLE_ID!);
             }
             break;
-          case 'fcked catz':
-            assignedRoles.push(process.env.FCKED_CATZ_ROLE_ID!);
-            if (collection.count >= THRESHOLDS.FCKED_CATZ_WHALE) {
-              assignedRoles.push(process.env.FCKED_CATZ_WHALE_ROLE_ID!);
-            }
-            break;
           case 'money monsters':
+          case 'moneymonsters':
+            console.log('Assigning Money Monsters role');
             assignedRoles.push(process.env.MONEY_MONSTERS_ROLE_ID!);
             if (collection.count >= THRESHOLDS.MONEY_MONSTERS_WHALE) {
               assignedRoles.push(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!);
             }
             break;
           case 'money monsters 3d':
+          case 'moneymonsters3d':
+          case 'money monsters3d':
+            console.log('Assigning Money Monsters 3D role');
             assignedRoles.push(process.env.MONEY_MONSTERS3D_ROLE_ID!);
             if (collection.count >= THRESHOLDS.MONEY_MONSTERS3D_WHALE) {
               assignedRoles.push(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!);
+            }
+            break;
+          case 'fcked catz':
+            assignedRoles.push(process.env.FCKED_CATZ_ROLE_ID!);
+            if (collection.count >= THRESHOLDS.FCKED_CATZ_WHALE) {
+              assignedRoles.push(process.env.FCKED_CATZ_WHALE_ROLE_ID!);
             }
             break;
           case 'candy bots':
@@ -144,7 +179,11 @@ export async function verifyHolder(walletAddress: string): Promise<VerifyResult>
         assignedRoles.push(process.env.BUXDAO_5_ROLE_ID!);
       }
 
-      console.log(`Assigned roles for ${walletAddress}:`, assignedRoles);
+      console.log(`Assigned roles for ${walletAddress}:`, {
+        roles: assignedRoles,
+        buxBalance: standardBuxBalance,
+        collections: collections.map(c => `${c.count}x ${c.name}`),
+      });
 
       const verifyResult = {
         isHolder: collections.length > 0 || buxBalance > 0,
