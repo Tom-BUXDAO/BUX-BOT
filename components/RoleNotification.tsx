@@ -43,17 +43,15 @@ export default function RoleNotification({ roleUpdate, onClose }: Props) {
   return (
     <div className={styles.container}>
       <div className={styles.content}>
-        <h3>Role Updates</h3>
-        {added.length > 0 && (
-          <div className={styles.section}>
-            <h4>Added Roles:</h4>
-            <ul>
-              {added.map(role => (
-                <li key={role} className={styles.added}>{getRoleName(role)}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <h3>Role Verification Complete</h3>
+        <div className={styles.section}>
+          <h4>Your Current Roles:</h4>
+          <ul>
+            {added.map(role => (
+              <li key={role} className={styles.added}>{getRoleName(role)}</li>
+            ))}
+          </ul>
+        </div>
         {removed.length > 0 && (
           <div className={styles.section}>
             <h4>Removed Roles:</h4>
@@ -64,9 +62,9 @@ export default function RoleNotification({ roleUpdate, onClose }: Props) {
             </ul>
           </div>
         )}
-        {added.length === 0 && removed.length === 0 && (
+        {added.length === 0 && (
           <div className={styles.section}>
-            <p>Your roles are up to date!</p>
+            <p>No roles assigned</p>
           </div>
         )}
         <button onClick={onClose} className={styles.closeButton}>

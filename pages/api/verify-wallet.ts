@@ -39,7 +39,17 @@ export default async function handler(
       select: {
         id: true,
         discordId: true,
+        roles: true,
       }
+    });
+
+    // Store current roles for comparison
+    const previousRoles = user.roles || [];
+
+    // Reset user roles in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { roles: [] }
     });
 
     // Add wallet to user's wallets
@@ -84,7 +94,7 @@ export default async function handler(
     // Verify holder status with longer timeout
     const verifyResult = await verifyHolder(walletAddress, discordId);
     
-    // Update Discord roles
+    // Update Discord roles - all current roles will be treated as new
     const roleUpdate = await updateDiscordRoles(
       discordId,
       verifyResult.assignedRoles
@@ -93,15 +103,19 @@ export default async function handler(
     console.log('Role update result:', {
       userId: discordId,
       dbUserId: user.id,
-      assignedRoles: verifyResult.assignedRoles,
-      roleUpdate
+      previousRoles,
+      newRoles: verifyResult.assignedRoles,
+      roleUpdate: {
+        added: verifyResult.assignedRoles,
+        removed: previousRoles.filter(role => !verifyResult.assignedRoles.includes(role))
+      }
     });
 
     return res.status(200).json({
       ...verifyResult,
       roleUpdate: {
-        added: roleUpdate.added,
-        removed: roleUpdate.removed
+        added: verifyResult.assignedRoles,
+        removed: previousRoles.filter(role => !verifyResult.assignedRoles.includes(role))
       }
     });
 
