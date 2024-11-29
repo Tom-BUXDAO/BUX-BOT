@@ -1,7 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '@/lib/prisma';
 import { getSession } from 'next-auth/react';
+import prisma from '@/lib/prisma';
 import { rateLimit } from '@/utils/rateLimit';
+import { verifyHolder } from '@/utils/verifyHolder';
 
 const limiter = rateLimit({
   interval: 60 * 1000, // 60 seconds
@@ -26,6 +27,8 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
+    console.log('Starting wallet verification for:', walletAddress);
+
     // Create verification record
     const verification = await prisma.walletVerification.create({
       data: {
@@ -35,14 +38,8 @@ export default async function handler(
       }
     });
 
-    // Perform verification logic here
-    const verificationResult = {
-      isHolder: true, // Replace with actual verification
-      collections: [],
-      buxBalance: 0,
-      totalNFTs: 0,
-      totalValue: 0
-    };
+    // Verify holder status
+    const verificationResult = await verifyHolder(walletAddress);
 
     // Update verification record
     await prisma.walletVerification.update({

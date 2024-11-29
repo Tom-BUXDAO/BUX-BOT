@@ -8,82 +8,82 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  discordId     String         @unique
-  discordName   String
-  wallets       UserWallet[]
-  ownedNFTs     NFT[]         @relation("Ownership")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id          String       @id @default(cuid())
+  discordId   String       @unique
+  discordName String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  ownedNFTs   NFT[]        @relation("Ownership")
+  wallets     UserWallet[]
 
   @@map("User")
 }
 
 model UserWallet {
-  id            String    @id @default(cuid())
-  address       String    @unique
-  user          User      @relation(fields: [userId], references: [id])
-  userId        String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  address   String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("UserWallet")
 }
 
 model NFT {
-  id               String        @id @default(cuid())
-  mint             String        @unique
-  name             String
-  symbol           String?
-  image            String?
-  collection       String
-  attributes       Json?
-  currentOwner     User?         @relation("Ownership", fields: [ownerDiscordId], references: [discordId])
-  ownerDiscordId   String?
-  ownerWallet      String?
-  rarity           NFTRarity?
-  salesHistory     NFTSale[]
-  currentListing   NFTListing?
-  lastUpdated      DateTime      @updatedAt
-  createdAt        DateTime      @default(now())
+  id             String      @id @default(cuid())
+  mint           String      @unique
+  name           String
+  symbol         String?
+  image          String?
+  collection     String
+  attributes     Json?
+  ownerDiscordId String?
+  ownerWallet    String?
+  lastUpdated    DateTime    @updatedAt
+  createdAt      DateTime    @default(now())
+  currentOwner   User?       @relation("Ownership", fields: [ownerDiscordId], references: [discordId])
+  currentListing NFTListing?
+  rarity         NFTRarity?
+  salesHistory   NFTSale[]
 }
 
 model NFTRarity {
-  id            String   @id @default(cuid())
-  nft           NFT      @relation(fields: [nftId], references: [id])
-  nftId         String   @unique
-  rank          Int
-  score         Float
-  attributes    Json
-  source        String   // e.g. "howrare.is"
-  lastUpdated   DateTime @updatedAt
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  nftId       String   @unique
+  rank        Int
+  score       Float
+  attributes  Json
+  source      String
+  lastUpdated DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  nft         NFT      @relation(fields: [nftId], references: [id])
 }
 
 model NFTSale {
-  id            String   @id @default(cuid())
-  nft           NFT      @relation(fields: [nftId], references: [id])
-  nftId         String
-  price         Float
-  currency      String   // e.g. "SOL"
-  marketplace   String   // e.g. "magiceden"
-  signature     String   @unique
-  buyer         String
-  seller        String
-  timestamp     DateTime
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  nftId       String
+  price       Float
+  currency    String
+  marketplace String
+  signature   String   @unique
+  buyer       String
+  seller      String
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+  nft         NFT      @relation(fields: [nftId], references: [id])
 }
 
 model NFTListing {
-  id            String   @id @default(cuid())
-  nft           NFT      @relation(fields: [nftId], references: [id])
-  nftId         String   @unique
-  price         Float
-  currency      String   // e.g. "SOL"
-  marketplace   String   // e.g. "magiceden"
-  seller        String
-  lastUpdated   DateTime @updatedAt
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  nftId       String   @unique
+  price       Float
+  currency    String
+  marketplace String
+  seller      String
+  lastUpdated DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  nft         NFT      @relation(fields: [nftId], references: [id])
 }
 
 model Collection {
@@ -100,8 +100,8 @@ model Collection {
 model TokenBalance {
   walletAddress  String   @id
   balance        BigInt   @default(0)
-  ownerDiscordId String?
   lastUpdated    DateTime @default(now())
+  ownerDiscordId String?
 }
 
 model WalletVerification {
@@ -110,8 +110,8 @@ model WalletVerification {
   userId        String
   createdAt     DateTime @default(now())
   status        String   @default("pending")
-  result        Json?    // Optional result field
-  
+  result        Json?
+
   @@index([walletAddress])
   @@index([userId])
-} 
+}
