@@ -36,10 +36,6 @@ export default function Home() {
     }
   }, [verifyResult]);
 
-  const handleDiscordLogin = () => {
-    signIn('discord', { callbackUrl: '/' });
-  };
-
   return (
     <div className={styles.container}>
       <main className={styles.main}>
@@ -56,19 +52,18 @@ export default function Home() {
 
         <RoleInfo />
 
-        {!session ? (
-          <button 
-            onClick={handleDiscordLogin}
-            className={`${styles.connectButton} ${styles.discordButton}`}
-          >
-            <FaDiscord />
+        {!session && (
+          <WalletMultiButton className={styles.connectButton}>
+            <FaDiscord className={styles.discordIcon} />
             Login with Discord
-          </button>
-        ) : !wallet.connected ? (
+          </WalletMultiButton>
+        )}
+        {session && !wallet.connected && (
           <WalletMultiButton className={styles.connectButton}>
             Connect Wallet
           </WalletMultiButton>
-        ) : (
+        )}
+        {session && wallet.connected && (
           <UserProfile walletAddress={walletAddress} />
         )}
       </main>
