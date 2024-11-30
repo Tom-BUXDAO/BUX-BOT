@@ -55,7 +55,7 @@ export default function Home() {
         {!session ? (
           <button 
             onClick={() => signIn('discord')}
-            className={styles.connectButton}
+            className={styles.loginButton}
           >
             <FaDiscord />
             Login with Discord
