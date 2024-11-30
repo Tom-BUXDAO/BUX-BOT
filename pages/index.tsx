@@ -39,20 +39,27 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <Image
-          src="/logo.png"
-          alt="BUX DAO Logo"
-          width={128}
-          height={128}
-          priority
-        />
+        <div className={styles.logoContainer}>
+          <div className={styles.logoBlur}>
+            <Image
+              src="/logo.png"
+              alt="BUX DAO Logo"
+              width={128}
+              height={128}
+              priority
+              className={styles.logo}
+            />
+          </div>
+          <h1 className={styles.logoText}>BUX DAO</h1>
+        </div>
 
         {!session ? (
           <button 
             onClick={() => signIn('discord')}
             className={styles.connectButton}
+            style={{ background: '#5865F2' }}
           >
-            <FaDiscord />
+            <FaDiscord className={styles.buttonIcon} />
             Login with Discord
           </button>
         ) : !wallet.connected ? (
