@@ -14,7 +14,7 @@ export default function Home() {
   const { data: session } = useSession();
   const wallet = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const { verifyResult, error } = useWalletVerification();
+  const { verifyResult } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [roleUpdate, setRoleUpdate] = useState<{ added: string[]; removed: string[] } | null>(null);
 
@@ -39,27 +39,20 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <div className={styles.logoContainer}>
-          <div className={styles.logoBlur}>
-            <Image
-              src="/logo.png"
-              alt="BUX DAO Logo"
-              width={128}
-              height={128}
-              priority
-              className={styles.logo}
-            />
-          </div>
-          <h1 className={styles.logoText}>BUX DAO</h1>
-        </div>
+        <Image
+          src="/logo.png"
+          alt="BUX DAO Logo"
+          width={128}
+          height={128}
+          priority
+        />
 
         {!session ? (
           <button 
-            onClick={() => signIn('discord', { callbackUrl: '/' })}
+            onClick={() => signIn('discord')}
             className={styles.connectButton}
-            style={{ background: '#5865F2' }}
           >
-            <FaDiscord className={styles.buttonIcon} />
+            <FaDiscord />
             Login with Discord
           </button>
         ) : !wallet.connected ? (
