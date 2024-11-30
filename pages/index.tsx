@@ -39,13 +39,17 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <Image
-          src="/logo.png"
-          alt="BUX DAO Logo"
-          width={128}
-          height={128}
-          priority
-        />
+        <div className={styles.header}>
+          <Image
+            src="/logo.png"
+            alt="BUX DAO Logo"
+            width={128}
+            height={128}
+            priority
+            className={styles.logo}
+          />
+          <h1 className={styles.title}>BUX DAO</h1>
+        </div>
 
         {!session ? (
           <button 
