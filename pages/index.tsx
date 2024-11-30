@@ -39,23 +39,10 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <div className={styles.header}>
-          <Image
-            src="/logo.png"
-            alt="BUX DAO Logo"
-            width={128}
-            height={128}
-            priority
-          />
-          <h1 className={styles.title}>BUX DAO Role Verification</h1>
-        </div>
-
-        <RoleInfo />
-
         {!session ? (
           <button 
             onClick={() => signIn('discord')}
-            className={styles.loginButton}
+            className={styles.discordButton}
           >
             <FaDiscord />
             Login with Discord
@@ -65,6 +52,8 @@ export default function Home() {
         ) : (
           <UserProfile walletAddress={walletAddress} />
         )}
+        
+        <RoleInfo />
       </main>
       {roleUpdate && showRoleNotification && (
         <RoleNotification 
