@@ -36,12 +36,23 @@ export default function Home() {
     }
   }, [verifyResult]);
 
+  const handleDiscordLogin = async () => {
+    try {
+      await signIn('discord', { 
+        callbackUrl: process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || '/',
+        scope: 'identify guilds'
+      });
+    } catch (error) {
+      console.error('Discord login error:', error);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
         {!session ? (
           <button 
-            onClick={() => signIn('discord')}
+            onClick={handleDiscordLogin}
             className={styles.discordButton}
           >
             <FaDiscord />
