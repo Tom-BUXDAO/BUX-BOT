@@ -36,26 +36,28 @@ export default function Home() {
     }
   }, [verifyResult]);
 
-  const handleDiscordLogin = async () => {
-    try {
-      await signIn('discord', { 
-        callbackUrl: process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || '/',
-        scope: 'identify guilds'
-      });
-    } catch (error) {
-      console.error('Discord login error:', error);
-    }
-  };
-
   return (
     <div className={styles.container}>
       <main className={styles.main}>
+        <div className={styles.logoContainer}>
+          <Image
+            src="/logo.png"
+            alt="BUX DAO Logo"
+            width={128}
+            height={128}
+            priority
+            className={styles.logo}
+          />
+          <div className={styles.logoText}>BUX DAO</div>
+        </div>
+
         {!session ? (
           <button 
-            onClick={handleDiscordLogin}
-            className={styles.discordButton}
+            onClick={() => signIn('discord')}
+            className={styles.connectButton}
+            style={{ background: '#5865F2' }}
           >
-            <FaDiscord />
+            <FaDiscord className={styles.icon} />
             Login with Discord
           </button>
         ) : !wallet.connected ? (
