@@ -36,6 +36,10 @@ export default function Home() {
     }
   }, [verifyResult]);
 
+  const handleDiscordLogin = () => {
+    signIn('discord', { callbackUrl: '/' });
+  };
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
@@ -50,12 +54,14 @@ export default function Home() {
           <h1 className={styles.title}>BUX DAO Role Verification</h1>
         </div>
 
+        <RoleInfo />
+
         {!session ? (
           <button 
-            onClick={() => signIn('discord')}
-            className={styles.connectButton}
+            onClick={handleDiscordLogin}
+            className={`${styles.connectButton} ${styles.discordButton}`}
           >
-            <FaDiscord className={styles.discordIcon} />
+            <FaDiscord />
             Login with Discord
           </button>
         ) : !wallet.connected ? (
@@ -65,8 +71,6 @@ export default function Home() {
         ) : (
           <UserProfile walletAddress={walletAddress} />
         )}
-        
-        <RoleInfo />
       </main>
       {roleUpdate && showRoleNotification && (
         <RoleNotification 
