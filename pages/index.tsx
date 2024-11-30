@@ -14,7 +14,7 @@ export default function Home() {
   const { data: session } = useSession();
   const wallet = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const { verifyResult } = useWalletVerification();
+  const { verifyResult, error } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [roleUpdate, setRoleUpdate] = useState<{ added: string[]; removed: string[] } | null>(null);
 
@@ -55,7 +55,7 @@ export default function Home() {
 
         {!session ? (
           <button 
-            onClick={() => signIn('discord')}
+            onClick={() => signIn('discord', { callbackUrl: '/' })}
             className={styles.connectButton}
             style={{ background: '#5865F2' }}
           >
