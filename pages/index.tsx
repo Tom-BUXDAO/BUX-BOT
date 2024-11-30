@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { signIn, signOut, useSession } from 'next-auth/react';
+import React, { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { FaDiscord } from 'react-icons/fa';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -14,8 +14,7 @@ export default function Home() {
   const { data: session } = useSession();
   const wallet = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const [imageError, setImageError] = useState(false);
-  const { verifyResult, loading, error, verifyWallet } = useWalletVerification();
+  const { verifyResult } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [roleUpdate, setRoleUpdate] = useState<{ added: string[]; removed: string[] } | null>(null);
 
@@ -37,23 +36,24 @@ export default function Home() {
     }
   }, [verifyResult]);
 
-  const handleDiscordLogin = async () => {
-    try {
-      await signIn('discord', { 
-        callbackUrl: process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || '/',
-      });
-    } catch (error) {
-      console.error('Discord login error:', error);
-    }
-  };
-
   return (
     <div className={styles.container}>
       <main className={styles.main}>
+        <div className={styles.header}>
+          <Image
+            src="/logo.png"
+            alt="BUX DAO Logo"
+            width={128}
+            height={128}
+            priority
+          />
+          <h1 className={styles.title}>BUX DAO Role Verification</h1>
+        </div>
+
         {!session ? (
           <button 
-            onClick={handleDiscordLogin}
-            className={styles.loginButton}
+            onClick={() => signIn('discord')}
+            className={styles.connectButton}
           >
             <FaDiscord className={styles.discordIcon} />
             Login with Discord
