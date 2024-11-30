@@ -52,19 +52,17 @@ export default function Home() {
 
         <RoleInfo />
 
-        {!session && (
+        {!session ? (
           <button 
             onClick={() => signIn('discord')}
-            className={`${styles.walletButton} ${styles.discordButton}`}
+            className={styles.connectButton}
           >
             <FaDiscord />
             Login with Discord
           </button>
-        )}
-        {session && !wallet.connected && (
-          <WalletMultiButton className={styles.walletButton} />
-        )}
-        {session && wallet.connected && (
+        ) : !wallet.connected ? (
+          <WalletMultiButton className={styles.connectButton} />
+        ) : (
           <UserProfile walletAddress={walletAddress} />
         )}
       </main>
