@@ -24,22 +24,47 @@ interface MenuItem {
   onClick: () => void;
 }
 
-const BUX_DECIMALS = 9;
-
 interface UserProfileProps {
   walletAddress: string;
 }
 
 export default function UserProfile({ walletAddress }: UserProfileProps) {
-  const { data: session } = useSession();
-  const { verifyResult } = useWalletVerification();
+  const { data: session, status } = useSession();
+  const { disconnect } = useWallet();
+  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const wallet = useWallet();
+  const { verifyWallet: contextVerifyWallet } = useWalletVerification();
 
-  // Format BUX balance directly from verifyResult
-  const buxBalance = verifyResult?.buxBalance || 0;
-  const formattedBalance = buxBalance.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  const menuItems: MenuItem[] = [
+    {
+      label: 'Verify Holder',
+      icon: <FaWallet className={styles.menuIcon} />,
+      onClick: () => {
+        contextVerifyWallet(walletAddress);
+        setShowMenu(false);
+      }
+    },
+    {
+      label: 'Sign Out',
+      icon: <FaSignOutAlt className={styles.menuIcon} />,
+      onClick: async () => {
+        if (wallet.connected) {
+          await disconnect();
+        }
+        await signOut();
+        setShowMenu(false);
+      }
+    }
+  ];
+
+  useEffect(() => {
+    if (status === 'authenticated' && walletAddress) {
+      contextVerifyWallet(walletAddress);
+    }
+  }, [contextVerifyWallet, status, walletAddress]);
 
   return (
     <div className={styles.container}>
@@ -55,9 +80,31 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
         )}
         <div className={styles.info}>
           <div className={styles.name}>{session?.user?.name}</div>
-          <div className={styles.balance}>{formattedBalance} BUX</div>
+          <div className={styles.balance}>{verifyResult?.buxBalance?.toLocaleString()} BUX</div>
         </div>
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className={styles.menuButton}
+          title="Toggle menu"
+          aria-label="Toggle profile menu"
+        >
+          <FaBars />
+        </button>
       </div>
+      {showMenu && (
+        <div className={styles.menu}>
+          {menuItems.map((item, index) => (
+            <button
+              key={index}
+              onClick={item.onClick}
+              className={styles.menuItem}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 
