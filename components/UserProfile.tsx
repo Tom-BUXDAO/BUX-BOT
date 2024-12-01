@@ -4,6 +4,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush } from 'react-icons/fa';
 import styles from '@/styles/UserProfile.module.css';
 import Image from 'next/image';
+import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
 interface VerifyResult {
   isHolder: boolean;
@@ -25,13 +26,19 @@ interface MenuItem {
 
 const BUX_DECIMALS = 9;
 
-export default function UserProfile({ walletAddress }: { walletAddress: string }) {
+interface UserProfileProps {
+  walletAddress: string;
+}
+
+export default function UserProfile({ walletAddress }: UserProfileProps) {
   const { data: session, status } = useSession();
   const { disconnect } = useWallet();
   const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const wallet = useWallet();
+  const { verifyWallet: contextVerifyWallet } = useWalletVerification();
 
   // Menu items configuration
   const menuItems: MenuItem[] = [
@@ -39,7 +46,7 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
       label: 'Verify Holder',
       icon: <FaWallet className={styles.menuIcon} />,
       onClick: () => {
-        verifyWallet();
+        contextVerifyWallet(walletAddress);
         setShowMenu(false);
       }
     },
@@ -63,52 +70,25 @@ export default function UserProfile({ walletAddress }: { walletAddress: string }
     }
   ];
 
-  const verifyWallet = useCallback(async () => {
-    if (!walletAddress || !session?.user?.id || status !== 'authenticated') return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('/api/verify-wallet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ walletAddress }),
-      });
-
-      if (response.status === 401) {
-        await signOut({ redirect: true });
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to verify wallet');
-      }
-
-      const result = await response.json();
-      setVerifyResult(result);
-    } catch (err) {
-      console.error('Error verifying wallet:', err);
-      setError(err instanceof Error ? err.message : 'Failed to verify wallet');
-    } finally {
-      setLoading(false);
-    }
-  }, [walletAddress, session?.user?.id, status]);
-
   useEffect(() => {
-    if (status === 'authenticated') {
-      verifyWallet();
+    if (status === 'authenticated' && walletAddress) {
+      contextVerifyWallet(walletAddress);
     }
-  }, [verifyWallet, status]);
+  }, [contextVerifyWallet, status, walletAddress]);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
     
-    const interval = setInterval(verifyWallet, 5 * 60 * 1000);
+    const interval = setInterval(contextVerifyWallet, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [verifyWallet, status]);
+  }, [contextVerifyWallet, status]);
+
+  useEffect(() => {
+    if (wallet.connected && wallet.publicKey) {
+      console.log('Wallet connected, verifying...', wallet.publicKey.toString());
+      contextVerifyWallet(wallet.publicKey.toString());
+    }
+  }, [wallet.connected, wallet.publicKey, contextVerifyWallet]);
 
   const handleLogout = async () => {
     await disconnect();
