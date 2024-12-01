@@ -32,11 +32,14 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
+  font-size: 2.5rem;
+  letter-spacing: 0.5rem;
+  white-space: nowrap;
 }
 
 .logo {
-  filter: blur(1px);
-  opacity: 0.9;
+  filter: blur(2px);
+  opacity: 0.8;
   position: relative;
   z-index: 1;
 }
