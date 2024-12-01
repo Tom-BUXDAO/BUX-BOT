@@ -23,12 +23,14 @@ const ROLE_ORDER: Record<string, { name: string; order: number }> = {
   '1095033899492573274': { name: 'BUXDAO 5', order: 2 },
   
   // Main collections (10-19)
-  '1300969268665389157': { name: 'MONSTER 3D 🐋', order: 10 },
-  '1093607056696692828': { name: 'MONSTER', order: 11 },
-  '1093606438674382858': { name: 'CAT', order: 12 },
-  '1300968964276621314': { name: 'MEGA BOT 🐋', order: 13 },
-  '1300968964276621313': { name: 'AI BITBOT', order: 14 },
-  '1300968964276621315': { name: 'CELEB CAT', order: 15 },
+  '1300969268665389157': { name: 'MONSTER 3D', order: 10 },
+  '1300969268665389157': { name: 'MONSTER 3D 🐋', order: 11 },
+  '1093607056696692828': { name: 'MONSTER', order: 12 },
+  '1300969268665389158': { name: 'MONSTER 🐋', order: 13 },
+  '1093606438674382858': { name: 'CAT', order: 14 },
+  '1300968964276621314': { name: 'MEGA BOT 🐋', order: 15 },
+  '1300968964276621313': { name: 'AI BITBOT', order: 16 },
+  '1300968964276621315': { name: 'CELEB CAT', order: 17 },
   
   // Collab collections (20-29)
   '1095033759612547133': { name: 'AI squirrel', order: 20 },

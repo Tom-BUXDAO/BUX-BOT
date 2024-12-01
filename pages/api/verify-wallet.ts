@@ -93,20 +93,20 @@ export default async function handler(
       rolesToAdd.add('1095033899492573274'); // BUXDAO 5
 
       // Main Collections (10-19)
-      // Monster 3D
+      // Monster 3D (Gen 2)
       if (counts['money_monsters3d'] > 0) {
-        rolesToAdd.add('1093607056696692828'); // MONSTER 3D
+        rolesToAdd.add('1300969268665389157'); // MONSTER 3D
       }
       if (counts['money_monsters3d'] >= 25) {
         rolesToAdd.add('1300969268665389157'); // MONSTER 3D WHALE
       }
 
-      // Monster
+      // Monster (Gen 1)
       if (counts['money_monsters'] > 0) {
         rolesToAdd.add('1093607056696692828'); // MONSTER
       }
       if (counts['money_monsters'] >= 25) {
-        rolesToAdd.add('1300969268665389157'); // MONSTER WHALE
+        rolesToAdd.add('1300969268665389158'); // MONSTER WHALE
       }
 
       // Other main collections
