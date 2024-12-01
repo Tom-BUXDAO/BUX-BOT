@@ -16,65 +16,37 @@ interface DiscordRole {
   position: number;
 }
 
-// Define role order
-const ROLE_ORDER: Record<string, number> = {
+// Define role order with exact Discord role names
+const ROLE_ORDER: Record<string, { name: string; order: number }> = {
   // BUX Token roles (1-9)
-  '1095363984581984357': 1,  // BUX BANKER
-  '1095033899492573274': 2,  // BUXDAO 5
+  '1095363984581984357': { name: 'BUX BANKER', order: 1 },
+  '1095033899492573274': { name: 'BUXDAO 5', order: 2 },
   
   // Main collections (10-19)
-  '1300969268665389157': 10, // MONSTER 3D WHALE
-  '1093607056696692828': 11, // MONSTER
-  '1093606438674382858': 12, // FCKED CATZ
-  '1300968964276621314': 13, // BITBOT WHALE
-  '1300968964276621313': 14, // AI BITBOT
-  '1300968964276621315': 15, // CELEB CAT
+  '1300969268665389157': { name: 'MONSTER 3D 🐋', order: 10 },
+  '1093607056696692828': { name: 'MONSTER', order: 11 },
+  '1093606438674382858': { name: 'CAT', order: 12 },
+  '1300968964276621314': { name: 'MEGA BOT 🐋', order: 13 },
+  '1300968964276621313': { name: 'AI BITBOT', order: 14 },
+  '1300968964276621315': { name: 'CELEB CAT', order: 15 },
   
   // Collab collections (20-29)
-  '1095033759612547133': 20, // AI SQUIRREL
-  '1300968613179686943': 21, // AI ENERGY APE
-  '1300968964276621316': 22, // REJECTED BOT
-  '1300969147441610773': 23, // CANDY BOT
-  '1300968964276621317': 24  // DOODLE BOT
+  '1095033759612547133': { name: 'AI squirrel', order: 20 },
+  '1300968613179686943': { name: 'AI energy ape', order: 21 },
+  '1300968964276621316': { name: 'Rjctd bot', order: 22 },
+  '1300969147441610773': { name: 'Candy bot', order: 23 },
+  '1300968964276621317': { name: 'Doodle bot', order: 24 }
 };
 
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
   const { added } = roleUpdate;
-  const [discordRoles, setDiscordRoles] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  
-  useEffect(() => {
-    let mounted = true;
-    
-    async function fetchRoles() {
-      try {
-        const response = await fetch('/api/discord/roles');
-        if (response.ok && mounted) {
-          const roles: DiscordRole[] = await response.json();
-          const roleMap = roles.reduce((acc, role) => {
-            acc[role.id] = role.name;
-            return acc;
-          }, {} as Record<string, string>);
-          setDiscordRoles(roleMap);
-        }
-      } catch (error) {
-        console.error('Failed to fetch Discord roles:', error);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-    
-    fetchRoles();
-    return () => { mounted = false; };
-  }, []);
 
   // Filter unique roles and sort by order
   const uniqueRoles = [...new Set(added)]
-    .sort((a, b) => (ROLE_ORDER[a as keyof typeof ROLE_ORDER] || 999) - (ROLE_ORDER[b as keyof typeof ROLE_ORDER] || 999));
+    .sort((a, b) => (ROLE_ORDER[a]?.order || 999) - (ROLE_ORDER[b]?.order || 999))
+    .filter(role => ROLE_ORDER[role]); // Only show roles we know about
 
-  if (uniqueRoles.length === 0 || isLoading) return null;
+  if (uniqueRoles.length === 0) return null;
 
   return (
     <div className={styles.container}>
@@ -90,7 +62,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
       <div className={styles.roleList}>
         {uniqueRoles.map(role => (
           <div key={role} className={styles.role}>
-            {discordRoles[role]}
+            {ROLE_ORDER[role].name}
           </div>
         ))}
       </div>
