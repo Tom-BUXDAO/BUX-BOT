@@ -31,12 +31,9 @@ interface UserProfileProps {
 export default function UserProfile({ walletAddress }: UserProfileProps) {
   const { data: session, status } = useSession();
   const { disconnect } = useWallet();
-  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const wallet = useWallet();
-  const { verifyWallet: contextVerifyWallet } = useWalletVerification();
+  const { verifyResult, verifyWallet: contextVerifyWallet } = useWalletVerification();
 
   const menuItems: MenuItem[] = [
     {
