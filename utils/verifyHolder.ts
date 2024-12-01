@@ -45,6 +45,11 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
 
     console.log(`Total BUX balance: ${standardBuxBalance}`);
 
+    // Calculate total value (BUX balance in USD equivalent)
+    const totalValue = standardBuxBalance * 0.01; // Assuming 1 BUX = $0.01
+
+    console.log('Total value:', totalValue);
+
     // Count NFTs by collection
     const collections = Object.entries(
       nfts.reduce((acc, nft) => {
@@ -83,6 +88,7 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       collections,
       buxBalance: standardBuxBalance,
       totalNFTs: nfts.length,
+      totalValue,
       assignedRoles
     };
 
