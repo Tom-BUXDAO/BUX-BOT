@@ -36,11 +36,6 @@
   white-space: nowrap;
 }
 
-.title::after {
-  content: ' ';
-  white-space: pre;
-}
-
 .logo {
   filter: blur(3px);
   opacity: 0.6;
