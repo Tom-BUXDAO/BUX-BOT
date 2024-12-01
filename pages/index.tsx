@@ -53,7 +53,7 @@ export default function Home() {
 
         {!session ? (
           <button 
-            onClick={() => signIn('discord')}
+            onClick={() => signIn('discord', { callbackUrl: '/' })}
             className={styles.walletButton}
           >
             <FaDiscord />
