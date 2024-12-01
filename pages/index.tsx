@@ -48,7 +48,10 @@ export default function Home() {
             priority
             className={styles.logo}
           />
-          <h1 className={styles.title}>BUX      DAO</h1>
+          <h1 className={styles.title}>
+            <span>BUX</span>
+            <span>DAO</span>
+          </h1>
         </div>
 
         {!session ? (
