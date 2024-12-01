@@ -69,16 +69,32 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     else if (standardBuxBalance >= 10000) assignedRoles.push('1093606579355525252'); // BUILDER
     else if (standardBuxBalance >= 2500) assignedRoles.push('1095034117877399686'); // BEGINNER
 
-    // Collection roles - add proper role IDs for each collection
+    // Collection roles
     collections.forEach(({ name, count }) => {
-      if (name === 'moneymonsters3d' && count >= 1) {
-        assignedRoles.push('1095033899492573274');
-        if (count >= 10) assignedRoles.push('1300969268665389157');
+      switch(name) {
+        case 'money_monsters3d':
+          assignedRoles.push('1095033899492573274'); // Base role
+          if (count >= 10) assignedRoles.push('1300969268665389157'); // Whale role
+          break;
+        case 'aibitbots':
+          assignedRoles.push('1300968964276621313');
+          break;
+        case 'candy_bots':
+          assignedRoles.push('1300969147441610773');
+          break;
+        case 'money_monsters':
+          assignedRoles.push('1093607056696692828');
+          break;
+        case 'fcked_catz':
+          assignedRoles.push('1093606438674382858');
+          break;
+        case 'squirrels':
+          assignedRoles.push('1095033759612547133');
+          break;
+        case 'energy_apes':
+          assignedRoles.push('1300968613179686943');
+          break;
       }
-      if (name === 'aibitbots' && count >= 1) {
-        assignedRoles.push('1300968964276621313');
-      }
-      // Add other collection roles...
     });
 
     console.log('Assigned roles:', assignedRoles);
@@ -88,7 +104,7 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       collections,
       buxBalance: standardBuxBalance,
       totalNFTs: nfts.length,
-      totalValue,
+      totalValue: standardBuxBalance * 0.01,
       assignedRoles
     };
 
