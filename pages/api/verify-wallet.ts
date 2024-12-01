@@ -77,47 +77,67 @@ export default async function handler(
     // Then verify holdings and get new roles
     const verifyResult = await verifyHolder(walletAddress, discordId);
     
-    // Add whale roles based on collection counts
+    // Add collection roles and deduplicate
     if (verifyResult.collections) {
       const counts = verifyResult.collections.reduce((acc, col) => {
         acc[col.name] = col.count;
         return acc;
       }, {} as Record<string, number>);
 
-      // Base collection roles
-      if (counts['money_monsters3d'] > 0) {
-        verifyResult.assignedRoles.push('1093607056696692828'); // MONSTER
+      const rolesToAdd = new Set<string>();
+
+      // BUX Token roles
+      if (verifyResult.buxBalance >= 100000) {
+        rolesToAdd.add('1095363984581984357'); // BUX BANKER
+      }
+      rolesToAdd.add('1095033899492573274'); // BUXDAO 5
+
+      // Money Monsters
+      if (counts['money_monsters'] > 0 || counts['money_monsters3d'] > 0) {
+        rolesToAdd.add('1093607056696692828'); // MONSTER
       }
       if (counts['money_monsters3d'] >= 25) {
-        verifyResult.assignedRoles.push('1300969268665389157'); // MONSTER 3D WHALE
+        rolesToAdd.add('1300969268665389157'); // MONSTER 3D WHALE
       }
 
+      // FCKED CATZ
+      if (counts['fcked_catz'] > 0) {
+        rolesToAdd.add('1093606438674382858'); // CAT
+      }
+
+      // AI BitBots
       if (counts['ai_bitbots'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621313'); // BITBOT
+        rolesToAdd.add('1300968964276621313'); // BITBOT
       }
       if (counts['ai_bitbots'] >= 10) {
-        verifyResult.assignedRoles.push('1300968964276621314'); // BITBOT WHALE
+        rolesToAdd.add('1300968964276621314'); // BITBOT WHALE
       }
 
+      // Celeb Catz
       if (counts['celebcatz'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621315'); // CELEB CAT
+        rolesToAdd.add('1300968964276621315'); // CELEB CAT
       }
 
-      if (counts['candy_bots'] > 0) {
-        verifyResult.assignedRoles.push('1300969147441610773'); // CANDY BOT
+      // AI Collections
+      if (counts['squirrels'] > 0) {
+        rolesToAdd.add('1095033759612547133'); // AI SQUIRREL
+      }
+      if (counts['energy_apes'] > 0) {
+        rolesToAdd.add('1300968613179686943'); // AI ENERGY APE
       }
 
+      // Other Collections
       if (counts['rjctd_bots'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621316'); // REJECTED BOT
+        rolesToAdd.add('1300968964276621316'); // REJECTED BOT
       }
-
+      if (counts['candy_bots'] > 0) {
+        rolesToAdd.add('1300969147441610773'); // CANDY BOT
+      }
       if (counts['doodle_bot'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621317'); // DOODLE BOT
+        rolesToAdd.add('1300968964276621317'); // DOODLE BOT
       }
 
-      if (counts['fcked_catz'] > 0) {
-        verifyResult.assignedRoles.push('1093606438674382858'); // CAT
-      }
+      verifyResult.assignedRoles = Array.from(rolesToAdd);
     }
 
     // Sort roles before assigning
