@@ -68,4 +68,16 @@
 .walletButton:active {
   transform: translateY(0);
 }
+
+.profileContainer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: rgba(20, 20, 20, 0.8);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem;
+}
  
