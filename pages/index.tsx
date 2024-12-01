@@ -59,6 +59,8 @@ export default function Home() {
             <FaDiscord />
             Login with Discord
           </button>
+        ) : !wallet.connected ? (
+          <WalletMultiButton className={styles.walletButton} />
         ) : (
           <UserProfile walletAddress={walletAddress} />
         )}
