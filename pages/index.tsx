@@ -21,7 +21,7 @@ export default function Home() {
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
       const { added, removed } = verifyResult.roleUpdate;
-      if (added.length > 0 || removed.length > 0) {
+      if ((added && added.length > 0) || (removed && removed.length > 0)) {
         setRoleUpdate(verifyResult.roleUpdate);
         setShowRoleNotification(true);
       }
@@ -40,7 +40,7 @@ export default function Home() {
             priority
             className={styles.logo}
           />
-          <h1 className={styles.title}>BUX      DAO</h1>
+          <h1 className={styles.title}>BUX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DAO</h1>
         </div>
 
         {!session ? (
@@ -63,13 +63,15 @@ export default function Home() {
         <RoleInfo />
       </main>
       {roleUpdate && showRoleNotification && (
-        <RoleNotification 
-          roleUpdate={roleUpdate}
-          onClose={() => {
-            setShowRoleNotification(false);
-            setRoleUpdate(null);
-          }}
-        />
+        <div className={styles.notificationContainer}>
+          <RoleNotification 
+            roleUpdate={roleUpdate}
+            onClose={() => {
+              setShowRoleNotification(false);
+              setRoleUpdate(null);
+            }}
+          />
+        </div>
       )}
     </div>
   );
