@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush, FaUser, FaImage, FaCrown } from 'react-icons/fa';
+import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush, FaUser, FaImage, FaCrown, FaCheck, FaTimes } from 'react-icons/fa';
 import styles from '@/styles/UserProfile.module.css';
 import Image from 'next/image';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
@@ -54,13 +54,18 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
     <div className={styles.container}>
       <div className={styles.header}>
         {session?.user?.image && (
-          <Image
-            src={session.user.image}
-            alt="Profile"
-            width={48}
-            height={48}
-            className={styles.avatar}
-          />
+          <div className={styles.avatarContainer}>
+            <Image
+              src={session.user.image}
+              alt="Profile"
+              width={48}
+              height={48}
+              className={styles.avatar}
+            />
+            <div className={`${styles.verificationBadge} ${verifyResult?.isHolder ? styles.verified : styles.unverified}`}>
+              {verifyResult?.isHolder ? <FaCheck /> : <FaTimes />}
+            </div>
+          </div>
         )}
         <div className={styles.info}>
           <div className={styles.name}>{session?.user?.name}</div>

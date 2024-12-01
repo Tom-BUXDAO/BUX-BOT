@@ -86,4 +86,35 @@
 .error {
   color: var(--error);
 }
+
+.avatarContainer {
+  position: relative;
+}
+
+.verificationBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1a1033;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #1a1033;
+}
+
+.verificationBadge.verified {
+  color: #50C878;
+}
+
+.verificationBadge.unverified {
+  color: #FF6B6B;
+}
+
+.verificationBadge svg {
+  width: 10px;
+  height: 10px;
+}
  
