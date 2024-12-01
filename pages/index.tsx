@@ -43,12 +43,12 @@ export default function Home() {
           <Image
             src="/logo.png"
             alt="BUX DAO Logo"
-            width={128}
-            height={128}
+            width={96}
+            height={96}
             priority
             className={styles.logo}
           />
-          <h1 className={styles.title}>BUX DAO</h1>
+          <h1 className={styles.title}>BUX      DAO</h1>
         </div>
 
         {!session ? (

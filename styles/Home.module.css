@@ -32,19 +32,25 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  font-size: 2.5rem;
-  letter-spacing: 0.5rem;
-  white-space: nowrap;
+  font-size: 3.5rem;
+  letter-spacing: normal;
+}
+
+.title::after {
+  content: ' ';
+  white-space: pre;
 }
 
 .logo {
-  filter: blur(2px);
-  opacity: 0.8;
+  filter: blur(3px);
+  opacity: 0.6;
   position: relative;
   z-index: 1;
+  width: 96px;
+  height: 96px;
 }
 
-.discordButton {
+.walletButton {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -59,12 +65,12 @@
   transition: all 0.2s ease;
 }
 
-.discordButton:hover {
+.walletButton:hover {
   background: #4752C4;
   transform: translateY(-2px);
 }
 
-.discordButton:active {
+.walletButton:active {
   transform: translateY(0);
 }
  
