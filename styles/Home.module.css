@@ -82,4 +82,18 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
   z-index: 100;
 }
+
+.notificationContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: rgba(10, 10, 10, 0.99);
+  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: blur(30px);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
  
