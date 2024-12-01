@@ -48,7 +48,7 @@ export default function Home() {
             priority
             className={styles.logo}
           />
-          <h1 className={styles.title}>BUX&emsp;&emsp;DAO</h1>
+          <h1 className={styles.title}>BUX&emsp;DAO</h1>
         </div>
 
         {!session ? (
@@ -59,8 +59,6 @@ export default function Home() {
             <FaDiscord />
             Login with Discord
           </button>
-        ) : !wallet.connected ? (
-          <WalletMultiButton className={styles.walletButton} />
         ) : (
           <UserProfile walletAddress={walletAddress} />
         )}
