@@ -40,7 +40,7 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       }
     });
 
-    const totalBuxBalance = tokenBalances.reduce((sum, tb) => sum + Number(tb.amount), 0);
+    const totalBuxBalance = tokenBalances.reduce((sum, tb) => sum + Number(tb.balance), 0);
     const standardBuxBalance = totalBuxBalance / 1_000_000_000;
 
     console.log(`Total BUX balance: ${standardBuxBalance}`);
