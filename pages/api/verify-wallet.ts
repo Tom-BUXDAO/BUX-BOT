@@ -134,5 +134,5 @@ export const config = {
     responseLimit: false,
     externalResolver: true,
   },
-  maxDuration: 300 // Set max duration to 5 minutes
+  maxDuration: 60 // Set to maximum allowed for hobby plan (60 seconds)
 }; 
