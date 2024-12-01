@@ -112,7 +112,9 @@ export default async function handler(
 
     // Sort roles before assigning
     const sortedRoles = verifyResult.assignedRoles.sort((a, b) => {
-      return (ROLE_ORDER[a] || 999) - (ROLE_ORDER[b] || 999);
+      const aOrder = ROLE_ORDER[a as RoleId] || 999;
+      const bOrder = ROLE_ORDER[b as RoleId] || 999;
+      return aOrder - bOrder;
     });
 
     verifyResult.assignedRoles = sortedRoles;
