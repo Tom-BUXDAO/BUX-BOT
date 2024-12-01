@@ -5,8 +5,11 @@
   border-radius: 1rem;
   min-width: 300px;
   max-width: 500px;
+  max-height: 80vh;
   position: relative;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
 }
 
 .title {
@@ -14,6 +17,7 @@
   font-size: 1.5rem;
   margin: 0 0 1.5rem 0;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .closeButton {
@@ -39,6 +43,32 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-right: -0.5rem; /* Compensate for padding */
+}
+
+/* Webkit (Chrome, Safari, etc) */
+.roleList::-webkit-scrollbar {
+  width: 6px;
+  background-color: transparent;
+}
+
+.roleList::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 215, 0, 0.3);
+  border-radius: 3px;
+}
+
+.roleList::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Firefox */
+@supports (scrollbar-width: thin) {
+  .roleList {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 215, 0, 0.3) transparent;
+  }
 }
 
 .role {
