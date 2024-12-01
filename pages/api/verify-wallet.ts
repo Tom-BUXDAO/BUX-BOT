@@ -39,32 +39,24 @@ export default async function handler(
     console.log('Previous roles:', previousRoles);
 
     // Verify holder status
-    console.log('Calling verifyHolder...');
     const verifyResult = await verifyHolder(walletAddress, discordId);
-    console.log('VerifyHolder result:', verifyResult);
     
-    // Update Discord roles
-    console.log('Updating Discord roles...');
-    await updateDiscordRoles(discordId, verifyResult.assignedRoles);
-
-    // Update user roles in database
-    await prisma.user.update({
-      where: { discordId },
-      data: { roles: verifyResult.assignedRoles }
-    });
-
-    // Calculate added and removed roles
+    // Calculate role changes before updating Discord
     const added = verifyResult.assignedRoles.filter(role => !previousRoles.includes(role));
     const removed = previousRoles.filter(role => !verifyResult.assignedRoles.includes(role));
 
-    console.log('Role changes:', {
-      added,
-      removed,
-      previousRoles,
-      newRoles: verifyResult.assignedRoles,
-      collections: verifyResult.collections,
-      buxBalance: verifyResult.buxBalance
-    });
+    console.log('Role changes calculated:', { added, removed });
+
+    // Update Discord roles
+    if (added.length > 0 || removed.length > 0) {
+      await updateDiscordRoles(discordId, verifyResult.assignedRoles);
+
+      // Update user roles in database
+      await prisma.user.update({
+        where: { discordId },
+        data: { roles: verifyResult.assignedRoles }
+      });
+    }
 
     return res.status(200).json({
       ...verifyResult,
