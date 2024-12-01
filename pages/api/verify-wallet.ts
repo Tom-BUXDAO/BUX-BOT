@@ -11,18 +11,23 @@ export default async function handler(
   res: NextApiResponse<VerifyResult | { error: string; details?: string }>
 ) {
   try {
+    console.log('Starting wallet verification...');
     const session = await getServerSession(req, res, authOptions);
     const discordId = session?.user?.id;
     const discordName = session?.user?.name;
 
     if (!discordId) {
+      console.error('No Discord ID found in session');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const { walletAddress } = req.body;
     if (!walletAddress) {
+      console.error('No wallet address provided');
       return res.status(400).json({ error: 'Wallet address is required' });
     }
+
+    console.log(`Verifying wallet ${walletAddress} for user ${discordName} (${discordId})`);
 
     // Get user's current roles first
     const user = await prisma.user.findUnique({
@@ -31,11 +36,15 @@ export default async function handler(
     });
 
     const previousRoles = user?.roles || [];
+    console.log('Previous roles:', previousRoles);
 
     // Verify holder status
+    console.log('Calling verifyHolder...');
     const verifyResult = await verifyHolder(walletAddress, discordId);
+    console.log('VerifyHolder result:', verifyResult);
     
     // Update Discord roles
+    console.log('Updating Discord roles...');
     await updateDiscordRoles(discordId, verifyResult.assignedRoles);
 
     // Update user roles in database
@@ -48,7 +57,14 @@ export default async function handler(
     const added = verifyResult.assignedRoles.filter(role => !previousRoles.includes(role));
     const removed = previousRoles.filter(role => !verifyResult.assignedRoles.includes(role));
 
-    console.log('Role changes:', { added, removed, previousRoles, newRoles: verifyResult.assignedRoles });
+    console.log('Role changes:', {
+      added,
+      removed,
+      previousRoles,
+      newRoles: verifyResult.assignedRoles,
+      collections: verifyResult.collections,
+      buxBalance: verifyResult.buxBalance
+    });
 
     return res.status(200).json({
       ...verifyResult,
