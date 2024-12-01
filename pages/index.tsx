@@ -19,14 +19,6 @@ export default function Home() {
   const [roleUpdate, setRoleUpdate] = useState<{ added: string[]; removed: string[] } | null>(null);
 
   useEffect(() => {
-    if (wallet.publicKey) {
-      setWalletAddress(wallet.publicKey.toString());
-    } else {
-      setWalletAddress('');
-    }
-  }, [wallet.publicKey]);
-
-  useEffect(() => {
     if (verifyResult?.roleUpdate) {
       const { added, removed } = verifyResult.roleUpdate;
       if (added.length > 0 || removed.length > 0) {
@@ -48,12 +40,12 @@ export default function Home() {
             priority
             className={styles.logo}
           />
-          <h1 className={styles.title}>BUX&emsp;DAO</h1>
+          <h1 className={styles.title}>BUX      DAO</h1>
         </div>
 
         {!session ? (
           <button 
-            onClick={() => signIn('discord', { callbackUrl: '/' })}
+            onClick={() => signIn('discord')}
             className={styles.walletButton}
           >
             <FaDiscord />
@@ -62,7 +54,9 @@ export default function Home() {
         ) : (
           <>
             <WalletMultiButton className={styles.walletButton} />
-            <UserProfile walletAddress={walletAddress} />
+            <div className={styles.profileContainer}>
+              <UserProfile walletAddress={walletAddress} />
+            </div>
           </>
         )}
         
