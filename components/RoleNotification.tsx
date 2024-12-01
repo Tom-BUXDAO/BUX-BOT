@@ -41,12 +41,15 @@ const ROLE_ORDER: Record<string, number> = {
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
   const { added } = roleUpdate;
   const [discordRoles, setDiscordRoles] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
+    let mounted = true;
+    
     async function fetchRoles() {
       try {
         const response = await fetch('/api/discord/roles');
-        if (response.ok) {
+        if (response.ok && mounted) {
           const roles: DiscordRole[] = await response.json();
           const roleMap = roles.reduce((acc, role) => {
             acc[role.id] = role.name;
@@ -56,17 +59,22 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
         }
       } catch (error) {
         console.error('Failed to fetch Discord roles:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     }
     
     fetchRoles();
+    return () => { mounted = false; };
   }, []);
 
   // Filter unique roles and sort by order
   const uniqueRoles = [...new Set(added)]
-    .sort((a, b) => (ROLE_ORDER[a] || 999) - (ROLE_ORDER[b] || 999));
+    .sort((a, b) => (ROLE_ORDER[a as keyof typeof ROLE_ORDER] || 999) - (ROLE_ORDER[b as keyof typeof ROLE_ORDER] || 999));
 
-  if (uniqueRoles.length === 0) return null;
+  if (uniqueRoles.length === 0 || isLoading) return null;
 
   return (
     <div className={styles.container}>
@@ -82,7 +90,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
       <div className={styles.roleList}>
         {uniqueRoles.map(role => (
           <div key={role} className={styles.role}>
-            {discordRoles[role] || 'Loading...'}
+            {discordRoles[role]}
           </div>
         ))}
       </div>
