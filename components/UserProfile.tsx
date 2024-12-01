@@ -1,67 +1,54 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush } from 'react-icons/fa';
+import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush, FaUser, FaImage, FaCrown } from 'react-icons/fa';
 import styles from '@/styles/UserProfile.module.css';
 import Image from 'next/image';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
-
-interface VerifyResult {
-  isHolder: boolean;
-  collections: Array<{
-    name: string;
-    count: number;
-  }>;
-  buxBalance: number;
-  totalNFTs: number;
-  totalValue: number;
-  assignedRoles?: string[];
-}
-
-interface MenuItem {
-  label: string;
-  icon: JSX.Element;
-  onClick: () => void;
-}
 
 interface UserProfileProps {
   walletAddress: string;
 }
 
 export default function UserProfile({ walletAddress }: UserProfileProps) {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const { disconnect } = useWallet();
   const [showMenu, setShowMenu] = useState(false);
   const wallet = useWallet();
   const { verifyResult, verifyWallet: contextVerifyWallet } = useWalletVerification();
 
-  const menuItems: MenuItem[] = [
+  const menuItems = [
     {
       label: 'Verify Holder',
-      icon: <FaWallet className={styles.menuIcon} />,
-      onClick: () => {
-        contextVerifyWallet(walletAddress);
-        setShowMenu(false);
-      }
+      icon: <FaWallet className={styles.menuIcon} />
     },
     {
-      label: 'Sign Out',
-      icon: <FaSignOutAlt className={styles.menuIcon} />,
-      onClick: async () => {
-        if (wallet.connected) {
-          await disconnect();
-        }
-        await signOut();
-        setShowMenu(false);
-      }
+      label: 'Profile',
+      icon: <FaUser className={styles.menuIcon} />
+    },
+    {
+      label: 'My NFTs',
+      icon: <FaImage className={styles.menuIcon} />
+    },
+    {
+      label: 'My Roles',
+      icon: <FaCrown className={styles.menuIcon} />
+    },
+    {
+      label: 'BUX',
+      icon: <FaCoins className={styles.menuIcon} />
+    },
+    {
+      label: 'Rarity',
+      icon: <FaPaintBrush className={styles.menuIcon} />
     }
   ];
 
   useEffect(() => {
-    if (status === 'authenticated' && walletAddress) {
+    if (session && walletAddress) {
       contextVerifyWallet(walletAddress);
     }
-  }, [contextVerifyWallet, status, walletAddress]);
+  }, [contextVerifyWallet, session, walletAddress]);
 
   return (
     <div className={styles.container}>
@@ -83,9 +70,20 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
           onClick={() => setShowMenu(!showMenu)}
           className={styles.menuButton}
           title="Toggle menu"
-          aria-label="Toggle profile menu"
+          aria-label="Toggle menu"
         >
           <FaBars />
+        </button>
+        <button
+          onClick={async () => {
+            if (wallet.connected) await disconnect();
+            await signOut();
+          }}
+          className={styles.signOutButton}
+          title="Sign out"
+          aria-label="Sign out"
+        >
+          <FaSignOutAlt />
         </button>
       </div>
       {showMenu && (
@@ -93,7 +91,12 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
           {menuItems.map((item, index) => (
             <button
               key={index}
-              onClick={item.onClick}
+              onClick={() => {
+                if (item.label === 'Verify Holder') {
+                  contextVerifyWallet(walletAddress);
+                }
+                setShowMenu(false);
+              }}
               className={styles.menuItem}
             >
               {item.icon}
