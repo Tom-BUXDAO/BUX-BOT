@@ -20,6 +20,7 @@ export default function Home() {
 
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
+      console.log('Role update received:', verifyResult.roleUpdate);
       const { added, removed } = verifyResult.roleUpdate;
       if ((added && added.length > 0) || (removed && removed.length > 0)) {
         setRoleUpdate(verifyResult.roleUpdate);
@@ -27,6 +28,12 @@ export default function Home() {
       }
     }
   }, [verifyResult]);
+
+  useEffect(() => {
+    if (wallet.connected && wallet.publicKey) {
+      setWalletAddress(wallet.publicKey.toString());
+    }
+  }, [wallet.connected, wallet.publicKey]);
 
   return (
     <div className={styles.container}>
@@ -54,9 +61,7 @@ export default function Home() {
         ) : (
           <>
             <WalletMultiButton className={styles.walletButton} />
-            <div className={styles.profileContainer}>
-              <UserProfile walletAddress={walletAddress} />
-            </div>
+            <UserProfile walletAddress={walletAddress} />
           </>
         )}
         
