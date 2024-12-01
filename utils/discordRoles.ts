@@ -49,67 +49,43 @@ async function getClient(): Promise<Client> {
   return client;
 }
 
-export async function updateDiscordRoles(discordId: string, newRoles: string[]): Promise<RoleUpdate> {
+export async function updateDiscordRoles(discordId: string, newRoles: string[]) {
+  console.log(`Updating roles for Discord user ${discordId}`);
+  console.log('New roles to assign:', newRoles);
+
   try {
-    // Get current roles from database
+    // Get current roles
     const user = await prisma.user.findUnique({
-      where: { discordId }
+      where: { discordId },
+      select: { roles: true }
     });
 
     const currentRoles = user?.roles || [];
-    
-    // Determine roles to add and remove
+    console.log('Current roles:', currentRoles);
+
+    // Calculate changes
     const rolesToAdd = newRoles.filter(role => !currentRoles.includes(role));
     const rolesToRemove = currentRoles.filter(role => !newRoles.includes(role));
 
-    // Update Discord server roles
-    const client = await getClient();
-    const guild = await client.guilds.fetch(GUILD_ID!);
-    const member = await guild.members.fetch(discordId);
+    console.log('Roles to add:', rolesToAdd);
+    console.log('Roles to remove:', rolesToRemove);
 
-    if (!member) {
-      throw new Error('Member not found in Discord server');
-    }
-
-    // Remove old roles with rate limiting
-    for (const roleId of rolesToRemove) {
-      const role = guild.roles.cache.get(roleId);
-      if (role) {
-        try {
-          await member.roles.remove(role);
-          console.log(`Removed role ${role.name} from ${member.user.tag}`);
-          await setTimeout(RATE_LIMIT_DELAY); // Wait between operations
-        } catch (error) {
-          console.error(`Failed to remove role ${role.name}:`, error);
-        }
-      }
-    }
-
-    // Add new roles with rate limiting
-    for (const roleId of rolesToAdd) {
-      const role = guild.roles.cache.get(roleId);
-      if (role) {
-        try {
-          await member.roles.add(role);
-          console.log(`Added role ${role.name} to ${member.user.tag}`);
-          await setTimeout(RATE_LIMIT_DELAY); // Wait between operations
-        } catch (error) {
-          console.error(`Failed to add role ${role.name}:`, error);
-        }
-      }
-    }
-
-    // Update user roles in database
+    // Update roles in database
     await prisma.user.update({
       where: { discordId },
       data: { roles: newRoles }
     });
 
-    return {
-      added: rolesToAdd,
-      removed: rolesToRemove
-    };
+    // Log each role change
+    rolesToAdd.forEach(role => {
+      console.log(`Added role ${role} to ${discordId}`);
+    });
 
+    rolesToRemove.forEach(role => {
+      console.log(`Removed role ${role} from ${discordId}`);
+    });
+
+    return { added: rolesToAdd, removed: rolesToRemove };
   } catch (error) {
     console.error('Error updating Discord roles:', error);
     throw error;
