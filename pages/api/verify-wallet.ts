@@ -86,47 +86,39 @@ export default async function handler(
 
       const rolesToAdd = new Set<string>();
 
-      // BUX Token roles
+      // BUX Token roles (1-9)
       if (verifyResult.buxBalance >= 100000) {
         rolesToAdd.add('1095363984581984357'); // BUX BANKER
       }
       rolesToAdd.add('1095033899492573274'); // BUXDAO 5
 
-      // Money Monsters
-      if (counts['money_monsters'] > 0 || counts['money_monsters3d'] > 0) {
-        rolesToAdd.add('1093607056696692828'); // MONSTER
-      }
+      // Main Collections (10-19)
       if (counts['money_monsters3d'] >= 25) {
         rolesToAdd.add('1300969268665389157'); // MONSTER 3D WHALE
       }
-
-      // FCKED CATZ
+      if (counts['money_monsters'] > 0 || counts['money_monsters3d'] > 0) {
+        rolesToAdd.add('1093607056696692828'); // MONSTER
+      }
       if (counts['fcked_catz'] > 0) {
         rolesToAdd.add('1093606438674382858'); // CAT
-      }
-
-      // AI BitBots
-      if (counts['ai_bitbots'] > 0) {
-        rolesToAdd.add('1300968964276621313'); // BITBOT
       }
       if (counts['ai_bitbots'] >= 10) {
         rolesToAdd.add('1300968964276621314'); // BITBOT WHALE
       }
-
-      // Celeb Catz
+      if (counts['ai_bitbots'] > 0) {
+        rolesToAdd.add('1300968964276621313'); // BITBOT
+      }
       if (counts['celebcatz'] > 0) {
         rolesToAdd.add('1300968964276621315'); // CELEB CAT
       }
 
-      // AI Collections
+      // Collab Collections (20-29)
       if (counts['squirrels'] > 0) {
         rolesToAdd.add('1095033759612547133'); // AI SQUIRREL
       }
       if (counts['energy_apes'] > 0) {
         rolesToAdd.add('1300968613179686943'); // AI ENERGY APE
       }
-
-      // Other Collections
       if (counts['rjctd_bots'] > 0) {
         rolesToAdd.add('1300968964276621316'); // REJECTED BOT
       }
