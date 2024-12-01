@@ -127,3 +127,12 @@ export default async function handler(
     });
   }
 } 
+
+export const config = {
+  api: {
+    bodyParser: true,
+    responseLimit: false,
+    externalResolver: true,
+  },
+  maxDuration: 300 // Set max duration to 5 minutes
+}; 
