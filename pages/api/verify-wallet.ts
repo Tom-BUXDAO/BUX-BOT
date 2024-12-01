@@ -84,29 +84,39 @@ export default async function handler(
         return acc;
       }, {} as Record<string, number>);
 
-      // Add BitBot Whale role if they have 10+ BitBots
-      if (counts['ai_bitbots'] >= 10) {
-        verifyResult.assignedRoles.push('1300968964276621314');
+      // Base collection roles
+      if (counts['money_monsters3d'] > 0) {
+        verifyResult.assignedRoles.push('1093607056696692828'); // MONSTER
       }
-
-      // Add Monster 3D Whale role if they have 25+ MM3D
       if (counts['money_monsters3d'] >= 25) {
-        verifyResult.assignedRoles.push('1300969268665389157');
+        verifyResult.assignedRoles.push('1300969268665389157'); // MONSTER 3D WHALE
       }
 
-      // Add Celeb Cat role if they have any celebcatz
+      if (counts['ai_bitbots'] > 0) {
+        verifyResult.assignedRoles.push('1300968964276621313'); // BITBOT
+      }
+      if (counts['ai_bitbots'] >= 10) {
+        verifyResult.assignedRoles.push('1300968964276621314'); // BITBOT WHALE
+      }
+
       if (counts['celebcatz'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621315');
+        verifyResult.assignedRoles.push('1300968964276621315'); // CELEB CAT
       }
 
-      // Add Rejected Bot role if they have any rjctd_bots
+      if (counts['candy_bots'] > 0) {
+        verifyResult.assignedRoles.push('1300969147441610773'); // CANDY BOT
+      }
+
       if (counts['rjctd_bots'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621316');
+        verifyResult.assignedRoles.push('1300968964276621316'); // REJECTED BOT
       }
 
-      // Add Doodle Bot role if they have any doodle_bot
       if (counts['doodle_bot'] > 0) {
-        verifyResult.assignedRoles.push('1300968964276621317');
+        verifyResult.assignedRoles.push('1300968964276621317'); // DOODLE BOT
+      }
+
+      if (counts['fcked_catz'] > 0) {
+        verifyResult.assignedRoles.push('1093606438674382858'); // CAT
       }
     }
 
