@@ -41,21 +41,19 @@
 }
 
 .closeButton {
-  background: rgba(255, 215, 0, 0.1);
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  color: #FFD700;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
-  width: fit-content;
-  margin: 0 auto;
-  min-width: 120px;
+  width: 100%;
 }
 
 .closeButton:hover {
-  background: rgba(255, 215, 0, 0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Webkit scrollbar styles */
