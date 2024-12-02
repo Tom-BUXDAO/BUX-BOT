@@ -43,23 +43,14 @@ const ROLE_ORDER: Record<string, { name: string; order: number }> = {
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
   const { added } = roleUpdate;
 
-  // Filter unique roles and sort by order
   const uniqueRoles = [...new Set(added)]
     .sort((a, b) => (ROLE_ORDER[a]?.order || 999) - (ROLE_ORDER[b]?.order || 999))
-    .filter(role => ROLE_ORDER[role]); // Only show roles we know about
+    .filter(role => ROLE_ORDER[role]);
 
   if (uniqueRoles.length === 0) return null;
 
   return (
     <div className={styles.container}>
-      <button 
-        onClick={onClose} 
-        className={styles.closeButton}
-        title="Close notification"
-        aria-label="Close role assignment notification"
-      >
-        <FaTimes />
-      </button>
       <h3 className={styles.title}>Roles Assigned</h3>
       <div className={styles.roleList}>
         {uniqueRoles.map(role => (
@@ -68,6 +59,14 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
           </div>
         ))}
       </div>
+      <button 
+        onClick={onClose} 
+        className={styles.closeButton}
+        title="Close notification"
+        aria-label="Close role assignment notification"
+      >
+        Close
+      </button>
     </div>
   );
 } 
