@@ -98,7 +98,7 @@ export default async function handler(
         rolesToAdd.add('1300969268665389157'); // MONSTER 3D
       }
       if (counts['money_monsters3d'] >= 25) {
-        rolesToAdd.add('1300969268665389157'); // MONSTER 3D WHALE
+        rolesToAdd.add('1300969268665389159'); // MONSTER 3D WHALE
       }
 
       // Monster (Gen 1)

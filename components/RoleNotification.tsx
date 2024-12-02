@@ -24,7 +24,7 @@ const ROLE_ORDER: Record<string, { name: string; order: number }> = {
   
   // Main collections (10-19)
   '1300969268665389157': { name: 'MONSTER 3D', order: 10 },
-  '1300969268665389157': { name: 'MONSTER 3D 🐋', order: 11 },
+  '1300969268665389159': { name: 'MONSTER 3D 🐋', order: 11 },
   '1093607056696692828': { name: 'MONSTER', order: 12 },
   '1300969268665389158': { name: 'MONSTER 🐋', order: 13 },
   '1093606438674382858': { name: 'CAT', order: 14 },
