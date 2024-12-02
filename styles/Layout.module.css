@@ -1,0 +1,45 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #2a1b3d 0%, #1a1033 100%);
+  color: white;
+  position: relative;
+}
+
+.header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.title {
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255, 215, 0, 0.8);
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  font-size: 3.5rem;
+  white-space: nowrap;
+}
+
+.logo {
+  filter: blur(3px);
+  opacity: 0.6;
+  position: relative;
+  z-index: 1;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+} 

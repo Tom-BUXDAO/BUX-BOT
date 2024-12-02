@@ -5,6 +5,7 @@ import { FaSignOutAlt, FaBars, FaWallet, FaCoins, FaPaintBrush, FaUser, FaImage,
 import styles from '@/styles/UserProfile.module.css';
 import Image from 'next/image';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
+import { useRouter } from 'next/router';
 
 interface UserProfileProps {
   walletAddress: string;
@@ -16,6 +17,7 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
   const [showMenu, setShowMenu] = useState(false);
   const wallet = useWallet();
   const { verifyResult, verifyWallet: contextVerifyWallet } = useWalletVerification();
+  const router = useRouter();
 
   const menuItems = [
     {
@@ -49,6 +51,11 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
       contextVerifyWallet(walletAddress);
     }
   }, [contextVerifyWallet, session, walletAddress]);
+
+  const handleMenuClick = (path: string) => {
+    router.push(path);
+    setShowMenu(false);
+  };
 
   return (
     <div className={styles.container}>
@@ -100,7 +107,7 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
                 if (item.label === 'Verify Holder') {
                   contextVerifyWallet(walletAddress);
                 }
-                setShowMenu(false);
+                handleMenuClick(item.label.toLowerCase());
               }}
               className={styles.menuItem}
             >
