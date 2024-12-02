@@ -22,7 +22,6 @@ export default async function handler(
       where: { discordId: id as string },
       select: {
         discordName: true,
-        email: true,
         createdAt: true,
         wallets: {
           select: {
@@ -37,7 +36,12 @@ export default async function handler(
       return res.status(404).json({ error: 'User not found' });
     }
 
-    return res.status(200).json(user);
+    const response = {
+      ...user,
+      email: session.user?.email || null
+    };
+
+    return res.status(200).json(response);
 
   } catch (error) {
     console.error('Error fetching user data:', error);
