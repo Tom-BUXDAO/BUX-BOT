@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import { useWallet } from '@solana/wallet-adapter-react';
 import UserProfile from './UserProfile';
 import styles from '@/styles/Layout.module.css';
 
@@ -9,6 +10,8 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { data: session } = useSession();
+  const wallet = useWallet();
+  const walletAddress = wallet.publicKey?.toString() || '';
 
   return (
     <div className={styles.container}>
@@ -22,7 +25,7 @@ export default function Layout({ children }: LayoutProps) {
           className={styles.logo}
         />
         <h1 className={styles.title}>BUX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DAO</h1>
-        {session && <UserProfile />}
+        {session && <UserProfile walletAddress={walletAddress} />}
       </div>
       <main className={styles.main}>
         {children}
