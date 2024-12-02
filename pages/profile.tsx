@@ -1,6 +1,8 @@
 import { useSession } from 'next-auth/react';
 import Layout from '@/components/Layout';
 import styles from '@/styles/Profile.module.css';
+import layoutStyles from '@/styles/Layout.module.css';
+import { FaUser } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import { prisma } from '@/lib/prisma';
 
@@ -31,7 +33,10 @@ export default function ProfilePage() {
   return (
     <Layout>
       <div className={styles.profileContainer}>
-        <h2>Profile</h2>
+        <div className={layoutStyles.pageHeader}>
+          <FaUser className={layoutStyles.pageIcon} />
+          <h2>Profile</h2>
+        </div>
         {userData && (
           <div className={styles.profileInfo}>
             <div className={styles.infoRow}>
