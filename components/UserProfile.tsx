@@ -11,6 +11,12 @@ interface UserProfileProps {
   walletAddress: string;
 }
 
+interface MenuItem {
+  label: string;
+  icon: JSX.Element;
+  path: string;
+}
+
 export default function UserProfile({ walletAddress }: UserProfileProps) {
   const { data: session } = useSession();
   const { disconnect } = useWallet();
@@ -19,30 +25,36 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
   const { verifyResult, verifyWallet: contextVerifyWallet } = useWalletVerification();
   const router = useRouter();
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       label: 'Verify Holder',
-      icon: <FaWallet className={styles.menuIcon} />
+      icon: <FaWallet className={styles.menuIcon} />,
+      path: '/'
     },
     {
       label: 'Profile',
-      icon: <FaUser className={styles.menuIcon} />
+      icon: <FaUser className={styles.menuIcon} />,
+      path: '/profile'
     },
     {
       label: 'My NFTs',
-      icon: <FaImage className={styles.menuIcon} />
+      icon: <FaImage className={styles.menuIcon} />,
+      path: '/my-nfts'
     },
     {
       label: 'My Roles',
-      icon: <FaCrown className={styles.menuIcon} />
+      icon: <FaCrown className={styles.menuIcon} />,
+      path: '/my-roles'
     },
     {
       label: 'BUX',
-      icon: <FaCoins className={styles.menuIcon} />
+      icon: <FaCoins className={styles.menuIcon} />,
+      path: '/bux'
     },
     {
       label: 'Rarity',
-      icon: <FaPaintBrush className={styles.menuIcon} />
+      icon: <FaPaintBrush className={styles.menuIcon} />,
+      path: '/rarity'
     }
   ];
 
@@ -52,8 +64,11 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
     }
   }, [contextVerifyWallet, session, walletAddress]);
 
-  const handleMenuClick = (path: string) => {
-    router.push(path);
+  const handleMenuClick = (item: MenuItem) => {
+    if (item.label === 'Verify Holder') {
+      contextVerifyWallet(walletAddress);
+    }
+    router.push(item.path);
     setShowMenu(false);
   };
 
@@ -103,12 +118,7 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
           {menuItems.map((item, index) => (
             <button
               key={index}
-              onClick={() => {
-                if (item.label === 'Verify Holder') {
-                  contextVerifyWallet(walletAddress);
-                }
-                handleMenuClick(item.label.toLowerCase());
-              }}
+              onClick={() => handleMenuClick(item)}
               className={styles.menuItem}
             >
               {item.icon}
