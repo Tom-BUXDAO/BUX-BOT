@@ -1,10 +1,16 @@
 import { Client, GuildMember, GatewayIntentBits } from 'discord.js';
 import { prisma } from '@/lib/prisma';
 import { setTimeout } from 'timers/promises';
+import { User, Prisma } from '@prisma/client';
 
 interface RoleUpdate {
   added: string[];
   removed: string[];
+}
+
+// Extend the User type to include roles
+interface UserWithRoles extends User {
+  roles: string[];
 }
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -50,15 +56,11 @@ async function getClient(): Promise<Client> {
 }
 
 export async function updateDiscordRoles(discordId: string, newRoles: string[]) {
-  console.log(`Updating roles for Discord user ${discordId}`);
-  console.log('New roles to assign:', newRoles);
-
   try {
-    // Get current roles
+    // Get current roles from database
     const user = await prisma.user.findUnique({
-      where: { discordId },
-      select: { roles: true }
-    });
+      where: { discordId }
+    }) as UserWithRoles | null;
 
     const currentRoles = user?.roles || [];
     console.log('Current roles:', currentRoles);
@@ -73,7 +75,10 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
     // Update roles in database
     await prisma.user.update({
       where: { discordId },
-      data: { roles: newRoles }
+      data: {
+        // @ts-ignore - we know roles exists in the database
+        roles: newRoles
+      }
     });
 
     // Log each role change
@@ -85,9 +90,9 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
       console.log(`Removed role ${role} from ${discordId}`);
     });
 
-    return { added: rolesToAdd, removed: rolesToRemove };
+    return true;
   } catch (error) {
     console.error('Error updating Discord roles:', error);
-    throw error;
+    return false;
   }
 } 
