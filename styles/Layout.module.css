@@ -42,4 +42,23 @@
   flex-direction: column;
   align-items: center;
   padding: 2rem;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.pageHeader h2 {
+  color: white;
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.pageIcon {
+  color: white;
+  font-size: 2.5rem;
 } 

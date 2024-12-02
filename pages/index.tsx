@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
-import { FaDiscord } from 'react-icons/fa';
+import { FaDiscord, FaWallet } from 'react-icons/fa';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import Image from 'next/image';
@@ -9,6 +9,7 @@ import UserProfile from '../components/UserProfile';
 import RoleInfo from '../components/RoleInfo';
 import RoleNotification from '../components/RoleNotification';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
+import layoutStyles from '@/styles/Layout.module.css';
 
 export default function Home() {
   const { data: session } = useSession();
@@ -49,7 +50,10 @@ export default function Home() {
           />
           <h1 className={styles.title}>BUX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DAO</h1>
         </div>
-        <h2 className={styles.pageTitle}>Holder Verify</h2>
+        <div className={layoutStyles.pageHeader}>
+          <FaWallet className={layoutStyles.pageIcon} />
+          <h2>Holder Verify</h2>
+        </div>
 
         {!session ? (
           <button 

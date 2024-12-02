@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Layout from '@/components/Layout';
 import styles from '@/styles/Rarity.module.css';
 import { FaStar } from 'react-icons/fa';
+import layoutStyles from '@/styles/Layout.module.css';
 
 export default function RarityPage() {
   const { data: session } = useSession();
@@ -25,8 +26,8 @@ export default function RarityPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <FaStar className={styles.icon} />
+        <div className={layoutStyles.pageHeader}>
+          <FaStar className={layoutStyles.pageIcon} />
           <h2>Rarity Checker</h2>
         </div>
 

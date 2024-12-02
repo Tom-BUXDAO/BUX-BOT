@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import styles from '@/styles/MyNFTs.module.css';
 import { FaImage } from 'react-icons/fa';
+import layoutStyles from '@/styles/Layout.module.css';
 
 interface NFTCollection {
   name: string;
@@ -40,8 +41,8 @@ export default function MyNFTsPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <FaImage className={styles.icon} />
+        <div className={layoutStyles.pageHeader}>
+          <FaImage className={layoutStyles.pageIcon} />
           <h2>My NFTs</h2>
         </div>
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Layout from '@/components/Layout';
 import styles from '@/styles/MyRoles.module.css';
 import { FaCrown } from 'react-icons/fa';
+import layoutStyles from '@/styles/Layout.module.css';
 
 interface DiscordRole {
   id: string;
@@ -47,8 +48,8 @@ export default function MyRolesPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <FaCrown className={styles.icon} />
+        <div className={layoutStyles.pageHeader}>
+          <FaCrown className={layoutStyles.pageIcon} />
           <h2>My Roles</h2>
         </div>
         

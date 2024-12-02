@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import styles from '@/styles/BUX.module.css';
 import { FaCoins } from 'react-icons/fa';
+import layoutStyles from '@/styles/Layout.module.css';
 
 interface BUXData {
   totalSupply: number;
@@ -34,8 +35,8 @@ export default function BUXPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={styles.header}>
-          <FaCoins className={styles.icon} />
+        <div className={layoutStyles.pageHeader}>
+          <FaCoins className={layoutStyles.pageIcon} />
           <h2>BUX Token</h2>
         </div>
 
