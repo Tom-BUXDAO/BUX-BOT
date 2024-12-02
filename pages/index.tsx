@@ -49,6 +49,7 @@ export default function Home() {
           />
           <h1 className={styles.title}>BUX&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DAO</h1>
         </div>
+        <h2 className={styles.pageTitle}>Holder Verify</h2>
 
         {!session ? (
           <button 

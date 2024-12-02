@@ -27,7 +27,7 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
 
   const menuItems: MenuItem[] = [
     {
-      label: 'Verify Holder',
+      label: 'Holder Verify',
       icon: <FaWallet className={styles.menuIcon} />,
       path: '/'
     },
@@ -65,7 +65,7 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
   }, [contextVerifyWallet, session, walletAddress]);
 
   const handleMenuClick = (item: MenuItem) => {
-    if (item.label === 'Verify Holder') {
+    if (item.label === 'Holder Verify') {
       contextVerifyWallet(walletAddress);
     }
     router.push(item.path);
