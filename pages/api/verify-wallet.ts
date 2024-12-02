@@ -46,12 +46,20 @@ export default async function handler(
   try {
     console.log('Starting wallet verification...');
     const session = await getServerSession(req, res, authOptions);
-    const discordId = session?.user?.id;
-    const discordName = session?.user?.name;
-
-    if (!discordId) {
-      console.error('No Discord ID found in session');
+    if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const discordId = session.user.id;
+
+    // Get user's wallets first
+    const user = await prisma.user.findUnique({
+      where: { discordId },
+      include: { wallets: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
     const { walletAddress } = req.body;
@@ -60,16 +68,11 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    console.log(`Verifying wallet ${walletAddress} for user ${discordName} (${discordId})`);
+    console.log(`Verifying wallet ${walletAddress} for user ${session?.user?.name} (${discordId})`);
 
     // Get user's current roles
-    const user = await prisma.user.findUnique({
-      where: { discordId },
-      select: { id: true, roles: true }
-    });
-
-    const previousRoles = user?.roles || [];
-    console.log('Previous roles:', previousRoles);
+    const userRoles = user?.roles || [];
+    console.log('Previous roles:', userRoles);
 
     // First, clear all roles
     await updateDiscordRoles(discordId, []);
@@ -162,13 +165,13 @@ export default async function handler(
     });
 
     // All previous roles were removed, and new ones were added
-    const removed = previousRoles;
+    const removed = userRoles;
     const added = verifyResult.assignedRoles;
 
     console.log('Role changes:', {
       removed,
       added,
-      previousRoles,
+      previousRoles: userRoles,
       newRoles: verifyResult.assignedRoles
     });
 
@@ -178,7 +181,7 @@ export default async function handler(
       await tx.tokenBalance.updateMany({
         where: {
           walletAddress: {
-            in: wallets.map(w => w.address)
+            in: user.wallets.map(w => w.address)
           }
         },
         data: {
@@ -190,7 +193,7 @@ export default async function handler(
       await tx.nFT.updateMany({
         where: {
           ownerAddress: {
-            in: wallets.map(w => w.address)
+            in: user.wallets.map(w => w.address)
           }
         },
         data: {
