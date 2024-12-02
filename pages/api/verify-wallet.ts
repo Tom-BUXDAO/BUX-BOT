@@ -172,6 +172,35 @@ export default async function handler(
       newRoles: verifyResult.assignedRoles
     });
 
+    // Update all related tables with Discord ID
+    await prisma.$transaction(async (tx) => {
+      // Update TokenBalance table
+      await tx.tokenBalance.updateMany({
+        where: {
+          walletAddress: {
+            in: wallets.map(w => w.address)
+          }
+        },
+        data: {
+          ownerDiscordId: discordId
+        }
+      });
+
+      // Update NFT table
+      await tx.nFT.updateMany({
+        where: {
+          ownerAddress: {
+            in: wallets.map(w => w.address)
+          }
+        },
+        data: {
+          ownerDiscordId: discordId
+        }
+      });
+
+      // Existing role updates...
+    });
+
     return res.status(200).json({
       ...verifyResult,
       roleUpdate: { added, removed }
