@@ -1,0 +1,93 @@
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  justify-content: center;
+}
+
+.header h2 {
+  color: #FFD700;
+  margin: 0;
+}
+
+.icon {
+  color: #FFD700;
+  font-size: 1.5rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  text-align: center;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.statCard h3 {
+  color: #b8a7d9;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.statCard p {
+  color: #FFD700;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.collectionSelect {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.collectionSelect select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 400px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.nftGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.loading, .placeholder {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  grid-column: 1 / -1;
+  padding: 3rem;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .stats {
+    grid-template-columns: 1fr;
+  }
+} 
