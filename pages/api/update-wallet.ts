@@ -23,8 +23,8 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // Add wallet to user
-    await prisma.wallet.upsert({
+    // Add wallet to user - using correct model name UserWallet
+    await prisma.userWallet.upsert({
       where: {
         address: address
       },
