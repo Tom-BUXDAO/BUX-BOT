@@ -1,4 +1,4 @@
-import { CollectionName } from '../types/verification';
+import { CollectionName } from '../types/collections';
 
 interface WhaleConfig {
   threshold: number;
@@ -10,7 +10,7 @@ interface CollectionConfig {
   whale?: WhaleConfig;
 }
 
-export const NFT_THRESHOLDS: Record<CollectionName, CollectionConfig> = {
+export const NFT_THRESHOLDS = {
   'Money Monsters 3D': {
     holder: process.env.MONEY_MONSTERS3D_ROLE_ID,
     whale: {

@@ -1,4 +1,4 @@
-import { CollectionName } from '../utils/roleConfig';
+import { CollectionName } from './collections';
 
 export interface RoleUpdate {
   added: string[];
