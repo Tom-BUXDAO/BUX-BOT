@@ -24,7 +24,27 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    console.log(`Processing wallet connection for user ${userId} and wallet ${address}`);
+    console.log('\n=== Starting Wallet Connection Process ===');
+    console.log(`User ID: ${userId}`);
+    console.log(`Wallet Address: ${address}`);
+
+    // First check if wallet exists
+    const existingWallet = await prisma.userWallet.findUnique({
+      where: { address }
+    });
+    console.log('Existing wallet:', existingWallet);
+
+    // Check NFTs before update
+    const nftsBefore = await prisma.nFT.findMany({
+      where: { ownerWallet: address }
+    });
+    console.log(`NFTs before update: ${nftsBefore.length}`);
+
+    // Check token balance before update
+    const balanceBefore = await prisma.tokenBalance.findUnique({
+      where: { walletAddress: address }
+    });
+    console.log('Token balance before:', balanceBefore);
 
     // Start a transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx) => {
@@ -43,24 +63,23 @@ export default async function handler(
       });
       console.log('Wallet connection updated:', wallet);
 
-      // Check NFTs for this wallet
-      const nftsCount = await tx.nFT.count({
-        where: {
-          ownerWallet: address
-        }
-      });
-      console.log(`Found ${nftsCount} NFTs for wallet ${address}`);
-
-      // Check token balance
-      const balance = await tx.tokenBalance.findUnique({
-        where: { walletAddress: address }
-      });
-      console.log('Current token balance:', balance);
-
       // Update ownership records with guaranteed non-null userId
       await updateOwnership(address, userId);
+
+      // Check NFTs after update
+      const nftsAfter = await tx.nFT.findMany({
+        where: { ownerWallet: address }
+      });
+      console.log(`NFTs after update: ${nftsAfter.length}`);
+
+      // Check token balance after update
+      const balanceAfter = await tx.tokenBalance.findUnique({
+        where: { walletAddress: address }
+      });
+      console.log('Token balance after:', balanceAfter);
     });
 
+    console.log('=== Wallet Connection Process Complete ===\n');
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error('Error updating wallet:', error);
