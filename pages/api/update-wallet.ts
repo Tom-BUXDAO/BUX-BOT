@@ -29,22 +29,34 @@ export default async function handler(
     console.log('User ID:', userId);
     console.log('Wallet Address:', address);
 
-    try {
-      // Create new wallet connection
-      const wallet = await prisma.userWallet.create({
-        data: {
-          address,
-          userId
-        }
-      });
-      console.log('Created wallet connection:', wallet);
-    } catch (error: any) {
-      console.error('Failed to create wallet:', error);
-      return res.status(400).json({ 
-        error: 'Failed to create wallet connection',
-        details: error.message,
-        code: error.code
-      });
+    // Check if wallet exists
+    const existingWallet = await prisma.userWallet.findFirst({
+      where: { address }
+    });
+
+    if (existingWallet) {
+      if (existingWallet.userId !== userId) {
+        return res.status(400).json({ error: 'Wallet already connected to another user' });
+      }
+      console.log('Wallet already connected to this user');
+    } else {
+      try {
+        // Create new wallet connection
+        await prisma.userWallet.create({
+          data: {
+            address: address.toString(), // Ensure string
+            userId: userId
+          }
+        });
+        console.log('Created new wallet connection');
+      } catch (error: any) {
+        console.error('Failed to create wallet:', error);
+        return res.status(400).json({ 
+          error: 'Failed to create wallet connection',
+          details: error.message,
+          code: error.code
+        });
+      }
     }
 
     // Get user's Discord ID
