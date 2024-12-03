@@ -16,6 +16,20 @@ export async function verifyHolder(
   discordId: string
 ): Promise<VerificationResult> {
   try {
+    // First update ownership records
+    await prisma.$transaction([
+      // Update NFTs ownership
+      prisma.nFT.updateMany({
+        where: { ownerWallet: walletAddress },
+        data: { ownerDiscordId: discordId }
+      }),
+      // Update token balance ownership
+      prisma.tokenBalance.update({
+        where: { walletAddress },
+        data: { ownerDiscordId: discordId }
+      })
+    ]);
+
     // Get NFT counts by collection
     const nftCounts = await prisma.nFT.groupBy({
       by: ['collection'],
