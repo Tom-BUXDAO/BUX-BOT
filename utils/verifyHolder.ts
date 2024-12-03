@@ -1,13 +1,5 @@
 import { prisma } from '@/lib/prisma';
 
-const MAIN_COLLECTIONS = [
-  'money_monsters3d',
-  'aibitbots',
-  'candy_bots',
-  'fcked_catz',
-  'squirrels'
-];
-
 export async function verifyHolder(walletAddress: string, discordId: string) {
   console.log(`Starting verification for wallet ${walletAddress} and Discord ID ${discordId}`);
   
@@ -32,7 +24,8 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       where: {
         ownerWallet: {
           in: walletAddresses
-        }
+        },
+        ownerDiscordId: discordId // Only get NFTs that are properly linked
       },
       select: {
         collection: true,
@@ -47,7 +40,8 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       where: {
         walletAddress: {
           in: walletAddresses
-        }
+        },
+        ownerDiscordId: discordId // Only get balances that are properly linked
       }
     });
 
@@ -68,7 +62,7 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     console.log('NFT collections:', collections);
 
     // Determine roles based on holdings
-    const assignedRoles = [];
+    const assignedRoles: string[] = [];
     
     // BUX balance roles
     if (standardBuxBalance >= Number(process.env.BUX_BANKER_THRESHOLD)) {
@@ -81,51 +75,18 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       assignedRoles.push(process.env.BUX_BEGINNER_ROLE_ID!);
     }
 
-    // Check if user has all 5 main collections
-    console.log('Checking for BUXDAO 5 role eligibility:');
-    console.log('Required collections:', MAIN_COLLECTIONS);
-    console.log('User collections:', collectionCounts);
-    
-    // Declare missingCollections variable
-    let missingCollections: string[];
-    
-    // Only check for missing collections if user has any NFTs at all
-    if (Object.keys(collectionCounts).length === 0) {
-      console.log('User has no NFTs, not eligible for BUXDAO 5');
-      missingCollections = MAIN_COLLECTIONS; // All collections are missing
-    } else {
-      missingCollections = MAIN_COLLECTIONS.filter(collection => 
-        !collectionCounts[collection] || collectionCounts[collection] === 0
-      );
-    }
-    
-    console.log('Missing collections:', missingCollections);
-    const hasAllMainCollections = missingCollections.length === 0;
-    console.log('Has all main collections?', hasAllMainCollections);
-
-    if (hasAllMainCollections) {
-      console.log('Assigning BUXDAO 5 role');
-      assignedRoles.push(process.env.BUXDAO_5_ROLE_ID!);
-    }
-
     // Individual collection roles
     collections.forEach(({ name, count }) => {
-      console.log(`Processing collection ${name} with count ${count}`);
-      
       switch(name) {
         case 'money_monsters3d':
-          console.log('Found Money Monsters 3D');
           assignedRoles.push(process.env.MONEY_MONSTERS3D_ROLE_ID!);
           if (count >= Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD)) {
-            console.log('Assigning MM3D whale role');
             assignedRoles.push(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!);
           }
           break;
         case 'ai_bitbots':
-          console.log('Found AI Bitbots');
           assignedRoles.push(process.env.AI_BITBOTS_ROLE_ID!);
           if (count >= Number(process.env.AI_BITBOTS_WHALE_THRESHOLD)) {
-            console.log('Assigning AI Bitbots whale role');
             assignedRoles.push(process.env.AI_BITBOTS_WHALE_ROLE_ID!);
           }
           break;
@@ -148,25 +109,6 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     });
 
     console.log('Final assigned roles:', assignedRoles);
-
-    // At the start of the function, log the role IDs we're using
-    console.log('Role IDs from env:', {
-      AI_BITBOTS_WHALE: process.env.AI_BITBOTS_WHALE_ROLE_ID,
-      BUXDAO_5: process.env.BUXDAO_5_ROLE_ID,
-      // ... add other role IDs
-    });
-
-    // Before assigning roles, log the collections we found
-    console.log('Collections found:', collectionCounts);
-
-    // Before returning, log which roles we're assigning and why
-    console.log('Final assigned roles:', assignedRoles.map(roleId => ({
-      roleId,
-      reason: roleId === process.env.BUXDAO_5_ROLE_ID ? 'BUXDAO 5' :
-              roleId === process.env.AI_BITBOTS_WHALE_ROLE_ID ? 'AI Bitbots Whale' :
-              // ... add other role mappings
-              'Unknown'
-    })));
 
     return {
       isHolder: nfts.length > 0 || standardBuxBalance > 0,
