@@ -7,41 +7,47 @@ export async function updateOwnership(walletAddress: string, userId: string) {
     // Get the user's Discord ID
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { discordId: true }
+      select: { 
+        id: true,
+        discordId: true,
+        discordName: true
+      }
     });
 
     if (!user?.discordId) {
       throw new Error('User Discord ID not found');
     }
 
-    console.log(`Found Discord ID: ${user.discordId}`);
+    console.log(`Found user:`, user);
 
     // Start a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
-      // First check if NFTs exist for this wallet
-      const nftsCount = await tx.nFT.count({
+      // First get all NFTs for this wallet
+      const nfts = await tx.nFT.findMany({
         where: {
           ownerWallet: walletAddress
         }
       });
-      console.log(`Found ${nftsCount} NFTs for wallet ${walletAddress}`);
+      console.log(`Found ${nfts.length} NFTs for wallet ${walletAddress}`);
 
-      // Update NFTs owned by this wallet
-      const nftResult = await tx.nFT.updateMany({
-        where: {
-          ownerWallet: walletAddress
-        },
-        data: {
-          ownerDiscordId: user.discordId
-        }
-      });
-      console.log(`Updated ${nftResult.count} NFTs with Discord ID`);
+      if (nfts.length > 0) {
+        // Update NFTs owned by this wallet
+        const nftResult = await tx.nFT.updateMany({
+          where: {
+            ownerWallet: walletAddress
+          },
+          data: {
+            ownerDiscordId: user.discordId
+          }
+        });
+        console.log(`Updated ${nftResult.count} NFTs with Discord ID ${user.discordId}`);
+      }
 
-      // Check existing token balance
-      const existingBalance = await tx.tokenBalance.findUnique({
+      // Get current token balance
+      const tokenBalance = await tx.tokenBalance.findUnique({
         where: { walletAddress: walletAddress }
       });
-      console.log(`Current token balance: ${existingBalance ? Number(existingBalance.balance) / 1_000_000_000 : 0} BUX`);
+      console.log('Found token balance:', tokenBalance);
 
       // Update or create token balance record
       const tokenResult = await tx.tokenBalance.upsert({
@@ -55,11 +61,11 @@ export async function updateOwnership(walletAddress: string, userId: string) {
         create: {
           walletAddress: walletAddress,
           ownerDiscordId: user.discordId,
-          balance: existingBalance?.balance || BigInt(0),
+          balance: tokenBalance?.balance || BigInt(0),
           lastUpdated: new Date()
         }
       });
-      console.log(`Updated token balance record with Discord ID`);
+      console.log('Updated token balance:', tokenResult);
     });
 
     console.log(`Successfully completed ownership update for wallet ${walletAddress}`);
