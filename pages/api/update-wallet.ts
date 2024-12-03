@@ -38,38 +38,34 @@ export default async function handler(
       return res.status(400).json({ error: 'Discord ID not found' });
     }
 
-    console.log(`Discord ID: ${user.discordId}`);
+    // Check if wallet already exists
+    const existingWallet = await prisma.userWallet.findUnique({
+      where: { address }
+    });
 
-    // First, create the wallet connection
-    const wallet = await prisma.userWallet.create({
-      data: {
-        address: address,
-        userId: userId
+    if (existingWallet) {
+      console.log('Wallet already exists:', existingWallet);
+      if (existingWallet.userId !== userId) {
+        return res.status(400).json({ error: 'Wallet already connected to another user' });
       }
-    });
-    console.log('Created wallet connection:', wallet);
+    } else {
+      // Create new wallet connection
+      try {
+        const wallet = await prisma.userWallet.create({
+          data: {
+            address: address,
+            userId: userId
+          }
+        });
+        console.log('Created new wallet connection:', wallet);
+      } catch (error) {
+        console.error('Error creating wallet:', error);
+        return res.status(500).json({ error: 'Failed to create wallet connection' });
+      }
+    }
 
-    // Now update NFTs and token balance
-    const [nftResult, tokenResult] = await Promise.all([
-      // Update NFT ownership
-      prisma.nFT.updateMany({
-        where: { ownerWallet: address },
-        data: { ownerDiscordId: user.discordId }
-      }),
-      // Update token balance
-      prisma.tokenBalance.updateMany({
-        where: { walletAddress: address },
-        data: { ownerDiscordId: user.discordId }
-      })
-    ]);
-
-    console.log('Update results:', {
-      nfts: nftResult,
-      tokenBalance: tokenResult
-    });
-
-    // Verify the updates
-    const [updatedNFTs, updatedBalance] = await Promise.all([
+    // Check existing NFTs and token balance
+    const [existingNFTs, existingBalance] = await Promise.all([
       prisma.nFT.findMany({
         where: { ownerWallet: address }
       }),
@@ -78,15 +74,57 @@ export default async function handler(
       })
     ]);
 
-    console.log('Verification:', {
+    console.log(`Found ${existingNFTs.length} NFTs:`, existingNFTs);
+    console.log('Found token balance:', existingBalance);
+
+    // Update NFTs and token balance in a transaction
+    await prisma.$transaction(async (tx) => {
+      if (existingNFTs.length > 0) {
+        const nftResult = await tx.nFT.updateMany({
+          where: { ownerWallet: address },
+          data: { ownerDiscordId: user.discordId }
+        });
+        console.log(`Updated ${nftResult.count} NFTs with Discord ID ${user.discordId}`);
+      }
+
+      if (existingBalance) {
+        const tokenResult = await tx.tokenBalance.update({
+          where: { walletAddress: address },
+          data: { ownerDiscordId: user.discordId }
+        });
+        console.log('Updated token balance:', tokenResult);
+      }
+    });
+
+    // Verify the updates worked
+    const [updatedNFTs, updatedBalance] = await Promise.all([
+      prisma.nFT.findMany({
+        where: { 
+          ownerWallet: address,
+          ownerDiscordId: user.discordId
+        }
+      }),
+      prisma.tokenBalance.findUnique({
+        where: { walletAddress: address }
+      })
+    ]);
+
+    console.log('After updates:', {
       nfts: updatedNFTs.length,
       balance: updatedBalance
     });
 
-    // Run verification with updated data
+    // Now run verification
     const verificationResult = await verifyHolder(address, user.discordId);
+    console.log('Verification result:', verificationResult);
 
-    return res.status(200).json({ success: true, verification: verificationResult });
+    return res.status(200).json({ 
+      success: true, 
+      nfts: updatedNFTs.length,
+      balance: updatedBalance?.balance || 0,
+      verification: verificationResult 
+    });
+
   } catch (error) {
     console.error('Error updating wallet:', error);
     return res.status(500).json({ error: 'Internal server error' });
