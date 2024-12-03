@@ -1,4 +1,4 @@
-import { Client, GuildMember, GatewayIntentBits } from 'discord.js';
+import { Client, GuildMember, GatewayIntentBits, Role } from 'discord.js';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
@@ -40,32 +40,44 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
     const guild = await client.guilds.fetch(GUILD_ID!);
     const member = await guild.members.fetch(discordId);
 
-    // Get current Discord roles
-    const currentRoles = member.roles.cache
-      .filter(role => assignedRoles.includes(role.id))
-      .map(role => role.id);
+    // Get ALL current roles, not just the ones we manage
+    const currentRoles = member.roles.cache.map((role: Role) => role.id);
+    console.log('All current Discord roles:', currentRoles);
 
-    // Determine which roles to add and remove
-    const rolesToAdd = assignedRoles.filter(role => !currentRoles.includes(role));
-    const rolesToRemove = currentRoles.filter(role => !assignedRoles.includes(role));
+    // Get list of roles we manage from env
+    const managedRoleIds = [
+      process.env.BUX_BANKER_ROLE_ID,
+      process.env.BUX_SAVER_ROLE_ID,
+      process.env.BUX_BUILDER_ROLE_ID,
+      process.env.BUX_BEGINNER_ROLE_ID,
+      process.env.MONEY_MONSTERS3D_ROLE_ID,
+      process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID,
+      process.env.AI_BITBOTS_ROLE_ID,
+      process.env.AI_BITBOTS_WHALE_ROLE_ID,
+      process.env.CANDY_BOTS_ROLE_ID,
+      process.env.FCKED_CATZ_ROLE_ID,
+      process.env.FCKED_CATZ_WHALE_ROLE_ID,
+      process.env.SQUIRRELS_ROLE_ID,
+      process.env.ENERGY_APES_ROLE_ID,
+      process.env.BUXDAO_5_ROLE_ID
+    ].filter(Boolean) as string[];
 
-    console.log('Current roles:', currentRoles);
-    console.log('New roles to assign:', assignedRoles);
-    console.log('Roles to add:', rolesToAdd);
+    console.log('Managed role IDs:', managedRoleIds);
+
+    // Only remove roles that we manage
+    const rolesToRemove = currentRoles.filter(role => 
+      managedRoleIds.includes(role) && !assignedRoles.includes(role)
+    );
+
+    // Only add roles that we manage
+    const rolesToAdd = assignedRoles.filter(role => 
+      managedRoleIds.includes(role) && !currentRoles.includes(role)
+    );
+
     console.log('Roles to remove:', rolesToRemove);
+    console.log('Roles to add:', rolesToAdd);
 
-    // Add new roles
-    for (const roleId of rolesToAdd) {
-      try {
-        await member.roles.add(roleId);
-        console.log(`Added role ${roleId} to ${discordId}`);
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
-      } catch (error) {
-        console.error(`Error adding role ${roleId}:`, error);
-      }
-    }
-
-    // Remove old roles
+    // Remove roles first
     for (const roleId of rolesToRemove) {
       try {
         await member.roles.remove(roleId);
@@ -76,11 +88,25 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
       }
     }
 
+    // Then add new roles
+    for (const roleId of rolesToAdd) {
+      try {
+        await member.roles.add(roleId);
+        console.log(`Added role ${roleId} to ${discordId}`);
+        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
+      } catch (error) {
+        console.error(`Error adding role ${roleId}:`, error);
+      }
+    }
+
+    // Get final roles after updates
+    const finalRoles = member.roles.cache.map((role: Role) => role.id);
+
     return {
       added: rolesToAdd,
       removed: rolesToRemove,
       previousRoles: currentRoles,
-      newRoles: assignedRoles
+      newRoles: finalRoles
     };
   } catch (error) {
     console.error('Error updating Discord roles:', error);
