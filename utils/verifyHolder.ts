@@ -1,66 +1,83 @@
 import { prisma } from '@/lib/prisma';
+import { NFT_THRESHOLDS, BUX_THRESHOLDS, BUXDAO_5_ROLE_ID, CollectionName } from './roleConfig';
+import { updateDiscordRoles } from './discordRoles';
+import type { VerificationResult } from '../types/verification';
 
-interface Collection {
-  name: string;
-  count: number;
+// Type guard for collections with whale thresholds
+function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config is {
+  holder: string | undefined;
+  whale: { roleId: string | undefined; threshold: number };
+} {
+  return 'whale' in config && config.whale !== undefined;
 }
 
-interface VerificationResult {
-  isHolder: boolean;
-  collections: Collection[];
-  buxBalance: number;
-  totalNFTs: number;
-  totalValue: number;
-  assignedRoles: string[];
-}
-
-export async function verifyHolder(walletAddress: string, discordId: string): Promise<VerificationResult> {
+export async function verifyHolder(
+  walletAddress: string, 
+  discordId: string
+): Promise<VerificationResult> {
   try {
-    // Get NFTs and balance
-    const nfts = await prisma.nFT.findMany({
+    // Get NFT counts by collection
+    const nftCounts = await prisma.nFT.groupBy({
+      by: ['collection'],
       where: {
         ownerWallet: walletAddress,
         ownerDiscordId: discordId
+      },
+      _count: true
+    });
+
+    // Get BUX balance
+    const tokenBalance = await prisma.tokenBalance.findUnique({
+      where: { walletAddress }
+    });
+
+    const buxBalance = tokenBalance ? Number(tokenBalance.balance) / 1e9 : 0;
+    const totalNFTs = nftCounts.reduce((sum, { _count }) => sum + _count, 0);
+
+    // Calculate roles based on holdings
+    const assignedRoles: string[] = [];
+
+    // Add collection roles
+    nftCounts.forEach(({ collection, _count }) => {
+      const config = NFT_THRESHOLDS[collection as CollectionName];
+      if (config?.holder) {
+        assignedRoles.push(config.holder);
+      }
+      if (hasWhaleConfig(config) && _count >= config.whale.threshold && config.whale.roleId) {
+        assignedRoles.push(config.whale.roleId);
       }
     });
 
-    const balance = await prisma.tokenBalance.findUnique({
-      where: { 
-        walletAddress,
-        ownerDiscordId: discordId
+    // Add BUX roles
+    BUX_THRESHOLDS.forEach(tier => {
+      if (buxBalance >= tier.threshold && tier.roleId) {
+        assignedRoles.push(tier.roleId);
       }
     });
 
-    // Return empty array if no holdings
-    if (nfts.length === 0 && !balance) {
-      return {
-        isHolder: false,
-        collections: [],
-        buxBalance: 0,
-        totalNFTs: 0,
-        totalValue: 0,
-        assignedRoles: []
-      };
+    // Add BUXDAO 5 role if qualified
+    if (nftCounts.length >= 5 && BUXDAO_5_ROLE_ID) {
+      assignedRoles.push(BUXDAO_5_ROLE_ID);
     }
 
-    // Count NFTs by collection
-    const collectionCounts = nfts.reduce((acc, nft) => {
-      acc[nft.collection] = (acc[nft.collection] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const collections = Object.entries(collectionCounts).map(([name, count]) => ({
-      name,
-      count
-    }));
+    // Update Discord roles
+    const roleUpdate = await updateDiscordRoles(discordId, assignedRoles);
 
     return {
-      isHolder: true,
-      collections,
-      buxBalance: balance ? Number(balance.balance) / 1_000_000_000 : 0,
-      totalNFTs: nfts.length,
-      totalValue: 0,
-      assignedRoles: []
+      isHolder: totalNFTs > 0 || buxBalance > 0,
+      collections: nftCounts.map(({ collection, _count }) => {
+        const config = NFT_THRESHOLDS[collection as CollectionName];
+        const whaleThreshold = hasWhaleConfig(config) ? config.whale.threshold : Infinity;
+        return {
+          name: collection as CollectionName,
+          count: _count,
+          isWhale: _count >= whaleThreshold
+        };
+      }),
+      buxBalance,
+      totalNFTs,
+      assignedRoles,
+      roleUpdate
     };
 
   } catch (error) {

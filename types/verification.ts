@@ -1,17 +1,23 @@
+import { CollectionName } from '../utils/roleConfig';
+
 export interface RoleUpdate {
   added: string[];
   removed: string[];
+  previousRoles: string[];
+  newRoles: string[];
+}
+
+export interface CollectionHoldings {
+  name: CollectionName;
+  count: number;
+  isWhale: boolean;
 }
 
 export interface VerificationResult {
   isHolder: boolean;
-  collections: Array<{
-    name: string;
-    count: number;
-  }>;
+  collections: CollectionHoldings[];
   buxBalance: number;
   totalNFTs: number;
-  totalValue: number;
   assignedRoles: string[];
   roleUpdate?: RoleUpdate;
 }

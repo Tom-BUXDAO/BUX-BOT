@@ -19,38 +19,50 @@ export default async function handler(
     }
 
     const { address } = req.body;
-    if (!address) {
-      return res.status(400).json({ error: 'Wallet address is required' });
+    if (!address || typeof address !== 'string') {
+      return res.status(400).json({ error: 'Valid wallet address is required' });
     }
 
     console.log('\n=== Starting Wallet Verification ===');
-    console.log('Request body:', req.body);
     console.log('User ID:', session.user.id);
     console.log('Wallet Address:', address);
 
-    // Get user's Discord ID
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { discordId: true }
     });
 
     if (!user?.discordId) {
-      return res.status(400).json({ error: 'Discord ID not found' });
+      return res.status(400).json({ error: 'Discord account not connected' });
     }
 
     const verificationResult = await verifyHolder(address, user.discordId);
-    console.log('Verification result:', verificationResult);
+    console.log('Verification completed successfully');
+
+    if (verificationResult.isHolder) {
+      await prisma.userWallet.upsert({
+        where: { address },
+        create: {
+          address,
+          userId: session.user.id
+        },
+        update: {
+          userId: session.user.id
+        }
+      });
+    }
 
     return res.status(200).json({ 
       success: true,
       verification: verificationResult 
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error verifying wallet:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return res.status(500).json({ 
       error: 'Failed to verify wallet',
-      details: error.message 
+      message: errorMessage
     });
   }
 } 

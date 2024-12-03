@@ -1,67 +1,63 @@
-import { NextApiResponse } from 'next';
-
-interface RateLimitConfig {
-  interval: number;
-  uniqueTokenPerInterval: number;
+interface RateLimit {
+  count: number;
+  firstRequest: number;
 }
 
-interface RateLimitStore {
-  [key: string]: {
-    timestamps: number[];
-    lastCleanup: number;
-  };
-}
+class RateLimiter {
+  private limits: Map<string, RateLimit>;
+  private readonly windowMs: number;
+  private readonly maxRequests: number;
 
-export const createRateLimit = (config: RateLimitConfig) => {
-  const store: RateLimitStore = {};
+  constructor() {
+    this.limits = new Map();
+    this.windowMs = 60 * 1000; // 1 minute
+    this.maxRequests = 5; // 5 requests per minute
+  }
 
-  const cleanup = (token: string, now: number) => {
-    const data = store[token];
-    if (!data) return;
+  async checkLimit(identifier: string): Promise<boolean> {
+    const now = Date.now();
+    const limit = this.limits.get(identifier);
 
-    // Only cleanup once per interval
-    if (now - data.lastCleanup < config.interval) return;
-
-    const windowStart = now - config.interval;
-    data.timestamps = data.timestamps.filter(ts => ts > windowStart);
-    data.lastCleanup = now;
-
-    // Remove empty entries
-    if (data.timestamps.length === 0) {
-      delete store[token];
-    }
-  };
-
-  return {
-    check: async (res: NextApiResponse, limit: number, token: string): Promise<boolean> => {
-      const now = Date.now();
-
-      // Initialize or get token data
-      if (!store[token]) {
-        store[token] = {
-          timestamps: [],
-          lastCleanup: now
-        };
-      }
-
-      // Clean up old timestamps
-      cleanup(token, now);
-
-      const data = store[token];
-      if (!data) return true;
-
-      // Check limit
-      if (data.timestamps.length >= limit) {
-        res.status(429).json({
-          error: 'Rate limit exceeded',
-          retryAfter: Math.ceil((data.timestamps[0] + config.interval - now) / 1000)
-        });
-        return false;
-      }
-
-      // Add new timestamp
-      data.timestamps.push(now);
+    if (!limit) {
+      // First request
+      this.limits.set(identifier, { count: 1, firstRequest: now });
       return true;
     }
-  };
-}; 
+
+    if (now - limit.firstRequest > this.windowMs) {
+      // Window expired, reset
+      this.limits.set(identifier, { count: 1, firstRequest: now });
+      return true;
+    }
+
+    if (limit.count >= this.maxRequests) {
+      return false;
+    }
+
+    // Increment counter
+    limit.count++;
+    this.limits.set(identifier, limit);
+    return true;
+  }
+
+  async clearLimit(identifier: string): Promise<void> {
+    this.limits.delete(identifier);
+  }
+
+  // Clean up old entries periodically
+  private cleanup(): void {
+    const now = Date.now();
+    for (const [key, limit] of this.limits.entries()) {
+      if (now - limit.firstRequest > this.windowMs) {
+        this.limits.delete(key);
+      }
+    }
+  }
+}
+
+export const rateLimit = new RateLimiter();
+
+// Run cleanup every minute
+setInterval(() => {
+  rateLimit['cleanup']();
+}, 60 * 1000); 
