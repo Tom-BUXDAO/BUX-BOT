@@ -1,38 +1,56 @@
 import { prisma } from '@/lib/prisma';
 
-export async function updateOwnership(walletAddress: string, discordId: string) {
-  try {
-    console.log(`Updating ownership records for wallet ${walletAddress} with Discord ID ${discordId}`);
+export async function updateOwnership(walletAddress: string, userId: string) {
+  console.log(`Updating ownership for wallet ${walletAddress} and user ${userId}`);
 
+  try {
+    // Get the user's Discord ID
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { discordId: true }
+    });
+
+    if (!user?.discordId) {
+      throw new Error('User Discord ID not found');
+    }
+
+    // Start a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
-      // Update NFT ownership
-      const nftUpdateResult = await tx.nFT.updateMany({
+      // Update NFTs owned by this wallet
+      await tx.nFT.updateMany({
         where: {
           ownerWallet: walletAddress,
-          ownerDiscordId: null // Only update unassigned NFTs
+          ownerDiscordId: null // Only update NFTs that don't have an owner set
         },
         data: {
-          ownerDiscordId: discordId
+          ownerDiscordId: user.discordId
         }
       });
 
-      // Update token balance ownership
-      const tokenUpdateResult = await tx.tokenBalance.updateMany({
+      // Update token balances for this wallet
+      await tx.tokenBalance.upsert({
         where: {
-          walletAddress: walletAddress,
-          ownerDiscordId: null // Only update unassigned balances
+          walletAddress: walletAddress
         },
-        data: {
-          ownerDiscordId: discordId
+        update: {
+          ownerDiscordId: user.discordId,
+          lastUpdated: new Date()
+        },
+        create: {
+          walletAddress: walletAddress,
+          ownerDiscordId: user.discordId,
+          balance: BigInt(0),
+          lastUpdated: new Date()
         }
       });
-
-      console.log(`Updated ${nftUpdateResult.count} NFTs and ${tokenUpdateResult.count} token balances`);
     });
+
+    // Log the update for monitoring
+    console.log(`Successfully updated ownership for wallet ${walletAddress} to Discord ID ${user.discordId}`);
 
     return true;
   } catch (error) {
-    console.error('Error updating ownership records:', error);
-    return false;
+    console.error('Error updating ownership:', error);
+    throw error;
   }
 } 
