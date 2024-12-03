@@ -5,7 +5,7 @@ interface WalletVerificationContextType {
   verifyResult: VerificationResult | null;
   setVerifyResult: (result: VerificationResult | null) => void;
   clearVerification: () => void;
-  verifyWallet: (address: string) => Promise<void>;
+  verifyWallet: (walletAddress: string) => Promise<void>;
 }
 
 const WalletVerificationContext = createContext<WalletVerificationContextType | undefined>(undefined);
@@ -17,12 +17,12 @@ export function WalletVerificationProvider({ children }: { children: React.React
     setVerifyResult(null);
   }, []);
 
-  const verifyWallet = useCallback(async (address: string) => {
+  const verifyWallet = useCallback(async (walletAddress: string) => {
     try {
       const response = await fetch('/api/verify-wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address })
+        body: JSON.stringify({ address: walletAddress })
       });
 
       if (!response.ok) {
