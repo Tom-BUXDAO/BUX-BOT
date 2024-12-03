@@ -24,13 +24,29 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // Create wallet connection first
-    await prisma.userWallet.create({
-      data: {
-        address,
-        userId
+    console.log('Creating wallet connection:', { userId, address });
+
+    try {
+      // Create wallet connection first
+      await prisma.userWallet.create({
+        data: {
+          address,
+          userId
+        }
+      });
+      console.log('Wallet connection created');
+    } catch (error: any) {
+      // Handle duplicate wallet error
+      if (error.code === 'P2002') {
+        console.log('Wallet already exists, updating owner');
+        await prisma.userWallet.update({
+          where: { address },
+          data: { userId }
+        });
+      } else {
+        throw error;
       }
-    });
+    }
 
     // Run verification after wallet is connected
     const user = await prisma.user.findUnique({
@@ -42,7 +58,21 @@ export default async function handler(
       return res.status(400).json({ error: 'Discord ID not found' });
     }
 
+    // Update NFT ownership
+    await prisma.nFT.updateMany({
+      where: { ownerWallet: address },
+      data: { ownerDiscordId: user.discordId }
+    });
+
+    // Update token balance ownership
+    await prisma.tokenBalance.updateMany({
+      where: { walletAddress: address },
+      data: { ownerDiscordId: user.discordId }
+    });
+
+    console.log('Running verification');
     const verificationResult = await verifyHolder(address, user.discordId);
+    console.log('Verification result:', verificationResult);
     
     return res.status(200).json({ 
       success: true,
@@ -50,11 +80,7 @@ export default async function handler(
     });
 
   } catch (error: any) {
-    // Handle duplicate wallet error
-    if (error.code === 'P2002') {
-      return res.status(400).json({ error: 'Wallet already connected to another user' });
-    }
-    console.error('Error updating wallet:', error);
+    console.error('Error in update-wallet:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 } 
