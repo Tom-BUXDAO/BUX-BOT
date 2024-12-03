@@ -2,7 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
-import { updateOwnership } from '@/utils/updateOwnership';
 
 export default async function handler(
   req: NextApiRequest,
@@ -28,11 +27,17 @@ export default async function handler(
     console.log(`User ID: ${userId}`);
     console.log(`Wallet Address: ${address}`);
 
-    // First check if wallet exists
-    const existingWallet = await prisma.userWallet.findUnique({
-      where: { address }
+    // Get user's Discord ID
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { discordId: true }
     });
-    console.log('Existing wallet:', existingWallet);
+
+    if (!user?.discordId) {
+      return res.status(400).json({ error: 'Discord ID not found' });
+    }
+
+    console.log(`Discord ID: ${user.discordId}`);
 
     // Start a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
@@ -49,28 +54,28 @@ export default async function handler(
       });
       console.log('Wallet connection created/updated:', wallet);
 
-      // Now update NFT ownership
+      // Now update NFT ownership with Discord ID
       const nftResult = await tx.nFT.updateMany({
         where: {
           ownerWallet: address
         },
         data: {
-          ownerDiscordId: session.user.id
+          ownerDiscordId: user.discordId // Use Discord ID instead of user ID
         }
       });
-      console.log(`Updated ${nftResult.count} NFTs`);
+      console.log(`Updated ${nftResult.count} NFTs with Discord ID ${user.discordId}`);
 
-      // Update token balance
+      // Update token balance with Discord ID
       const tokenResult = await tx.tokenBalance.upsert({
         where: { walletAddress: address },
         create: {
           walletAddress: address,
-          ownerDiscordId: session.user.id,
+          ownerDiscordId: user.discordId, // Use Discord ID
           balance: BigInt(0),
           lastUpdated: new Date()
         },
         update: {
-          ownerDiscordId: session.user.id,
+          ownerDiscordId: user.discordId, // Use Discord ID
           lastUpdated: new Date()
         }
       });
