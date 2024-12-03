@@ -4,11 +4,11 @@ import { updateDiscordRoles } from './discordRoles';
 import type { VerificationResult } from '../types/verification';
 
 // Type guard for collections with whale thresholds
-function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config is {
+function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName] | undefined): config is {
   holder: string | undefined;
   whale: { roleId: string | undefined; threshold: number };
 } {
-  return 'whale' in config && config.whale !== undefined;
+  return config !== undefined && 'whale' in config && config.whale !== undefined;
 }
 
 export async function verifyHolder(
@@ -24,9 +24,16 @@ export async function verifyHolder(
         data: { ownerDiscordId: discordId }
       }),
       // Update token balance ownership
-      prisma.tokenBalance.update({
+      prisma.tokenBalance.upsert({
         where: { walletAddress },
-        data: { ownerDiscordId: discordId }
+        create: {
+          walletAddress,
+          ownerDiscordId: discordId,
+          balance: BigInt(0)
+        },
+        update: {
+          ownerDiscordId: discordId
+        }
       })
     ]);
 
