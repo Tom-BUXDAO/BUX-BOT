@@ -1,5 +1,13 @@
 import { prisma } from '@/lib/prisma';
 
+const MAIN_COLLECTIONS = [
+  'money_monsters3d',
+  'aibitbots',
+  'candy_bots',
+  'fcked_catz',
+  'squirrels'
+];
+
 export async function verifyHolder(walletAddress: string, discordId: string) {
   console.log(`Starting verification for wallet ${walletAddress} and Discord ID ${discordId}`);
   
@@ -48,16 +56,14 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
 
     console.log(`Total BUX balance: ${standardBuxBalance}`);
 
-    // Calculate total value (BUX balance in USD equivalent)
-    const totalValue = standardBuxBalance * 0.01; // Assuming 1 BUX = $0.01
-
     // Count NFTs by collection
-    const collections = Object.entries(
-      nfts.reduce((acc, nft) => {
-        acc[nft.collection] = (acc[nft.collection] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
-    ).map(([name, count]) => ({ name, count }));
+    const collectionCounts = nfts.reduce((acc, nft) => {
+      acc[nft.collection] = (acc[nft.collection] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const collections = Object.entries(collectionCounts)
+      .map(([name, count]) => ({ name, count }));
 
     console.log('NFT collections:', collections);
 
@@ -70,11 +76,19 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     else if (standardBuxBalance >= 10000) assignedRoles.push('1093606579355525252'); // BUILDER
     else if (standardBuxBalance >= 2500) assignedRoles.push('1095034117877399686'); // BEGINNER
 
-    // Collection roles
+    // Check if user has all 5 main collections
+    const hasAllMainCollections = MAIN_COLLECTIONS.every(collection => 
+      collectionCounts[collection] && collectionCounts[collection] > 0
+    );
+
+    if (hasAllMainCollections) {
+      assignedRoles.push('1095033899492573274'); // BUXDAO 5 role
+    }
+
+    // Individual collection roles
     collections.forEach(({ name, count }) => {
       switch(name) {
         case 'money_monsters3d':
-          assignedRoles.push('1095033899492573274'); // Base role
           if (count >= 10) assignedRoles.push('1300969268665389157'); // Whale role
           break;
         case 'aibitbots':
@@ -105,7 +119,7 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       collections,
       buxBalance: standardBuxBalance,
       totalNFTs: nfts.length,
-      totalValue: totalValue,
+      totalValue: standardBuxBalance * 0.01,
       assignedRoles
     };
 
