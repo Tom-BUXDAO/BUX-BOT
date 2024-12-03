@@ -27,9 +27,12 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
         }
       },
       select: {
-        collection: true
+        collection: true,
+        ownerDiscordId: true
       }
     });
+
+    console.log('Found NFTs:', nfts);
 
     // Get BUX balance for all wallets
     const tokenBalances = await prisma.tokenBalance.findMany({
@@ -47,8 +50,6 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
 
     // Calculate total value (BUX balance in USD equivalent)
     const totalValue = standardBuxBalance * 0.01; // Assuming 1 BUX = $0.01
-
-    console.log('Total value:', totalValue);
 
     // Count NFTs by collection
     const collections = Object.entries(
@@ -104,7 +105,7 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       collections,
       buxBalance: standardBuxBalance,
       totalNFTs: nfts.length,
-      totalValue: standardBuxBalance * 0.01,
+      totalValue: totalValue,
       assignedRoles
     };
 

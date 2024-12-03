@@ -34,49 +34,47 @@ export default async function handler(
     });
     console.log('Existing wallet:', existingWallet);
 
-    // Check NFTs before update
-    const nftsBefore = await prisma.nFT.findMany({
-      where: { ownerWallet: address }
-    });
-    console.log(`NFTs before update: ${nftsBefore.length}`);
-
-    // Check token balance before update
-    const balanceBefore = await prisma.tokenBalance.findUnique({
-      where: { walletAddress: address }
-    });
-    console.log('Token balance before:', balanceBefore);
-
     // Start a transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
-      // Add wallet to user with proper typing
+    await prisma.$transaction(async (tx) => {
+      // First, create or update the wallet connection
       const wallet = await tx.userWallet.upsert({
-        where: {
-          address: address
+        where: { address },
+        create: {
+          address,
+          userId,
         },
         update: {
-          userId: userId
+          userId,
         },
-        create: {
-          address: address as string,
-          userId: userId as string
+      });
+      console.log('Wallet connection created/updated:', wallet);
+
+      // Now update NFT ownership
+      const nftResult = await tx.nFT.updateMany({
+        where: {
+          ownerWallet: address
+        },
+        data: {
+          ownerDiscordId: session.user.id
         }
       });
-      console.log('Wallet connection updated:', wallet);
+      console.log(`Updated ${nftResult.count} NFTs`);
 
-      // Update ownership records with guaranteed non-null userId
-      await updateOwnership(address, userId);
-
-      // Check NFTs after update
-      const nftsAfter = await tx.nFT.findMany({
-        where: { ownerWallet: address }
+      // Update token balance
+      const tokenResult = await tx.tokenBalance.upsert({
+        where: { walletAddress: address },
+        create: {
+          walletAddress: address,
+          ownerDiscordId: session.user.id,
+          balance: BigInt(0),
+          lastUpdated: new Date()
+        },
+        update: {
+          ownerDiscordId: session.user.id,
+          lastUpdated: new Date()
+        }
       });
-      console.log(`NFTs after update: ${nftsAfter.length}`);
-
-      // Check token balance after update
-      const balanceAfter = await tx.tokenBalance.findUnique({
-        where: { walletAddress: address }
-      });
-      console.log('Token balance after:', balanceAfter);
+      console.log('Token balance record updated:', tokenResult);
     });
 
     console.log('=== Wallet Connection Process Complete ===\n');
