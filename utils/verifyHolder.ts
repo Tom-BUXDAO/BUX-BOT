@@ -71,10 +71,15 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     const assignedRoles = [];
     
     // BUX balance roles
-    if (standardBuxBalance >= 50000) assignedRoles.push('1095363984581984357'); // BANKER
-    else if (standardBuxBalance >= 25000) assignedRoles.push('1093607187454111825'); // SAVER
-    else if (standardBuxBalance >= 10000) assignedRoles.push('1093606579355525252'); // BUILDER
-    else if (standardBuxBalance >= 2500) assignedRoles.push('1095034117877399686'); // BEGINNER
+    if (standardBuxBalance >= Number(process.env.BUX_BANKER_THRESHOLD)) {
+      assignedRoles.push(process.env.BUX_BANKER_ROLE_ID!);
+    } else if (standardBuxBalance >= Number(process.env.BUX_SAVER_THRESHOLD)) {
+      assignedRoles.push(process.env.BUX_SAVER_ROLE_ID!);
+    } else if (standardBuxBalance >= Number(process.env.BUX_BUILDER_THRESHOLD)) {
+      assignedRoles.push(process.env.BUX_BUILDER_ROLE_ID!);
+    } else if (standardBuxBalance >= Number(process.env.BUX_BEGINNER_THRESHOLD)) {
+      assignedRoles.push(process.env.BUX_BEGINNER_ROLE_ID!);
+    }
 
     // Check if user has all 5 main collections
     const hasAllMainCollections = MAIN_COLLECTIONS.every(collection => 
@@ -82,32 +87,38 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     );
 
     if (hasAllMainCollections) {
-      assignedRoles.push('1095033899492573274'); // BUXDAO 5 role
+      assignedRoles.push(process.env.BUXDAO_5_ROLE_ID!);
     }
 
     // Individual collection roles
     collections.forEach(({ name, count }) => {
       switch(name) {
         case 'money_monsters3d':
-          if (count >= 10) assignedRoles.push('1300969268665389157'); // Whale role
+          assignedRoles.push(process.env.MONEY_MONSTERS3D_ROLE_ID!);
+          if (count >= Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD)) {
+            assignedRoles.push(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!);
+          }
           break;
         case 'aibitbots':
-          assignedRoles.push('1300968964276621313');
+          assignedRoles.push(process.env.AI_BITBOTS_ROLE_ID!);
+          if (count >= Number(process.env.AI_BITBOTS_WHALE_THRESHOLD)) {
+            assignedRoles.push(process.env.AI_BITBOTS_WHALE_ROLE_ID!);
+          }
           break;
         case 'candy_bots':
-          assignedRoles.push('1300969147441610773');
-          break;
-        case 'money_monsters':
-          assignedRoles.push('1093607056696692828');
+          assignedRoles.push(process.env.CANDY_BOTS_ROLE_ID!);
           break;
         case 'fcked_catz':
-          assignedRoles.push('1093606438674382858');
+          assignedRoles.push(process.env.FCKED_CATZ_ROLE_ID!);
+          if (count >= Number(process.env.FCKED_CATZ_WHALE_THRESHOLD)) {
+            assignedRoles.push(process.env.FCKED_CATZ_WHALE_ROLE_ID!);
+          }
           break;
         case 'squirrels':
-          assignedRoles.push('1095033759612547133');
+          assignedRoles.push(process.env.SQUIRRELS_ROLE_ID!);
           break;
         case 'energy_apes':
-          assignedRoles.push('1300968613179686943');
+          assignedRoles.push(process.env.ENERGY_APES_ROLE_ID!);
           break;
       }
     });
