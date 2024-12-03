@@ -18,23 +18,19 @@ export default async function handler(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = session.user.id;
     const { address } = req.body;
     if (!address) {
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // Create wallet connection first
-    await prisma.userWallet.create({
-      data: {
-        address,
-        userId
-      }
-    });
+    console.log('\n=== Starting Wallet Verification ===');
+    console.log('Request body:', req.body);
+    console.log('User ID:', session.user.id);
+    console.log('Wallet Address:', address);
 
-    // Run verification after wallet is connected
+    // Get user's Discord ID
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.user.id },
       select: { discordId: true }
     });
 
@@ -43,18 +39,18 @@ export default async function handler(
     }
 
     const verificationResult = await verifyHolder(address, user.discordId);
-    
+    console.log('Verification result:', verificationResult);
+
     return res.status(200).json({ 
       success: true,
       verification: verificationResult 
     });
 
   } catch (error: any) {
-    // Handle duplicate wallet error
-    if (error.code === 'P2002') {
-      return res.status(400).json({ error: 'Wallet already connected to another user' });
-    }
-    console.error('Error updating wallet:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error verifying wallet:', error);
+    return res.status(500).json({ 
+      error: 'Failed to verify wallet',
+      details: error.message 
+    });
   }
 } 
