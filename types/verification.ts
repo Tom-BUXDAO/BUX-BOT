@@ -3,7 +3,7 @@ export interface RoleUpdate {
   removed: string[];
 }
 
-export interface VerifyResult {
+export interface VerificationResult {
   isHolder: boolean;
   collections: Array<{
     name: string;
@@ -14,4 +14,13 @@ export interface VerifyResult {
   totalValue: number;
   assignedRoles: string[];
   roleUpdate?: RoleUpdate;
+}
+
+export interface WalletVerification {
+  id: string;
+  walletAddress: string;
+  userId: string;
+  createdAt: Date;
+  status: 'pending' | 'completed' | 'failed';
+  result: VerificationResult | null;
 } 
