@@ -1,73 +1,52 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
+import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
+import type { User } from 'next-auth';
+import type { Session } from 'next-auth';
+import type { Account } from 'next-auth';
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
       clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-      authorization: { params: { scope: 'identify guilds' } }
+      authorization: { params: { scope: 'identify guilds' } },
     }),
   ],
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  cookies: {
-    sessionToken: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production'
-      }
-    }
-  },
   callbacks: {
-    async jwt({ token, account }) {
-      if (account) {
-        token.discordId = account.providerAccountId;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub;
-        session.user.discordId = token.discordId as string;
-      }
-      return session;
-    },
-    async signIn({ user, account }) {
+    async signIn({ user, account }: { user: User; account: Account | null }) {
       if (account?.provider === 'discord') {
-        try {
-          await prisma.user.upsert({
-            where: {
-              discordId: account.providerAccountId,
-            },
-            update: {
-              discordName: user.name || 'Unknown',
-            },
-            create: {
-              discordId: account.providerAccountId,
-              discordName: user.name || 'Unknown',
-            },
-          });
-          return true;
-        } catch (error) {
-          console.error('Error saving user to database:', error);
-          return false;
-        }
+        await prisma.user.upsert({
+          where: { id: user.id },
+          create: {
+            id: user.id,
+            discordId: user.id,
+            discordName: user.name || 'Unknown'
+          },
+          update: {
+            discordId: user.id,
+            discordName: user.name || 'Unknown'
+          }
+        });
       }
       return true;
     },
+    async session({ session, user }: { session: Session; user: User }) {
+      if (session.user) {
+        session.user.id = user.id;
+      }
+      return session;
+    }
   },
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: '/',
+    error: '/auth/error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: 'database' as const
+  }
 };
 
 export default NextAuth(authOptions); 

@@ -21,6 +21,7 @@
     "sync-discord-ids": "DATABASE_URL=\"postgresql://bux_dao_owner:vEShINmdr61J@ep-purple-wave-a2nm1276.eu-central-1.aws.neon.tech/bux_dao?sslmode=require\" NODE_ENV=development ts-node scripts/syncOwnerDiscordIds.ts"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.7.4",
     "@prisma/client": "^5.0.0",
     "@shyft-to/js": "^0.2.40",
     "@solana/spl-token": "^0.4.9",
