@@ -38,26 +38,49 @@ export default async function handler(
       return res.status(400).json({ error: 'Discord ID not found' });
     }
 
-    // Start a transaction for all updates
-    await prisma.$transaction(async (tx) => {
-      // 1. Add wallet to userWallets table
-      await tx.userWallet.upsert({
-        where: { address },
-        create: { address, userId },
-        update: { userId }
-      });
+    console.log(`Discord ID: ${user.discordId}`);
 
-      // 2. Update NFT ownership for this wallet
-      await tx.nFT.updateMany({
+    // First, create the wallet connection
+    const wallet = await prisma.userWallet.create({
+      data: {
+        address: address,
+        userId: userId
+      }
+    });
+    console.log('Created wallet connection:', wallet);
+
+    // Now update NFTs and token balance
+    const [nftResult, tokenResult] = await Promise.all([
+      // Update NFT ownership
+      prisma.nFT.updateMany({
         where: { ownerWallet: address },
         data: { ownerDiscordId: user.discordId }
-      });
-
-      // 3. Update token balance ownership for this wallet
-      await tx.tokenBalance.updateMany({
+      }),
+      // Update token balance
+      prisma.tokenBalance.updateMany({
         where: { walletAddress: address },
         data: { ownerDiscordId: user.discordId }
-      });
+      })
+    ]);
+
+    console.log('Update results:', {
+      nfts: nftResult,
+      tokenBalance: tokenResult
+    });
+
+    // Verify the updates
+    const [updatedNFTs, updatedBalance] = await Promise.all([
+      prisma.nFT.findMany({
+        where: { ownerWallet: address }
+      }),
+      prisma.tokenBalance.findUnique({
+        where: { walletAddress: address }
+      })
+    ]);
+
+    console.log('Verification:', {
+      nfts: updatedNFTs.length,
+      balance: updatedBalance
     });
 
     // Run verification with updated data
