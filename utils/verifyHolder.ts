@@ -86,12 +86,17 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
     console.log('Required collections:', MAIN_COLLECTIONS);
     console.log('User collections:', collectionCounts);
     
-    let missingCollections = MAIN_COLLECTIONS.filter(collection => 
-      !collectionCounts[collection] || collectionCounts[collection] === 0
-    );
+    // Only check for missing collections if user has any NFTs at all
+    if (Object.keys(collectionCounts).length === 0) {
+      console.log('User has no NFTs, not eligible for BUXDAO 5');
+      missingCollections = MAIN_COLLECTIONS; // All collections are missing
+    } else {
+      missingCollections = MAIN_COLLECTIONS.filter(collection => 
+        !collectionCounts[collection] || collectionCounts[collection] === 0
+      );
+    }
     
     console.log('Missing collections:', missingCollections);
-
     const hasAllMainCollections = missingCollections.length === 0;
     console.log('Has all main collections?', hasAllMainCollections);
 
