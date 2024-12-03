@@ -1,6 +1,20 @@
 import { prisma } from '@/lib/prisma';
 
-export async function verifyHolder(walletAddress: string, discordId: string) {
+interface Collection {
+  name: string;
+  count: number;
+}
+
+interface VerificationResult {
+  isHolder: boolean;
+  collections: Collection[];
+  buxBalance: number;
+  totalNFTs: number;
+  totalValue: number;
+  assignedRoles: string[];
+}
+
+export async function verifyHolder(walletAddress: string, discordId: string): Promise<VerificationResult> {
   try {
     // Get NFTs and balance
     const nfts = await prisma.nFT.findMany({
@@ -29,16 +43,24 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
       };
     }
 
-    // Rest of your role assignment logic...
-    const assignedRoles: string[] = [];
-    
+    // Count NFTs by collection
+    const collectionCounts = nfts.reduce((acc, nft) => {
+      acc[nft.collection] = (acc[nft.collection] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const collections = Object.entries(collectionCounts).map(([name, count]) => ({
+      name,
+      count
+    }));
+
     return {
       isHolder: true,
-      collections: [],
+      collections,
       buxBalance: balance ? Number(balance.balance) / 1_000_000_000 : 0,
       totalNFTs: nfts.length,
       totalValue: 0,
-      assignedRoles
+      assignedRoles: []
     };
 
   } catch (error) {
