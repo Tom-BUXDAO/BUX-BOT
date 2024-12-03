@@ -6,8 +6,11 @@ import type { User } from 'next-auth';
 import type { Session } from 'next-auth';
 import type { Account } from 'next-auth';
 
+// Initialize PrismaAdapter with prisma client
+const adapter = PrismaAdapter(prisma);
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter,
   providers: [
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID!,
@@ -18,18 +21,23 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }: { user: User; account: Account | null }) {
       if (account?.provider === 'discord') {
-        await prisma.user.upsert({
-          where: { id: user.id },
-          create: {
-            id: user.id,
-            discordId: user.id,
-            discordName: user.name || 'Unknown'
-          },
-          update: {
-            discordId: user.id,
-            discordName: user.name || 'Unknown'
-          }
-        });
+        try {
+          await prisma.user.upsert({
+            where: { id: user.id },
+            create: {
+              id: user.id,
+              discordId: user.id,
+              discordName: user.name || 'Unknown'
+            },
+            update: {
+              discordId: user.id,
+              discordName: user.name || 'Unknown'
+            }
+          });
+        } catch (error) {
+          console.error('Error in signIn callback:', error);
+          return false;
+        }
       }
       return true;
     },
@@ -44,6 +52,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/',
     error: '/auth/error',
   },
+  debug: process.env.NODE_ENV === 'development',
   session: {
     strategy: 'database' as const
   }
