@@ -2,50 +2,67 @@ import { prisma } from '../lib/prisma';
 
 async function updateNFTOwnership() {
   try {
-    // Get all user wallets with their associated Discord IDs
-    const userWallets = await prisma.userWallet.findMany({
+    // First get all users
+    const users = await prisma.user.findMany({
       include: {
-        user: {
-          select: {
-            discordId: true
-          }
-        }
+        wallets: true
       }
     });
 
-    // Update NFTs for each wallet
-    for (const wallet of userWallets) {
-      console.log(`Updating NFTs for wallet ${wallet.address}`);
+    console.log(`Found ${users.length} users`);
+
+    for (const user of users) {
+      console.log(`\nProcessing user ${user.discordName} (${user.discordId})`);
+      console.log(`Has ${user.wallets.length} wallets`);
+
+      // Get all NFTs owned by any of this user's wallets
+      const walletAddresses = user.wallets.map(w => w.address);
       
-      await prisma.nFT.updateMany({
+      if (walletAddresses.length === 0) {
+        console.log('No wallets found for user');
+        continue;
+      }
+
+      console.log('Wallet addresses:', walletAddresses);
+
+      // Update NFTs
+      const nftUpdateResult = await prisma.nFT.updateMany({
         where: {
-          ownerWallet: wallet.address,
+          ownerWallet: {
+            in: walletAddresses
+          },
           ownerDiscordId: null // Only update NFTs that don't have an owner set
         },
         data: {
-          ownerDiscordId: wallet.user.discordId
+          ownerDiscordId: user.discordId
         }
       });
 
-      // Also update token balances
-      await prisma.tokenBalance.upsert({
-        where: {
-          walletAddress: wallet.address
-        },
-        update: {
-          ownerDiscordId: wallet.user.discordId,
-          lastUpdated: new Date()
-        },
-        create: {
-          walletAddress: wallet.address,
-          ownerDiscordId: wallet.user.discordId,
-          balance: BigInt(0),
-          lastUpdated: new Date()
-        }
-      });
+      console.log(`Updated ${nftUpdateResult.count} NFTs`);
+
+      // Update token balances
+      for (const address of walletAddresses) {
+        await prisma.tokenBalance.upsert({
+          where: {
+            walletAddress: address
+          },
+          update: {
+            ownerDiscordId: user.discordId,
+            lastUpdated: new Date()
+          },
+          create: {
+            walletAddress: address,
+            ownerDiscordId: user.discordId,
+            balance: BigInt(0),
+            lastUpdated: new Date()
+          }
+        });
+      }
+
+      console.log('Updated token balances');
     }
 
-    console.log('NFT ownership update completed');
+    console.log('\nNFT ownership update completed');
   } catch (error) {
     console.error('Error updating NFT ownership:', error);
     throw error;
