@@ -10,6 +10,15 @@ function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName] | undefine
   return config !== undefined && 'whale' in config && config.whale !== undefined;
 }
 
+// Normalize collection names to match config
+function normalizeCollectionName(dbName: string): CollectionName {
+  const nameMap: Record<string, CollectionName> = {
+    'money_monsters3d': 'Money Monsters 3D',
+    // Add other mappings as needed
+  };
+  return nameMap[dbName] || dbName as CollectionName;
+}
+
 export async function verifyHolder(
   walletAddress: string, 
   discordId: string
@@ -60,7 +69,8 @@ export async function verifyHolder(
     // Add collection roles
     nftCounts.forEach(({ collection, _count }) => {
       console.log('Checking collection:', collection); // Debug log
-      const config = NFT_THRESHOLDS[collection as CollectionName];
+      const normalizedName = normalizeCollectionName(collection);
+      const config = NFT_THRESHOLDS[normalizedName];
       console.log('Collection config:', config); // Debug log
       
       if (config?.holder) {

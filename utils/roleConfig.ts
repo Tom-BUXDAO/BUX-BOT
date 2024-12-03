@@ -1,3 +1,5 @@
+import { CollectionName } from '../types/verification';
+
 interface WhaleConfig {
   threshold: number;
   roleId: string | undefined;
@@ -8,7 +10,14 @@ interface CollectionConfig {
   whale?: WhaleConfig;
 }
 
-export const NFT_THRESHOLDS = {
+export const NFT_THRESHOLDS: Record<CollectionName, CollectionConfig> = {
+  'Money Monsters 3D': {
+    holder: process.env.MONEY_MONSTERS3D_ROLE_ID,
+    whale: {
+      roleId: process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID,
+      threshold: Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD)
+    }
+  },
   'AI BitBots': {
     holder: process.env.AI_BITBOTS_ROLE_ID,
     whale: {
@@ -28,13 +37,6 @@ export const NFT_THRESHOLDS = {
     whale: {
       roleId: process.env.MONEY_MONSTERS_WHALE_ROLE_ID,
       threshold: Number(process.env.MONEY_MONSTERS_WHALE_THRESHOLD)
-    }
-  },
-  'Money Monsters 3D': {
-    holder: process.env.MONEY_MONSTERS3D_ROLE_ID,
-    whale: {
-      roleId: process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID,
-      threshold: Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD)
     }
   },
   'CelebCatz': {
