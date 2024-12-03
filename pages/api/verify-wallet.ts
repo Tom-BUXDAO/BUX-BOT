@@ -13,32 +13,43 @@ export default async function handler(
   }
 
   try {
+    // Log request details
+    console.log('\n=== Starting Wallet Verification ===');
+    console.log('Request body:', req.body);
+
+    // Check session
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
+      console.log('No session found');
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    console.log('User ID:', session.user.id);
 
+    // Validate wallet address
     const { address } = req.body;
     if (!address || typeof address !== 'string') {
+      console.log('Invalid wallet address:', address);
       return res.status(400).json({ error: 'Valid wallet address is required' });
     }
-
-    console.log('\n=== Starting Wallet Verification ===');
-    console.log('User ID:', session.user.id);
     console.log('Wallet Address:', address);
 
+    // Get Discord ID
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { discordId: true }
     });
 
     if (!user?.discordId) {
+      console.log('No Discord ID found for user:', session.user.id);
       return res.status(400).json({ error: 'Discord account not connected' });
     }
+    console.log('Discord ID:', user.discordId);
 
+    // Verify wallet
     const verificationResult = await verifyHolder(address, user.discordId);
-    console.log('Verification completed successfully');
+    console.log('Verification result:', verificationResult);
 
+    // Update user wallet if verification successful
     if (verificationResult.isHolder) {
       await prisma.userWallet.upsert({
         where: { address },
@@ -50,6 +61,7 @@ export default async function handler(
           userId: session.user.id
         }
       });
+      console.log('Updated user wallet');
     }
 
     return res.status(200).json({ 
