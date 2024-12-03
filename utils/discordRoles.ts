@@ -2,7 +2,7 @@ import { Client, GuildMember, GatewayIntentBits, Role } from 'discord.js';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
-const RATE_LIMIT_DELAY = 1000; // 1 second between role operations
+const RATE_LIMIT_DELAY = 1000;
 
 // Create a singleton client with proper intents
 let client: Client | null = null;
@@ -40,11 +40,11 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
     const guild = await client.guilds.fetch(GUILD_ID!);
     const member = await guild.members.fetch(discordId);
 
-    // Get ALL current roles, not just the ones we manage
+    // Get ALL current roles
     const currentRoles = member.roles.cache.map((role: Role) => role.id);
-    console.log('All current Discord roles:', currentRoles);
+    console.log('Current Discord roles:', currentRoles);
 
-    // Get list of roles we manage from env
+    // Get list of roles we manage
     const managedRoleIds = [
       process.env.BUX_BANKER_ROLE_ID,
       process.env.BUX_SAVER_ROLE_ID,
@@ -64,12 +64,34 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
 
     console.log('Managed role IDs:', managedRoleIds);
 
-    // Only remove roles that we manage
+    // If no roles assigned, remove all managed roles
+    if (assignedRoles.length === 0) {
+      const rolesToRemove = currentRoles.filter(role => managedRoleIds.includes(role));
+      console.log('Removing all managed roles:', rolesToRemove);
+
+      for (const roleId of rolesToRemove) {
+        try {
+          await member.roles.remove(roleId);
+          console.log(`Removed role ${roleId} from ${discordId}`);
+          await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
+        } catch (error) {
+          console.error(`Error removing role ${roleId}:`, error);
+        }
+      }
+
+      return {
+        added: [],
+        removed: rolesToRemove,
+        previousRoles: currentRoles,
+        newRoles: member.roles.cache.map((role: Role) => role.id)
+      };
+    }
+
+    // Normal role updates if roles are assigned
     const rolesToRemove = currentRoles.filter(role => 
       managedRoleIds.includes(role) && !assignedRoles.includes(role)
     );
 
-    // Only add roles that we manage
     const rolesToAdd = assignedRoles.filter(role => 
       managedRoleIds.includes(role) && !currentRoles.includes(role)
     );
@@ -77,7 +99,7 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
     console.log('Roles to remove:', rolesToRemove);
     console.log('Roles to add:', rolesToAdd);
 
-    // Remove roles first
+    // Process removals
     for (const roleId of rolesToRemove) {
       try {
         await member.roles.remove(roleId);
@@ -88,7 +110,7 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
       }
     }
 
-    // Then add new roles
+    // Process additions
     for (const roleId of rolesToAdd) {
       try {
         await member.roles.add(roleId);
@@ -99,7 +121,7 @@ export async function updateDiscordRoles(discordId: string, assignedRoles: strin
       }
     }
 
-    // Get final roles after updates
+    // Get final state
     const finalRoles = member.roles.cache.map((role: Role) => role.id);
 
     return {
