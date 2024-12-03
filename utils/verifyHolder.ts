@@ -61,6 +61,19 @@ export async function verifyHolder(walletAddress: string, discordId: string) {
 
     console.log('NFT collections:', collections);
 
+    // Return empty array if no holdings
+    if (nfts.length === 0 && standardBuxBalance === 0) {
+      console.log('No holdings found, returning empty roles array');
+      return {
+        isHolder: false,
+        collections: [],
+        buxBalance: 0,
+        totalNFTs: 0,
+        totalValue: 0,
+        assignedRoles: []
+      };
+    }
+
     // Determine roles based on holdings
     const assignedRoles: string[] = [];
     
