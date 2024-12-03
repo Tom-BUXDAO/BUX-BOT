@@ -17,17 +17,22 @@ export async function updateOwnership(walletAddress: string, userId: string) {
     // Start a transaction to ensure data consistency
     await prisma.$transaction(async (tx) => {
       // Update NFTs owned by this wallet
-      await tx.nFT.updateMany({
+      const nftResult = await tx.nFT.updateMany({
         where: {
-          ownerWallet: walletAddress,
-          ownerDiscordId: null // Only update NFTs that don't have an owner set
+          ownerWallet: walletAddress
         },
         data: {
           ownerDiscordId: user.discordId
         }
       });
+      console.log(`Updated ${nftResult.count} NFTs for wallet ${walletAddress}`);
 
-      // Update token balances for this wallet
+      // Get current token balance
+      const tokenBalance = await tx.tokenBalance.findUnique({
+        where: { walletAddress: walletAddress }
+      });
+
+      // Update or create token balance record
       await tx.tokenBalance.upsert({
         where: {
           walletAddress: walletAddress
@@ -39,15 +44,14 @@ export async function updateOwnership(walletAddress: string, userId: string) {
         create: {
           walletAddress: walletAddress,
           ownerDiscordId: user.discordId,
-          balance: BigInt(0),
+          balance: tokenBalance?.balance || BigInt(0),
           lastUpdated: new Date()
         }
       });
+      console.log(`Updated token balance for wallet ${walletAddress}`);
     });
 
-    // Log the update for monitoring
     console.log(`Successfully updated ownership for wallet ${walletAddress} to Discord ID ${user.discordId}`);
-
     return true;
   } catch (error) {
     console.error('Error updating ownership:', error);
