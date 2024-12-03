@@ -1,48 +1,29 @@
 import { createContext, useContext, useState, useCallback } from 'react';
-import { VerifyResult } from '@/types/verification';
+import { VerificationResult } from '@/types/verification';
 
 interface WalletVerificationContextType {
-  verifyResult: VerifyResult | null;
-  verifyWallet: (walletAddress: string) => Promise<void>;
-  isVerifying: boolean;
-  error: string | null;
+  verifyResult: VerificationResult | null;
+  setVerifyResult: (result: VerificationResult | null) => void;
+  clearVerification: () => void;
 }
 
 const WalletVerificationContext = createContext<WalletVerificationContextType | undefined>(undefined);
 
 export function WalletVerificationProvider({ children }: { children: React.ReactNode }) {
-  const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [verifyResult, setVerifyResult] = useState<VerificationResult | null>(null);
 
-  const verifyWallet = useCallback(async (walletAddress: string) => {
-    setIsVerifying(true);
-    setError(null);
-    
-    try {
-      const response = await fetch('/api/verify-wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to verify wallet');
-      }
-
-      const result = await response.json();
-      console.log('Verification result:', result);
-      setVerifyResult(result); // This triggers UI updates
-    } catch (err) {
-      console.error('Error verifying wallet:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsVerifying(false);
-    }
+  const clearVerification = useCallback(() => {
+    setVerifyResult(null);
   }, []);
 
   return (
-    <WalletVerificationContext.Provider value={{ verifyResult, verifyWallet, isVerifying, error }}>
+    <WalletVerificationContext.Provider 
+      value={{ 
+        verifyResult, 
+        setVerifyResult, 
+        clearVerification 
+      }}
+    >
       {children}
     </WalletVerificationContext.Provider>
   );
