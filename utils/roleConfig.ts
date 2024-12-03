@@ -1,5 +1,3 @@
-import { CollectionName } from '../types/collections';
-
 interface WhaleConfig {
   threshold: number;
   roleId: string | undefined;
