@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
+import { verifyHolder } from '@/utils/verifyHolder';
 
 export default async function handler(
   req: NextApiRequest,
@@ -60,7 +61,7 @@ export default async function handler(
           ownerWallet: address
         },
         data: {
-          ownerDiscordId: user.discordId // Use Discord ID instead of user ID
+          ownerDiscordId: user.discordId
         }
       });
       console.log(`Updated ${nftResult.count} NFTs with Discord ID ${user.discordId}`);
@@ -70,20 +71,26 @@ export default async function handler(
         where: { walletAddress: address },
         create: {
           walletAddress: address,
-          ownerDiscordId: user.discordId, // Use Discord ID
-          balance: BigInt(0),
+          ownerDiscordId: user.discordId,
+          balance: BigInt(20000000000), // Set initial balance for testing
           lastUpdated: new Date()
         },
         update: {
-          ownerDiscordId: user.discordId, // Use Discord ID
+          ownerDiscordId: user.discordId,
           lastUpdated: new Date()
         }
       });
       console.log('Token balance record updated:', tokenResult);
     });
 
-    console.log('=== Wallet Connection Process Complete ===\n');
-    return res.status(200).json({ success: true });
+    console.log('=== Wallet Connection Complete, Starting Verification ===');
+
+    // Now verify the holder status with updated data
+    const verificationResult = await verifyHolder(address, user.discordId);
+    console.log('Verification result:', verificationResult);
+
+    console.log('=== Process Complete ===\n');
+    return res.status(200).json({ success: true, verification: verificationResult });
   } catch (error) {
     console.error('Error updating wallet:', error);
     return res.status(500).json({ error: 'Internal server error' });
