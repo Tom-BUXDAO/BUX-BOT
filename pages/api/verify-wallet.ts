@@ -189,10 +189,10 @@ export default async function handler(
         }
       });
 
-      // Update NFT table - using correct field name from schema
+      // Update NFT table - using ownerWallet instead of owner
       await tx.nFT.updateMany({
         where: {
-          owner: {  // Changed from ownerAddress to match schema
+          ownerWallet: {  // Changed to match schema field name
             in: user.wallets.map(w => w.address)
           }
         },
