@@ -81,10 +81,9 @@ async function addRoleWithRetry(discordId: string, roleId: string, roleNames: Re
         return;
       }
 
-      const error = await response.json();
-      if (error.retry_after) {
-        // Wait for Discord's suggested retry time plus a small buffer
-        const waitTime = (error.retry_after * 1000) + 100;
+      const errorData = await response.json() as { retry_after?: number };
+      if (errorData.retry_after) {
+        const waitTime = (errorData.retry_after * 1000) + 100;
         console.log(`Rate limited, waiting ${waitTime}ms before retrying role ${roleId}`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
@@ -95,8 +94,12 @@ async function addRoleWithRetry(discordId: string, roleId: string, roleNames: Re
       console.log(`Failed to add role ${roleId}, retrying in ${delay}ms`);
       await new Promise(resolve => setTimeout(resolve, delay));
 
-    } catch (error) {
-      console.error(`Error adding role ${roleId}:`, error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(`Error adding role ${roleId}:`, error.message);
+      } else {
+        console.error(`Unknown error adding role ${roleId}:`, error);
+      }
       // Exponential backoff for network errors
       const delay = baseDelay * Math.pow(2, i);
       await new Promise(resolve => setTimeout(resolve, delay));
@@ -106,15 +109,43 @@ async function addRoleWithRetry(discordId: string, roleId: string, roleNames: Re
   throw new Error(`Failed to add role ${roleId} after ${retries} attempts`);
 }
 
+// Add timeout handling and chunked role assignment
+async function addRolesInChunks(discordId: string, roleIds: string[], roleNames: Record<string, string>, chunkSize = 3) {
+  // Split roles into smaller chunks to avoid timeouts
+  for (let i = 0; i < roleIds.length; i += chunkSize) {
+    const chunk = roleIds.slice(i, i + chunkSize);
+    
+    // Process each chunk with delay between chunks
+    await Promise.all(chunk.map(async roleId => {
+      try {
+        await addRoleWithRetry(discordId, roleId, roleNames);
+        // Add delay between roles in chunk
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.error(`Failed to add role ${roleId} (${roleNames[roleId]}):`, error);
+      }
+    }));
+
+    // Add delay between chunks
+    if (i + chunkSize < roleIds.length) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+}
+
 export async function updateDiscordRoles(discordId: string, newRoles: string[]) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
   try {
-    // Get current member roles
+    // Get current member roles with timeout
     const memberResponse = await fetch(
       `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}`,
       {
         headers: {
           Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
-        }
+        },
+        signal: controller.signal
       }
     );
 
@@ -124,26 +155,15 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
 
     const memberData = await memberResponse.json();
     const currentRoles: string[] = memberData.roles || [];
-
-    // Get role names mapping
     const roleNames = await getGuildRoles();
-
-    // Get managed role IDs
     const managedRoleIds = Object.values(process.env)
       .filter(id => id && typeof id === 'string' && id.match(/^\d{17,19}$/))
       .map(id => id as string);
 
-    console.log('Current Discord roles:', currentRoles);
-    console.log('Managed role IDs:', managedRoleIds);
-    console.log('New roles to assign:', newRoles);
-    console.log('Role name mapping:', roleNames);
-
-    // Remove all managed roles
+    // Remove managed roles first
     const rolesToRemove = currentRoles.filter(roleId => managedRoleIds.includes(roleId));
-    console.log('Removing all managed roles:', rolesToRemove);
-
     for (const roleId of rolesToRemove) {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Delay between removals
+      await new Promise(resolve => setTimeout(resolve, 500));
       try {
         const removeResponse = await fetch(
           `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
@@ -151,7 +171,8 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
             method: 'DELETE',
             headers: {
               Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
-            }
+            },
+            signal: controller.signal
           }
         );
         
@@ -160,18 +181,21 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
         } else {
           console.log(`Successfully removed role ${roleId} (${roleNames[roleId]}) from ${discordId}`);
         }
-      } catch (error) {
-        console.error(`Error removing role ${roleId}:`, error);
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('Operation timed out');
+        }
+        if (error instanceof Error) {
+          console.error(`Error removing role ${roleId}:`, error.message);
+        } else {
+          console.error(`Unknown error removing role ${roleId}:`, error);
+        }
       }
     }
 
-    // Add new roles with retry logic
+    // Add new roles in chunks
     const rolesToAdd = newRoles.filter(roleId => !currentRoles.includes(roleId));
-    console.log('Roles to add:', rolesToAdd);
-
-    for (const roleId of rolesToAdd) {
-      await addRoleWithRetry(discordId, roleId, roleNames);
-    }
+    await addRolesInChunks(discordId, rolesToAdd, roleNames);
 
     return {
       added: rolesToAdd.map(id => roleNames[id] || id),
@@ -180,8 +204,14 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
       newRoles: newRoles.map(id => roleNames[id] || id)
     };
 
-  } catch (error) {
-    console.error('Error updating Discord roles:', error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error updating Discord roles:', error.message);
+    } else {
+      console.error('Unknown error updating Discord roles:', error);
+    }
     throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 } 
