@@ -9,6 +9,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const session = await getServerSession(req, res, authOptions);
     if (!session) {
@@ -19,8 +23,8 @@ export default async function handler(
       `${DISCORD_API}/guilds/${GUILD_ID}/roles`,
       {
         headers: {
-          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-        },
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+        }
       }
     );
 
