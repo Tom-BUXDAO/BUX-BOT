@@ -91,22 +91,33 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
 
     console.log('Current Discord roles:', currentRoles);
     console.log('Managed role IDs:', managedRoleIds);
+    console.log('New roles to assign:', newRoles);
+    console.log('Role name mapping:', roleNames);
 
     // Remove all managed roles
     const rolesToRemove = currentRoles.filter(roleId => managedRoleIds.includes(roleId));
     console.log('Removing all managed roles:', rolesToRemove);
 
     for (const roleId of rolesToRemove) {
-      console.log(`Removed role ${roleId} from ${discordId}`);
-      await fetch(
-        `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+      try {
+        const removeResponse = await fetch(
+          `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+            }
           }
+        );
+        
+        if (!removeResponse.ok) {
+          console.error(`Failed to remove role ${roleId}:`, await removeResponse.text());
+        } else {
+          console.log(`Successfully removed role ${roleId} (${roleNames[roleId]}) from ${discordId}`);
         }
-      );
+      } catch (error) {
+        console.error(`Error removing role ${roleId}:`, error);
+      }
     }
 
     // Add new roles
@@ -114,16 +125,25 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]) 
     console.log('Roles to add:', rolesToAdd);
 
     for (const roleId of rolesToAdd) {
-      console.log(`Added role ${roleId} to ${discordId}`);
-      await fetch(
-        `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+      try {
+        const addResponse = await fetch(
+          `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+            }
           }
+        );
+        
+        if (!addResponse.ok) {
+          console.error(`Failed to add role ${roleId}:`, await addResponse.text());
+        } else {
+          console.log(`Successfully added role ${roleId} (${roleNames[roleId]}) to ${discordId}`);
         }
-      );
+      } catch (error) {
+        console.error(`Error adding role ${roleId}:`, error);
+      }
     }
 
     return {
