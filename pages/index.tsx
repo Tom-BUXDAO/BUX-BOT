@@ -25,6 +25,14 @@ export default function Home() {
       console.log('Setting role update:', verifyResult.roleUpdate);
       setRoleUpdate(verifyResult.roleUpdate);
       setShowRoleNotification(true);
+
+      // Auto-hide notification after 5 seconds
+      const timer = setTimeout(() => {
+        setShowRoleNotification(false);
+        setRoleUpdate(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
     }
   }, [verifyResult]);
 
