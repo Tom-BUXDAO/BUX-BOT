@@ -14,7 +14,16 @@ function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config i
 function normalizeCollectionName(dbName: string): CollectionName {
   const nameMap: Record<string, CollectionName> = {
     'money_monsters3d': 'Money Monsters 3D',
-    // Add other mappings as needed
+    'money_monsters': 'Money Monsters',
+    'ai_bitbots': 'AI BitBots',
+    'fcked_catz': 'FCKED CATZ',
+    'celebcatz': 'CelebCatz',
+    'candy_bots': 'Candy Bots',
+    'doodle_bot': 'Doodle Bots',
+    'energy_apes': 'Energy Apes',
+    'rjctd_bots': 'RJCTD Bots',
+    'squirrels': 'Squirrels',
+    'warriors': 'Warriors'
   };
   return nameMap[dbName] || dbName as CollectionName;
 }
