@@ -29,35 +29,18 @@ export function WalletVerificationProvider({ children }: { children: React.React
         throw new Error('Failed to verify wallet');
       }
 
-      if (!response.body) {
-        throw new Error('No response body');
+      // Parse the response directly since we're not using chunked encoding anymore
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      // Handle chunked response
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let result = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        result += decoder.decode(value, { stream: true });
-      }
-
-      // Handle final chunk
-      result += decoder.decode();
-
-      try {
-        const data = JSON.parse(result);
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        if (data.verification) {
-          setVerifyResult(data.verification);
-        }
-      } catch (error) {
-        console.error('Error parsing verification result:', error);
-        throw new Error('Invalid verification response');
+      if (data.verification) {
+        console.log('Setting verification result:', data.verification);
+        setVerifyResult(data.verification);
+      } else {
+        throw new Error('No verification data received');
       }
 
     } catch (error) {
