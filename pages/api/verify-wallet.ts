@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
 
 export const config = {
-  maxDuration: 300, // 5 minute timeout
+  maxDuration: 60, // Maximum allowed for hobby plan
   api: {
     responseLimit: false,
     bodyParser: true
