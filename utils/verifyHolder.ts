@@ -28,6 +28,35 @@ function normalizeCollectionName(dbName: string): CollectionName {
   return nameMap[dbName] || dbName as CollectionName;
 }
 
+// Add chunking for role updates
+async function updateRolesInChunks(discordId: string, roles: string[], chunkSize = 3) {
+  const chunks = [];
+  for (let i = 0; i < roles.length; i += chunkSize) {
+    chunks.push(roles.slice(i, i + chunkSize));
+  }
+
+  let finalRoleUpdate = {
+    added: [] as string[],
+    removed: [] as string[],
+    previousRoles: [] as string[],
+    newRoles: [] as string[]
+  };
+
+  for (const chunk of chunks) {
+    const update = await updateDiscordRoles(discordId, chunk);
+    finalRoleUpdate = {
+      added: [...finalRoleUpdate.added, ...update.added],
+      removed: [...finalRoleUpdate.removed, ...update.removed],
+      previousRoles: update.previousRoles, // Use latest
+      newRoles: update.newRoles // Use latest
+    };
+    // Add delay between chunks
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  return finalRoleUpdate;
+}
+
 export async function verifyHolder(
   walletAddress: string, 
   discordId: string
@@ -107,8 +136,8 @@ export async function verifyHolder(
       assignedRoles.push(BUXDAO_5_ROLE_ID);
     }
 
-    // Update Discord roles
-    const roleUpdate = await updateDiscordRoles(discordId, assignedRoles);
+    // Update Discord roles in chunks
+    const roleUpdate = await updateRolesInChunks(discordId, assignedRoles);
 
     return {
       isHolder: totalNFTs > 0 || buxBalance > 0,
