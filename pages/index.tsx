@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { FaDiscord, FaWallet } from 'react-icons/fa';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -19,22 +19,33 @@ export default function Home() {
   const { verifyResult } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [roleUpdate, setRoleUpdate] = useState<RoleUpdate | null>(null);
+  const [lastVerification, setLastVerification] = useState<string | null>(null);
+
+  const handleRoleUpdate = useCallback((update: RoleUpdate) => {
+    // Only show notification if roles actually changed
+    if (update.added.length > 0 || update.removed.length > 0) {
+      setRoleUpdate(update);
+      setShowRoleNotification(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
-      console.log('Setting role update:', verifyResult.roleUpdate);
-      setRoleUpdate(verifyResult.roleUpdate);
-      setShowRoleNotification(true);
+      const verificationKey = JSON.stringify(verifyResult.roleUpdate);
+      if (verificationKey !== lastVerification) {
+        console.log('New role update:', verifyResult.roleUpdate);
+        handleRoleUpdate(verifyResult.roleUpdate);
+        setLastVerification(verificationKey);
 
-      // Auto-hide notification after 5 seconds
-      const timer = setTimeout(() => {
-        setShowRoleNotification(false);
-        setRoleUpdate(null);
-      }, 5000);
+        const timer = setTimeout(() => {
+          setShowRoleNotification(false);
+          setRoleUpdate(null);
+        }, 5000);
 
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [verifyResult]);
+  }, [verifyResult, lastVerification, handleRoleUpdate]);
 
   useEffect(() => {
     if (wallet.connected && wallet.publicKey) {
@@ -42,11 +53,11 @@ export default function Home() {
     }
   }, [wallet.connected, wallet.publicKey]);
 
-  console.log('Current state:', {
-    verifyResult,
-    roleUpdate,
-    showRoleNotification
-  });
+  const handleNotificationClose = useCallback(() => {
+    console.log('Closing notification');
+    setShowRoleNotification(false);
+    setRoleUpdate(null);
+  }, []);
 
   return (
     <div className={styles.container}>
@@ -89,11 +100,7 @@ export default function Home() {
         <div className={styles.overlay}>
           <RoleNotification 
             roleUpdate={roleUpdate}
-            onClose={() => {
-              console.log('Closing notification');
-              setShowRoleNotification(false);
-              setRoleUpdate(null);
-            }}
+            onClose={handleNotificationClose}
           />
         </div>
       )}
