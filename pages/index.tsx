@@ -10,6 +10,7 @@ import RoleInfo from '../components/RoleInfo';
 import RoleNotification from '../components/RoleNotification';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 import layoutStyles from '@/styles/Layout.module.css';
+import type { RoleUpdate } from '@/types/verification';
 
 export default function Home() {
   const { data: session } = useSession();
@@ -17,12 +18,11 @@ export default function Home() {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const { verifyResult } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
-  const [roleUpdate, setRoleUpdate] = useState<{ added: string[]; removed: string[] } | null>(null);
+  const [roleUpdate, setRoleUpdate] = useState<RoleUpdate | null>(null);
 
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
       console.log('Role update received:', verifyResult.roleUpdate);
-      const { added, removed } = verifyResult.roleUpdate;
       
       console.log('Current roleUpdate state:', roleUpdate);
       console.log('Current showRoleNotification state:', showRoleNotification);
