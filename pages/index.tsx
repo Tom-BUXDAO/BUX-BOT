@@ -78,7 +78,7 @@ export default function Home() {
       </main>
       
       {roleUpdate && showRoleNotification && (
-        <div className={styles.notificationContainer}>
+        <div className={styles.overlay}>
           <RoleNotification 
             roleUpdate={roleUpdate}
             onClose={() => {
