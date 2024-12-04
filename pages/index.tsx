@@ -72,6 +72,7 @@ export default function Home() {
         
         <RoleInfo />
       </main>
+      
       {roleUpdate && showRoleNotification && (
         <div className={styles.notificationContainer}>
           <RoleNotification 
