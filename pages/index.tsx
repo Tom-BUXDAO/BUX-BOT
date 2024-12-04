@@ -24,6 +24,9 @@ export default function Home() {
       console.log('Role update received:', verifyResult.roleUpdate);
       const { added, removed } = verifyResult.roleUpdate;
       
+      console.log('Current roleUpdate state:', roleUpdate);
+      console.log('Current showRoleNotification state:', showRoleNotification);
+      
       setRoleUpdate(verifyResult.roleUpdate);
       setShowRoleNotification(true);
       
@@ -39,6 +42,12 @@ export default function Home() {
       setWalletAddress(wallet.publicKey.toString());
     }
   }, [wallet.connected, wallet.publicKey]);
+
+  console.log('Render state:', {
+    roleUpdate,
+    showRoleNotification,
+    verifyResult
+  });
 
   return (
     <div className={styles.container}>
@@ -82,6 +91,7 @@ export default function Home() {
           <RoleNotification 
             roleUpdate={roleUpdate}
             onClose={() => {
+              console.log('Closing notification');
               setShowRoleNotification(false);
               setRoleUpdate(null);
             }}
