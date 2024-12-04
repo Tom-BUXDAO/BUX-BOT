@@ -1,50 +1,42 @@
-import styles from '../styles/RoleInfo.module.css';
+import { useWalletVerification } from '@/contexts/WalletVerificationContext';
+import styles from '@/styles/RoleInfo.module.css';
 
 export default function RoleInfo() {
+  const { verifyResult } = useWalletVerification();
+
+  if (!verifyResult?.roleUpdate) return null;
+
+  const { added, removed } = verifyResult.roleUpdate;
+  const hasChanges = added.length > 0 || removed.length > 0;
+
+  if (!hasChanges) return null;
+
   return (
-    <div className={styles.roleInfoContainer}>
-      <h2 className={styles.roleInfoTitle}>Role Assignment Info</h2>
-      
-      <div className={styles.roleSection}>
-        <h3>Collection Roles</h3>
-        <ul>
-          <li>Holder roles for each collection you own</li>
-          <li>
-            Whale roles for:
+    <div className={styles.overlay}>
+      <div className={styles.popup}>
+        <h2 className={styles.roleInfoTitle}>Role Updates</h2>
+        
+        {added.length > 0 && (
+          <div className={styles.roleSection}>
+            <h3>Added Roles</h3>
             <ul>
-              <li>10+ AI Bitbots</li>
-              <li>25+ Fcked Catz</li>
-              <li>25+ Money Monsters</li>
-              <li>25+ Money Monsters 3D</li>
+              {added.map(role => (
+                <li key={role}>{role}</li>
+              ))}
             </ul>
-          </li>
-        </ul>
-      </div>
-
-      <div className={styles.roleSection}>
-        <h3>$BUX Token Roles</h3>
-        <ul>
-          <li>BUX Beginner: 2,500+ $BUX</li>
-          <li>BUX Builder: 10,000+ $BUX</li>
-          <li>BUX Saver: 25,000+ $BUX</li>
-          <li>BUX Banker: 50,000+ $BUX</li>
-        </ul>
-      </div>
-
-      <div className={styles.roleSection}>
-        <h3>Special Roles</h3>
-        <ul>
-          <li>
-            BUXDAO 5: Hold at least 1 NFT from each main collection:
+          </div>
+        )}
+        
+        {removed.length > 0 && (
+          <div className={styles.roleSection}>
+            <h3>Removed Roles</h3>
             <ul>
-              <li>Money Monsters</li>
-              <li>Money Monsters 3D</li>
-              <li>Celeb Catz</li>
-              <li>Fcked Catz</li>
-              <li>AI Bitbots</li>
+              {removed.map(role => (
+                <li key={role}>{role}</li>
+              ))}
             </ul>
-          </li>
-        </ul>
+          </div>
+        )}
       </div>
     </div>
   );
