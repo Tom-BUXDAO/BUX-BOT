@@ -5,7 +5,7 @@ function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config i
   holder: string | undefined;
   whale: { roleId: string | undefined; threshold: number };
 } {
-  return 'whale' in config && config.whale !== undefined && !isNaN(config.whale.threshold);
+  return 'whale' in config && config.whale !== undefined;
 }
 
 export default function RoleInfo() {
@@ -20,9 +20,9 @@ export default function RoleInfo() {
             <li key={collection}>
               {collection}
               <ul>
-                {config.holder && <li>Holder</li>}
-                {hasWhaleConfig(config) && config.whale.threshold > 0 && (
-                  <li>Whale (≥{config.whale.threshold} NFTs)</li>
+                {config.holder && <li>Holder Role</li>}
+                {hasWhaleConfig(config) && (
+                  <li>Whale Role (≥{config.whale.threshold} NFTs)</li>
                 )}
               </ul>
             </li>
@@ -35,7 +35,7 @@ export default function RoleInfo() {
         <ul>
           {BUX_THRESHOLDS.map((tier, index) => (
             <li key={index}>≥{tier.threshold.toLocaleString()} BUX</li>
-          )).filter(tier => !isNaN(tier.props.children[1]))}
+          ))}
         </ul>
       </div>
 
