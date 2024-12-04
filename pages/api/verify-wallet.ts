@@ -52,6 +52,12 @@ export default async function handler(
       });
     }
 
+    // Log the response we're sending
+    console.log('Sending verification response:', {
+      success: true,
+      verification: verificationResult
+    });
+
     return res.status(200).json({ 
       success: true,
       verification: verificationResult 

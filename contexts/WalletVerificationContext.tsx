@@ -19,6 +19,8 @@ export function WalletVerificationProvider({ children }: { children: React.React
 
   const verifyWallet = useCallback(async (walletAddress: string) => {
     try {
+      console.log('Verifying wallet:', walletAddress);
+      
       const response = await fetch('/api/verify-wallet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,16 +28,20 @@ export function WalletVerificationProvider({ children }: { children: React.React
       });
 
       if (!response.ok) {
+        const error = await response.text();
+        console.error('Verification failed:', error);
         throw new Error('Failed to verify wallet');
       }
 
       const data = await response.json();
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      console.log('Verification response:', data);
 
       if (data.verification) {
+        console.log('Setting verification result:', data.verification);
         setVerifyResult(data.verification);
+      } else {
+        console.error('No verification data in response');
+        throw new Error('Invalid verification response');
       }
 
     } catch (error) {

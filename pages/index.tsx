@@ -22,7 +22,7 @@ export default function Home() {
 
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
-      console.log('Role update received:', verifyResult.roleUpdate);
+      console.log('Setting role update:', verifyResult.roleUpdate);
       setRoleUpdate(verifyResult.roleUpdate);
       setShowRoleNotification(true);
     }
@@ -34,10 +34,10 @@ export default function Home() {
     }
   }, [wallet.connected, wallet.publicKey]);
 
-  console.log('Render state:', {
+  console.log('Current state:', {
+    verifyResult,
     roleUpdate,
-    showRoleNotification,
-    verifyResult
+    showRoleNotification
   });
 
   return (
