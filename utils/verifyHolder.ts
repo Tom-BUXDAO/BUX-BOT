@@ -124,12 +124,7 @@ export async function verifyHolder(
       buxBalance,
       totalNFTs,
       assignedRoles,
-      roleUpdate: {
-        added: roleUpdate.added,
-        removed: roleUpdate.removed,
-        previousRoles: roleUpdate.previousRoles,
-        newRoles: assignedRoles
-      }
+      roleUpdate
     };
 
   } catch (error) {
