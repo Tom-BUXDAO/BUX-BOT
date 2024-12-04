@@ -29,18 +29,13 @@ export function WalletVerificationProvider({ children }: { children: React.React
         throw new Error('Failed to verify wallet');
       }
 
-      // Parse the response directly since we're not using chunked encoding anymore
       const data = await response.json();
-      
       if (data.error) {
         throw new Error(data.error);
       }
 
       if (data.verification) {
-        console.log('Setting verification result:', data.verification);
         setVerifyResult(data.verification);
-      } else {
-        throw new Error('No verification data received');
       }
 
     } catch (error) {

@@ -23,17 +23,8 @@ export default function Home() {
   useEffect(() => {
     if (verifyResult?.roleUpdate) {
       console.log('Role update received:', verifyResult.roleUpdate);
-      
-      console.log('Current roleUpdate state:', roleUpdate);
-      console.log('Current showRoleNotification state:', showRoleNotification);
-      
       setRoleUpdate(verifyResult.roleUpdate);
       setShowRoleNotification(true);
-      
-      console.log('Setting notification state:', {
-        roleUpdate: verifyResult.roleUpdate,
-        showNotification: true
-      });
     }
   }, [verifyResult]);
 
