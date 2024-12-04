@@ -3,11 +3,11 @@ import { NFT_THRESHOLDS, BUX_THRESHOLDS, BUXDAO_5_ROLE_ID, CollectionName } from
 import { updateDiscordRoles } from './discordRoles';
 import type { VerificationResult } from '../types/verification';
 
-function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName] | undefined): config is {
+function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config is {
   holder: string | undefined;
   whale: { roleId: string | undefined; threshold: number };
 } {
-  return config !== undefined && 'whale' in config && config.whale !== undefined;
+  return 'whale' in config && config.whale !== undefined;
 }
 
 // Normalize collection names to match config
@@ -24,6 +24,9 @@ export async function verifyHolder(
   discordId: string
 ): Promise<VerificationResult> {
   try {
+    // Get current Discord roles
+    const discordRoles = await updateDiscordRoles(discordId, []);
+
     // First update ownership records
     await prisma.$transaction([
       prisma.nFT.updateMany({
@@ -53,7 +56,7 @@ export async function verifyHolder(
       _count: true
     });
 
-    console.log('NFT counts:', nftCounts); // Debug log
+    console.log('NFT counts:', nftCounts);
 
     // Get BUX balance
     const tokenBalance = await prisma.tokenBalance.findUnique({
@@ -68,17 +71,13 @@ export async function verifyHolder(
 
     // Add collection roles
     nftCounts.forEach(({ collection, _count }) => {
-      console.log('Checking collection:', collection); // Debug log
       const normalizedName = normalizeCollectionName(collection);
       const config = NFT_THRESHOLDS[normalizedName];
-      console.log('Collection config:', config); // Debug log
       
       if (config?.holder) {
-        console.log('Adding holder role:', config.holder); // Debug log
         assignedRoles.push(config.holder);
       }
       if (hasWhaleConfig(config) && _count >= config.whale.threshold && config.whale.roleId) {
-        console.log('Adding whale role:', config.whale.roleId); // Debug log
         assignedRoles.push(config.whale.roleId);
       }
     });
@@ -95,26 +94,29 @@ export async function verifyHolder(
       assignedRoles.push(BUXDAO_5_ROLE_ID);
     }
 
-    console.log('Assigned roles:', assignedRoles); // Debug log
-
     // Update Discord roles
     const roleUpdate = await updateDiscordRoles(discordId, assignedRoles);
 
     return {
       isHolder: totalNFTs > 0 || buxBalance > 0,
       collections: nftCounts.map(({ collection, _count }) => {
-        const config = NFT_THRESHOLDS[collection as CollectionName];
-        const whaleThreshold = hasWhaleConfig(config) ? config.whale.threshold : Infinity;
+        const normalizedName = normalizeCollectionName(collection);
+        const config = NFT_THRESHOLDS[normalizedName];
         return {
-          name: collection as CollectionName,
+          name: normalizedName,
           count: _count,
-          isWhale: _count >= whaleThreshold
+          isWhale: hasWhaleConfig(config) ? _count >= config.whale.threshold : false
         };
       }),
       buxBalance,
       totalNFTs,
       assignedRoles,
-      roleUpdate
+      roleUpdate: {
+        added: roleUpdate.added,
+        removed: roleUpdate.removed,
+        previousRoles: roleUpdate.previousRoles,
+        newRoles: assignedRoles
+      }
     };
 
   } catch (error) {
