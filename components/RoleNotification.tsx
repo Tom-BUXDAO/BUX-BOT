@@ -4,6 +4,8 @@ interface RoleNotificationProps {
   roleUpdate: {
     added: string[];
     removed: string[];
+    previousRoles: string[];
+    newRoles: string[];
   };
   onClose: () => void;
 }
@@ -17,9 +19,9 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
       <div className={styles.roleList}>
         <div className={styles.roleSection}>
           <h4>Added Roles</h4>
-          {added.map(role => (
-            <div key={role} className={styles.role}>
-              {role}
+          {added.map(roleName => (
+            <div key={roleName} className={styles.role}>
+              {roleName}
             </div>
           ))}
         </div>

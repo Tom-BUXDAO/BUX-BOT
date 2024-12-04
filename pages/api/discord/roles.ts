@@ -33,7 +33,12 @@ export default async function handler(
     }
 
     const roles = await response.json();
-    return res.status(200).json(roles);
+    const roleMap = roles.reduce((acc: Record<string, string>, role: any) => {
+      acc[role.id] = role.name;
+      return acc;
+    }, {});
+
+    return res.status(200).json(roleMap);
 
   } catch (error) {
     console.error('Error fetching Discord roles:', error);
