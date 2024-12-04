@@ -23,10 +23,14 @@ export default function Home() {
     if (verifyResult?.roleUpdate) {
       console.log('Role update received:', verifyResult.roleUpdate);
       const { added, removed } = verifyResult.roleUpdate;
-      if ((added && added.length > 0) || (removed && removed.length > 0)) {
-        setRoleUpdate(verifyResult.roleUpdate);
-        setShowRoleNotification(true);
-      }
+      
+      setRoleUpdate(verifyResult.roleUpdate);
+      setShowRoleNotification(true);
+      
+      console.log('Setting notification state:', {
+        roleUpdate: verifyResult.roleUpdate,
+        showNotification: true
+      });
     }
   }, [verifyResult]);
 
