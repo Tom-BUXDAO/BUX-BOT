@@ -34,102 +34,105 @@ async function getClient(): Promise<Client> {
   return client;
 }
 
-export async function updateDiscordRoles(discordId: string, assignedRoles: string[]) {
+const DISCORD_API = 'https://discord.com/api/v10';
+
+interface DiscordRole {
+  id: string;
+  name: string;
+}
+
+async function getGuildRoles(): Promise<Record<string, string>> {
+  const response = await fetch(
+    `${DISCORD_API}/guilds/${GUILD_ID}/roles`,
+    {
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+      }
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch Discord roles');
+  }
+
+  const roles: DiscordRole[] = await response.json();
+  return roles.reduce((acc, role) => {
+    acc[role.id] = role.name;
+    return acc;
+  }, {} as Record<string, string>);
+}
+
+export async function updateDiscordRoles(discordId: string, newRoles: string[]) {
   try {
-    const client = await getClient();
-    const guild = await client.guilds.fetch(GUILD_ID!);
-    const member = await guild.members.fetch(discordId);
-
-    // Get ALL current roles
-    const currentRoles = member.roles.cache.map((role: Role) => role.id);
-    console.log('Current Discord roles:', currentRoles);
-
-    // Get list of roles we manage
-    const managedRoleIds = [
-      process.env.BUX_BANKER_ROLE_ID,
-      process.env.BUX_SAVER_ROLE_ID,
-      process.env.BUX_BUILDER_ROLE_ID,
-      process.env.BUX_BEGINNER_ROLE_ID,
-      process.env.MONEY_MONSTERS3D_ROLE_ID,
-      process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID,
-      process.env.AI_BITBOTS_ROLE_ID,
-      process.env.AI_BITBOTS_WHALE_ROLE_ID,
-      process.env.CANDY_BOTS_ROLE_ID,
-      process.env.FCKED_CATZ_ROLE_ID,
-      process.env.FCKED_CATZ_WHALE_ROLE_ID,
-      process.env.SQUIRRELS_ROLE_ID,
-      process.env.ENERGY_APES_ROLE_ID,
-      process.env.BUXDAO_5_ROLE_ID
-    ].filter(Boolean) as string[];
-
-    console.log('Managed role IDs:', managedRoleIds);
-
-    // If no roles assigned, remove all managed roles
-    if (assignedRoles.length === 0) {
-      const rolesToRemove = currentRoles.filter(role => managedRoleIds.includes(role));
-      console.log('Removing all managed roles:', rolesToRemove);
-
-      for (const roleId of rolesToRemove) {
-        try {
-          await member.roles.remove(roleId);
-          console.log(`Removed role ${roleId} from ${discordId}`);
-          await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
-        } catch (error) {
-          console.error(`Error removing role ${roleId}:`, error);
+    // Get current member roles
+    const memberResponse = await fetch(
+      `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}`,
+      {
+        headers: {
+          Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
         }
       }
+    );
 
-      return {
-        added: [],
-        removed: rolesToRemove,
-        previousRoles: currentRoles,
-        newRoles: member.roles.cache.map((role: Role) => role.id)
-      };
+    if (!memberResponse.ok) {
+      throw new Error('Failed to fetch member roles');
     }
 
-    // Normal role updates if roles are assigned
-    const rolesToRemove = currentRoles.filter(role => 
-      managedRoleIds.includes(role) && !assignedRoles.includes(role)
-    );
+    const memberData = await memberResponse.json();
+    const currentRoles: string[] = memberData.roles || [];
 
-    const rolesToAdd = assignedRoles.filter(role => 
-      managedRoleIds.includes(role) && !currentRoles.includes(role)
-    );
+    // Get role names mapping
+    const roleNames = await getGuildRoles();
 
-    console.log('Roles to remove:', rolesToRemove);
+    // Get managed role IDs
+    const managedRoleIds = Object.values(process.env)
+      .filter(id => id && typeof id === 'string' && id.match(/^\d{17,19}$/))
+      .map(id => id as string);
+
+    console.log('Current Discord roles:', currentRoles);
+    console.log('Managed role IDs:', managedRoleIds);
+
+    // Remove all managed roles
+    const rolesToRemove = currentRoles.filter(roleId => managedRoleIds.includes(roleId));
+    console.log('Removing all managed roles:', rolesToRemove);
+
+    for (const roleId of rolesToRemove) {
+      console.log(`Removed role ${roleId} from ${discordId}`);
+      await fetch(
+        `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+          }
+        }
+      );
+    }
+
+    // Add new roles
+    const rolesToAdd = newRoles.filter(roleId => !currentRoles.includes(roleId));
     console.log('Roles to add:', rolesToAdd);
 
-    // Process removals
-    for (const roleId of rolesToRemove) {
-      try {
-        await member.roles.remove(roleId);
-        console.log(`Removed role ${roleId} from ${discordId}`);
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
-      } catch (error) {
-        console.error(`Error removing role ${roleId}:`, error);
-      }
-    }
-
-    // Process additions
     for (const roleId of rolesToAdd) {
-      try {
-        await member.roles.add(roleId);
-        console.log(`Added role ${roleId} to ${discordId}`);
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
-      } catch (error) {
-        console.error(`Error adding role ${roleId}:`, error);
-      }
+      console.log(`Added role ${roleId} to ${discordId}`);
+      await fetch(
+        `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`
+          }
+        }
+      );
     }
-
-    // Get final state
-    const finalRoles = member.roles.cache.map((role: Role) => role.id);
 
     return {
-      added: rolesToAdd,
-      removed: rolesToRemove,
-      previousRoles: currentRoles,
-      newRoles: finalRoles
+      added: rolesToAdd.map(id => roleNames[id] || id),
+      removed: rolesToRemove.map(id => roleNames[id] || id),
+      previousRoles: currentRoles.map(id => roleNames[id] || id),
+      newRoles: newRoles.map(id => roleNames[id] || id)
     };
+
   } catch (error) {
     console.error('Error updating Discord roles:', error);
     throw error;
