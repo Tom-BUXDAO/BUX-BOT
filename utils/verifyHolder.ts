@@ -36,7 +36,7 @@ export async function verifyHolder(
     // Get current Discord roles
     const discordRoles = await updateDiscordRoles(discordId, []);
 
-    // First update ownership records
+    // First update ownership records for current wallet
     await prisma.$transaction([
       prisma.nFT.updateMany({
         where: { ownerWallet: walletAddress },
@@ -55,27 +55,31 @@ export async function verifyHolder(
       })
     ]);
 
-    // Get NFT counts by collection
+    // Get NFT counts across all wallets owned by this Discord ID
     const nftCounts = await prisma.nFT.groupBy({
       by: ['collection'],
       where: {
-        ownerWallet: walletAddress,
         ownerDiscordId: discordId
       },
       _count: true
     });
 
-    console.log('NFT counts:', nftCounts);
+    console.log('NFT counts across all wallets:', nftCounts);
 
-    // Get BUX balance
-    const tokenBalance = await prisma.tokenBalance.findUnique({
-      where: { walletAddress }
+    // Get total BUX balance across all wallets
+    const tokenBalances = await prisma.tokenBalance.findMany({
+      where: { ownerDiscordId: discordId }
     });
 
-    const buxBalance = tokenBalance ? Number(tokenBalance.balance) / 1e9 : 0;
+    const totalBuxBalance = tokenBalances.reduce(
+      (sum, { balance }) => sum + balance,
+      BigInt(0)
+    );
+
+    const buxBalance = Number(totalBuxBalance) / 1e9;
     const totalNFTs = nftCounts.reduce((sum, { _count }) => sum + _count, 0);
 
-    // Calculate roles based on holdings
+    // Calculate roles based on total holdings
     const assignedRoles: string[] = [];
 
     // Add collection roles
