@@ -3,16 +3,43 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
+import type { VerificationResult } from '@/types/verification';
+
+// Increase timeout for Vercel
+export const config = {
+  api: {
+    bodyParser: true,
+    responseLimit: false,
+    externalResolver: true
+  }
+};
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    // Set longer timeout
+    res.setTimeout(60000);
+
     // Log request details
     console.log('\n=== Starting Wallet Verification ===');
     console.log('Request body:', req.body);
@@ -45,8 +72,17 @@ export default async function handler(
     }
     console.log('Discord ID:', user.discordId);
 
-    // Verify wallet
-    const verificationResult = await verifyHolder(address, user.discordId);
+    // Verify wallet with timeout handling
+    const verificationPromise = verifyHolder(address, user.discordId);
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Verification timed out')), 55000)
+    );
+
+    const verificationResult = await Promise.race([
+      verificationPromise,
+      timeoutPromise
+    ]) as VerificationResult;
+
     console.log('Verification result:', verificationResult);
 
     // Update user wallet if verification successful
