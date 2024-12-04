@@ -26,12 +26,40 @@ export function WalletVerificationProvider({ children }: { children: React.React
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to verify wallet');
+        throw new Error('Failed to verify wallet');
       }
 
-      const data = await response.json();
-      setVerifyResult(data.verification);
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      // Handle chunked response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        result += decoder.decode(value, { stream: true });
+      }
+
+      // Handle final chunk
+      result += decoder.decode();
+
+      try {
+        const data = JSON.parse(result);
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        if (data.verification) {
+          setVerifyResult(data.verification);
+        }
+      } catch (error) {
+        console.error('Error parsing verification result:', error);
+        throw new Error('Invalid verification response');
+      }
+
     } catch (error) {
       console.error('Verification error:', error);
       throw error;
