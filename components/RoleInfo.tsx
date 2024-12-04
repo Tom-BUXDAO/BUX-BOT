@@ -20,9 +20,9 @@ export default function RoleInfo() {
             <li key={collection}>
               {collection}
               <ul>
-                {config.holder && <li>Holder Role</li>}
+                {config.holder && <li>NFT Holder</li>}
                 {hasWhaleConfig(config) && (
-                  <li>Whale Role (≥{config.whale.threshold} NFTs)</li>
+                  <li>NFT Whale (Hold {config.whale.threshold}+ NFTs)</li>
                 )}
               </ul>
             </li>
@@ -33,9 +33,12 @@ export default function RoleInfo() {
       <div className={styles.roleSection}>
         <h3>BUX Token</h3>
         <ul>
-          {BUX_THRESHOLDS.map((tier, index) => (
-            <li key={index}>≥{tier.threshold.toLocaleString()} BUX</li>
-          ))}
+          {BUX_THRESHOLDS.map((tier, index) => {
+            const labels = ['BUX Beginner', 'BUX Builder', 'BUX Saver', 'BUX Banker'];
+            return (
+              <li key={index}>{labels[index]} (Hold {tier.threshold.toLocaleString()}+ BUX)</li>
+            );
+          })}
         </ul>
       </div>
 
