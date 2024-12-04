@@ -63,7 +63,7 @@ async function getGuildRoles(): Promise<Record<string, string>> {
 }
 
 // Add rate limit handling and delay between operations
-async function addRoleWithRetry(discordId: string, roleId: string, roleNames: Record<string, string>, retries = 3, delay = 1000): Promise<void> {
+async function addRoleWithRetry(discordId: string, roleId: string, roleNames: Record<string, string>, retries = 5, baseDelay = 1000): Promise<void> {
   for (let i = 0; i < retries; i++) {
     try {
       const response = await fetch(
@@ -83,19 +83,27 @@ async function addRoleWithRetry(discordId: string, roleId: string, roleNames: Re
 
       const error = await response.json();
       if (error.retry_after) {
-        // Wait for the rate limit to reset
-        await new Promise(resolve => setTimeout(resolve, error.retry_after * 1000));
+        // Wait for Discord's suggested retry time plus a small buffer
+        const waitTime = (error.retry_after * 1000) + 100;
+        console.log(`Rate limited, waiting ${waitTime}ms before retrying role ${roleId}`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
         continue;
       }
 
-      console.error(`Failed to add role ${roleId}:`, error);
+      // Exponential backoff for other errors
+      const delay = baseDelay * Math.pow(2, i);
+      console.log(`Failed to add role ${roleId}, retrying in ${delay}ms`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+
     } catch (error) {
       console.error(`Error adding role ${roleId}:`, error);
+      // Exponential backoff for network errors
+      const delay = baseDelay * Math.pow(2, i);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
-
-    // Add delay between retries
-    await new Promise(resolve => setTimeout(resolve, delay));
   }
+
+  throw new Error(`Failed to add role ${roleId} after ${retries} attempts`);
 }
 
 export async function updateDiscordRoles(discordId: string, newRoles: string[]) {
