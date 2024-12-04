@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
 import type { VerificationResult } from '@/types/verification';
 
-// Increase timeout for Vercel
 export const config = {
   api: {
     bodyParser: true,
@@ -37,8 +36,11 @@ export default async function handler(
   }
 
   try {
-    // Set longer timeout
-    res.setTimeout(60000);
+    // Initial response to prevent timeout
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Transfer-Encoding': 'chunked'
+    });
 
     // Log request details
     console.log('\n=== Starting Wallet Verification ===');
@@ -47,16 +49,18 @@ export default async function handler(
     // Check session
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
-      console.log('No session found');
-      return res.status(401).json({ error: 'Unauthorized' });
+      res.write(JSON.stringify({ error: 'Unauthorized' }));
+      res.end();
+      return;
     }
     console.log('User ID:', session.user.id);
 
     // Validate wallet address
     const { address } = req.body;
     if (!address || typeof address !== 'string') {
-      console.log('Invalid wallet address:', address);
-      return res.status(400).json({ error: 'Valid wallet address is required' });
+      res.write(JSON.stringify({ error: 'Valid wallet address is required' }));
+      res.end();
+      return;
     }
     console.log('Wallet Address:', address);
 
@@ -67,22 +71,14 @@ export default async function handler(
     });
 
     if (!user?.discordId) {
-      console.log('No Discord ID found for user:', session.user.id);
-      return res.status(400).json({ error: 'Discord account not connected' });
+      res.write(JSON.stringify({ error: 'Discord account not connected' }));
+      res.end();
+      return;
     }
     console.log('Discord ID:', user.discordId);
 
-    // Verify wallet with timeout handling
-    const verificationPromise = verifyHolder(address, user.discordId);
-    const timeoutPromise = new Promise<never>((_, reject) => 
-      setTimeout(() => reject(new Error('Verification timed out')), 55000)
-    );
-
-    const verificationResult = await Promise.race([
-      verificationPromise,
-      timeoutPromise
-    ]) as VerificationResult;
-
+    // Verify wallet
+    const verificationResult = await verifyHolder(address, user.discordId);
     console.log('Verification result:', verificationResult);
 
     // Update user wallet if verification successful
@@ -100,17 +96,20 @@ export default async function handler(
       console.log('Updated user wallet');
     }
 
-    return res.status(200).json({ 
+    // Send final response
+    res.write(JSON.stringify({ 
       success: true,
       verification: verificationResult 
-    });
+    }));
+    res.end();
 
   } catch (error) {
     console.error('Error verifying wallet:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    return res.status(500).json({ 
+    res.write(JSON.stringify({ 
       error: 'Failed to verify wallet',
       message: errorMessage
-    });
+    }));
+    res.end();
   }
 } 
