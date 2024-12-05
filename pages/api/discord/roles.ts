@@ -22,12 +22,12 @@ export default async function handler(
 
     const roleMap = new Map(guild.roles.map(r => [r.id, r.name]));
     
-    // Map env role IDs to their Discord names
+    // Map env role IDs to their Discord names with correct whale emoji
     const roleMapping = {
       MONEY_MONSTERS: roleMap.get(process.env.MONEY_MONSTERS_ROLE_ID!),
       MONEY_MONSTERS_WHALE: roleMap.get(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!),
       FCKED_CATZ: roleMap.get(process.env.FCKED_CATZ_ROLE_ID!),
-      FCKED_CATZ_WHALE: roleMap.get(process.env.FCKED_CATZ_WHALE_ROLE_ID!),
+      FCKED_CATZ_WHALE: 'CAT 🐋', // Use exact Discord role name
       AI_BITBOTS: roleMap.get(process.env.AI_BITBOTS_ROLE_ID!),
       AI_BITBOTS_WHALE: roleMap.get(process.env.AI_BITBOTS_WHALE_ROLE_ID!),
       MONEY_MONSTERS3D: roleMap.get(process.env.MONEY_MONSTERS3D_ROLE_ID!),
@@ -39,10 +39,7 @@ export default async function handler(
       CANDY_BOTS: roleMap.get(process.env.CANDY_BOTS_ROLE_ID!),
       DOODLE_BOTS: roleMap.get(process.env.DOODLE_BOTS_ROLE_ID!),
       BUXDAO_5: roleMap.get(process.env.BUXDAO_5_ROLE_ID!),
-      BUX_BANKER: roleMap.get(process.env.BUX_BANKER_ROLE_ID!),
-      BUX_BEGINNER: roleMap.get(process.env.BUX_BEGINNER_ROLE_ID!),
-      BUX_SAVER: roleMap.get(process.env.BUX_SAVER_ROLE_ID!),
-      BUX_BUILDER: roleMap.get(process.env.BUX_BUILDER_ROLE_ID!)
+      BUX_BANKER: roleMap.get(process.env.BUX_BANKER_ROLE_ID!)
     };
 
     // Log the mapping for debugging
