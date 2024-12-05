@@ -18,79 +18,45 @@ export default async function handler(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = session.user.id;
     const { address } = req.body;
     if (!address) {
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    console.log('\n=== Starting Wallet Connection ===');
-    console.log('User ID:', userId);
-    console.log('Wallet Address:', address);
-
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { wallets: true }
+    console.log('Connecting wallet:', {
+      userId: session.user.id,
+      address
     });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    if (!user.discordId) {
-      return res.status(400).json({ error: 'Discord ID not found' });
-    }
-
-    // Run everything in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Delete empty wallet placeholder
-      await tx.userWallet.deleteMany({
-        where: { 
-          userId: user.id,
-          address: '' 
-        }
-      });
-
-      // Add new wallet
-      const wallet = await tx.userWallet.create({
-        data: {
-          address,
-          userId: user.id
-        }
-      });
-
-      // Update NFT and token ownership
-      await tx.nFT.updateMany({
-        where: { ownerWallet: address },
-        data: { ownerDiscordId: user.discordId }
-      });
-
-      await tx.tokenBalance.updateMany({
-        where: { walletAddress: address },
-        data: { ownerDiscordId: user.discordId }
-      });
-
-      return wallet;
+    // First delete empty wallet placeholder
+    await prisma.userWallet.deleteMany({
+      where: {
+        userId: session.user.id,
+        address: ''
+      }
     });
 
-    console.log('Wallet connection completed:', result);
+    // Then create new wallet connection
+    const wallet = await prisma.userWallet.create({
+      data: {
+        address,
+        userId: session.user.id
+      }
+    });
+
+    console.log('Wallet connected:', wallet);
 
     // Run verification
-    const verificationResult = await verifyHolder(address, user.discordId);
-    console.log('Verification complete:', verificationResult);
+    const verificationResult = await verifyHolder(address, session.user.discordId!);
     
     return res.status(200).json({ 
       success: true,
-      wallet: result,
+      wallet,
       verification: verificationResult 
     });
 
   } catch (error: any) {
     console.error('Error in update-wallet:', error);
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      details: error.message 
-    });
+    return res.status(500).json({ error: error.message });
   }
 } 
