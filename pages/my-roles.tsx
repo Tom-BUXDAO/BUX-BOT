@@ -4,19 +4,23 @@ import styles from '@/styles/MyRoles.module.css';
 import { FaCrown } from 'react-icons/fa';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
-// Map role IDs to their display names
+// Map role IDs to their exact display names from RoleNotification
 const ROLE_NAMES: { [key: string]: string } = {
-  '1093607056696692828': 'Squirrels',
-  '1093606438674382858': 'CelebCatz',
-  '1095033759612547133': 'Energy Apes',
-  '1095034117877399686': 'Money Monsters',
-  '1095033899492573274': 'Candy Bots',
-  '1093607187454111825': 'BUX Holder',
-  '1093606579355525252': 'NFT Holder',
-  '1095335098112561234': 'FCKED CATZ',
-  '1300968964276621313': 'Money Monsters 3D',
-  '1300969268665389157': 'RJCTD Bots',
-  '1300969353952362557': 'Doodle Bots'
+  '1095034117877399686': 'MONSTER',
+  '1095034117877399687': 'MONSTER 🐋',
+  '1093606438674382858': 'CAT',
+  '1095033566070583457': 'BITBOT',
+  '1095033566070583458': 'MEGA BOT 🐋',
+  '1300968964276621313': 'MONSTER 3D',
+  '1300968964276621314': 'MONSTER 3D 🐋',
+  '1093606438674382859': 'CELEB',
+  '1093607056696692828': 'AI squirrel',
+  '1095033759612547133': 'AI energy ape',
+  '1300969268665389157': 'Rjctd bot',
+  '1095033899492573274': 'Candy bot',
+  '1300969353952362557': 'Doodle bot',
+  '1248428373487784006': 'BUX$DAO 5',
+  '1095363984581984357': 'BUX BANKER'
 };
 
 export default function MyRoles() {
@@ -33,6 +37,7 @@ export default function MyRoles() {
     );
   }
 
+  // Get filtered roles from verifyResult
   const roles = verifyResult?.assignedRoles?.map(roleId => ({
     id: roleId,
     name: ROLE_NAMES[roleId] || roleId
