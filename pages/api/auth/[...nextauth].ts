@@ -69,7 +69,7 @@ export const authOptions: NextAuthOptions = {
         });
         if (dbUser) {
           session.user.id = dbUser.id;
-          session.user.discordId = dbUser.discordId;
+          session.user.discordId = dbUser.discordId || undefined;
           session.user.wallets = dbUser.wallets;
         }
       }
