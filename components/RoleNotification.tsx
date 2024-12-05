@@ -18,29 +18,15 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
       >
         <FaTimes />
       </button>
-      <h3>Role Update</h3>
+      <h3>Qualified Roles</h3>
       
-      {roleUpdate.added.length > 0 && (
-        <div className={styles.section}>
-          <h4>Added Roles:</h4>
-          <ul>
-            {roleUpdate.added.map((role, index) => (
-              <li key={`added-${index}`}>{role}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {roleUpdate.removed.length > 0 && (
-        <div className={styles.section}>
-          <h4>Removed Roles:</h4>
-          <ul>
-            {roleUpdate.removed.map((role, index) => (
-              <li key={`removed-${index}`}>{role}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <div className={styles.section}>
+        <ul>
+          {roleUpdate.newRoles.map((role, index) => (
+            <li key={`role-${index}`}>{role}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 } 
