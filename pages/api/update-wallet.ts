@@ -32,35 +32,54 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    // First delete empty wallet placeholder
-    const deleted = await prisma.userWallet.deleteMany({
-      where: {
-        userId: session.user.id,
-        address: ''
-      }
+    // Get user first to ensure they exist
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { wallets: true }
     });
-    console.log('Deleted empty wallets:', deleted);
 
-    // Then create new wallet connection
-    const wallet = await prisma.userWallet.create({
-      data: {
-        address,
-        userId: session.user.id
-      }
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Run everything in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Delete empty wallet placeholder
+      await tx.userWallet.deleteMany({
+        where: {
+          userId: user.id,
+          address: ''
+        }
+      });
+
+      // Create new wallet
+      const wallet = await tx.userWallet.create({
+        data: {
+          address,
+          userId: user.id
+        }
+      });
+
+      return wallet;
     });
-    console.log('Created new wallet:', wallet);
+
+    console.log('Wallet connection completed:', result);
 
     // Run verification
-    const verificationResult = await verifyHolder(address, session.user.discordId!);
+    const verificationResult = await verifyHolder(address, user.discordId!);
     
     return res.status(200).json({ 
       success: true,
-      wallet,
+      wallet: result,
       verification: verificationResult 
     });
 
   } catch (error: any) {
     console.error('Error in update-wallet:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 } 
