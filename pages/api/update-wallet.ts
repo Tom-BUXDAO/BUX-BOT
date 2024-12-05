@@ -24,7 +24,8 @@ export default async function handler(
 
     // Get user to get discordId
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id }
+      where: { id: session.user.id },
+      include: { wallets: true }
     });
 
     if (!user?.discordId) {
@@ -33,12 +34,19 @@ export default async function handler(
 
     // Run everything in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create wallet
-      const wallet = await tx.userWallet.create({
-        data: {
+      // Update or create wallet
+      const wallet = await tx.userWallet.upsert({
+        where: {
+          address_userId: {
+            address,
+            userId: session.user.id
+          }
+        },
+        create: {
           address,
           userId: session.user.id
-        }
+        },
+        update: {} // No updates needed if exists
       });
 
       // Update NFT ownership
