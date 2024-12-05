@@ -7,23 +7,25 @@
 .titleContainer {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   margin-bottom: 2rem;
 }
 
 .titleIcon {
-  font-size: 2rem;
-  color: var(--primary-color);
+  font-size: 1.75rem;
+  color: #fff;
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 1.75rem;
+  font-weight: 600;
   margin: 0;
-  color: var(--text-primary);
+  color: #fff;
+  font-family: var(--font-heading);
 }
 
 .infoContainer {
-  background: var(--card-bg);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 2rem;
 }
@@ -31,6 +33,12 @@
 .userInfo {
   text-align: center;
   margin-bottom: 2rem;
+}
+
+.userInfo h1 {
+  color: #fff;
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
 }
 
 .avatar {
@@ -45,7 +53,7 @@
 }
 
 .statCard {
-  background: var(--background);
+  background: rgba(0, 0, 0, 0.2);
   padding: 1.5rem;
   border-radius: 12px;
   display: flex;
@@ -54,8 +62,8 @@
 }
 
 .icon {
-  font-size: 1.5rem;
-  color: var(--primary-color);
+  font-size: 1.25rem;
+  color: #fff;
 }
 
 .statInfo {
@@ -64,13 +72,15 @@
 
 .statInfo h3 {
   margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: var(--text-primary);
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: normal;
 }
 
 .statInfo p {
   margin: 0;
-  color: var(--text-secondary);
+  color: #fff;
+  font-size: 1rem;
 }
 
 .walletList {
@@ -80,10 +90,11 @@
 }
 
 .walletItem {
-  background: var(--card-bg);
+  background: rgba(255, 255, 255, 0.05);
   padding: 0.5rem;
   border-radius: 6px;
   font-family: monospace;
+  color: #fff;
 }
 
 .collectionList {
@@ -93,8 +104,8 @@
 }
 
 .collectionItem {
-  background: var(--card-bg);
+  background: rgba(255, 255, 255, 0.05);
   padding: 0.5rem;
   border-radius: 6px;
-  text-align: left;
+  color: #fff;
 } 
