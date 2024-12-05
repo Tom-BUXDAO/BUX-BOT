@@ -37,6 +37,10 @@ export default async function handler(
       return res.status(404).json({ error: 'User not found' });
     }
 
+    if (!user.discordId) {
+      return res.status(400).json({ error: 'Discord ID not found' });
+    }
+
     // Add new wallet or update existing
     const wallet = await prisma.userWallet.upsert({
       where: { address },
