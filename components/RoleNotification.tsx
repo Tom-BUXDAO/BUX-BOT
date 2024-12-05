@@ -25,7 +25,8 @@ const ORDERED_ROLES = [
   'Candy bot',       // Candy Bots
   'Doodle bot',      // Doodle Bots
   'BUX$DAO 5',       // BUX DAO 5 collections
-  'BUX BANKER'       // BUX token role
+  'BUX BANKER',      // BUX token role
+  'FCKED CATZ'       // Added missing role
 ];
 
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
@@ -35,6 +36,9 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
     .sort((a, b) => 
       ORDERED_ROLES.indexOf(a) - ORDERED_ROLES.indexOf(b)
     );
+
+  console.log('All roles:', roleUpdate.newRoles);
+  console.log('Filtered roles:', displayRoles);
 
   return (
     <div className={styles.notification}>
