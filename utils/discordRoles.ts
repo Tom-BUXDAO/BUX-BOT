@@ -127,4 +127,47 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]):
     console.error('Error updating Discord roles:', error);
     throw error;
   }
-} 
+}
+
+// Add this function to help us map role IDs to names
+async function logRoleNames() {
+  try {
+    const guild = await rest.get(
+      Routes.guild(GUILD_ID!)
+    ) as { roles: { id: string, name: string }[] };
+
+    const roleMap = new Map(guild.roles.map(r => [r.id, r.name]));
+    
+    // Log all role mappings from .env.local
+    console.log('Role ID to Name mappings:');
+    console.log('AI_BITBOTS_ROLE_ID:', roleMap.get(process.env.AI_BITBOTS_ROLE_ID!));
+    console.log('FCKED_CATZ_ROLE_ID:', roleMap.get(process.env.FCKED_CATZ_ROLE_ID!));
+    console.log('MONEY_MONSTERS_ROLE_ID:', roleMap.get(process.env.MONEY_MONSTERS_ROLE_ID!));
+    console.log('MONEY_MONSTERS3D_ROLE_ID:', roleMap.get(process.env.MONEY_MONSTERS3D_ROLE_ID!));
+    console.log('CELEBCATZ_ROLE_ID:', roleMap.get(process.env.CELEBCATZ_ROLE_ID!));
+    console.log('AI_BITBOTS_WHALE_ROLE_ID:', roleMap.get(process.env.AI_BITBOTS_WHALE_ROLE_ID!));
+    console.log('FCKED_CATZ_WHALE_ROLE_ID:', roleMap.get(process.env.FCKED_CATZ_WHALE_ROLE_ID!));
+    console.log('MONEY_MONSTERS_WHALE_ROLE_ID:', roleMap.get(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!));
+    console.log('MONEY_MONSTERS3D_WHALE_ROLE_ID:', roleMap.get(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!));
+    console.log('BUX_BANKER_ROLE_ID:', roleMap.get(process.env.BUX_BANKER_ROLE_ID!));
+    console.log('CANDY_BOTS_ROLE_ID:', roleMap.get(process.env.CANDY_BOTS_ROLE_ID!));
+    console.log('DOODLE_BOTS_ROLE_ID:', roleMap.get(process.env.DOODLE_BOTS_ROLE_ID!));
+    console.log('ENERGY_APES_ROLE_ID:', roleMap.get(process.env.ENERGY_APES_ROLE_ID!));
+    console.log('RJCTD_BOTS_ROLE_ID:', roleMap.get(process.env.RJCTD_BOTS_ROLE_ID!));
+    console.log('SQUIRRELS_ROLE_ID:', roleMap.get(process.env.SQUIRRELS_ROLE_ID!));
+    console.log('WARRIORS_ROLE_ID:', roleMap.get(process.env.WARRIORS_ROLE_ID!));
+    console.log('BUX_BEGINNER_ROLE_ID:', roleMap.get(process.env.BUX_BEGINNER_ROLE_ID!));
+    console.log('BUX_SAVER_ROLE_ID:', roleMap.get(process.env.BUX_SAVER_ROLE_ID!));
+    console.log('BUX_BUILDER_ROLE_ID:', roleMap.get(process.env.BUX_BUILDER_ROLE_ID!));
+    console.log('BUXDAO_5_ROLE_ID:', roleMap.get(process.env.BUXDAO_5_ROLE_ID!));
+
+    return roleMap;
+  } catch (error) {
+    console.error('Error fetching role names:', error);
+    return new Map();
+  }
+}
+
+// Call this when the server starts
+logRoleNames().then(() => console.log('Role names logged'));
+ 
