@@ -20,28 +20,58 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      const discordProfile = profile as DiscordProfile;
-      if (!discordProfile?.id) return false;
-      
-      await prisma.user.upsert({
-        where: { discordId: discordProfile.id },
-        create: {
-          discordId: discordProfile.id,
-          discordName: discordProfile.global_name || discordProfile.username || 'Unknown'
-        },
-        update: {
-          discordName: discordProfile.global_name || discordProfile.username || 'Unknown'
-        }
-      });
-      return true;
+      try {
+        const discordProfile = profile as DiscordProfile;
+        if (!discordProfile?.id) return false;
+        
+        // Check if user exists and create/update accordingly
+        const dbUser = await prisma.user.upsert({
+          where: { discordId: discordProfile.id },
+          create: {
+            discordId: discordProfile.id,
+            discordName: discordProfile.global_name || discordProfile.username || 'Unknown',
+            wallets: {
+              create: {
+                address: '' // Empty initial wallet
+              }
+            }
+          },
+          update: {
+            discordName: discordProfile.global_name || discordProfile.username || 'Unknown'
+          },
+          include: {
+            wallets: true
+          }
+        });
+
+        console.log('User login:', {
+          discordId: dbUser.discordId,
+          wallets: dbUser.wallets.length
+        });
+
+        return true;
+      } catch (error) {
+        console.error('Error in signIn callback:', error);
+        return false;
+      }
     },
     async session({ session, token }) {
       if (session.user) {
         const dbUser = await prisma.user.findUnique({
-          where: { discordId: token.sub }
+          where: { discordId: token.sub },
+          include: {
+            wallets: {
+              select: {
+                address: true,
+                isPrimary: true
+              }
+            }
+          }
         });
         if (dbUser) {
           session.user.id = dbUser.id;
+          session.user.discordId = dbUser.discordId;
+          session.user.wallets = dbUser.wallets;
         }
       }
       return session;
@@ -55,7 +85,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   session: {
-    strategy: 'jwt' as const
+    strategy: 'jwt'
   },
   pages: {
     signIn: '/',
