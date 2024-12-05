@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         const discordProfile = profile as DiscordProfile;
         if (!discordProfile?.id) return false;
         
-        // Check if user exists and create/update accordingly
+        // Create new user with empty wallet
         const dbUser = await prisma.user.upsert({
           where: { discordId: discordProfile.id },
           create: {
@@ -32,7 +32,7 @@ export const authOptions: NextAuthOptions = {
             discordName: discordProfile.global_name || discordProfile.username || 'Unknown',
             wallets: {
               create: {
-                address: '' // Empty initial wallet
+                address: '' // Empty initial wallet placeholder
               }
             }
           },
@@ -44,7 +44,7 @@ export const authOptions: NextAuthOptions = {
           }
         });
 
-        console.log('User login:', {
+        console.log('New user created:', {
           discordId: dbUser.discordId,
           wallets: dbUser.wallets.length
         });

@@ -55,10 +55,19 @@ export default async function handler(
 
     // Update NFT and token ownership
     await prisma.$transaction([
+      // Delete the empty placeholder wallet if it exists
+      prisma.userWallet.deleteMany({
+        where: { 
+          userId: user.id,
+          address: '' 
+        }
+      }),
+      // Update NFT ownership
       prisma.nFT.updateMany({
         where: { ownerWallet: address },
         data: { ownerDiscordId: user.discordId }
       }),
+      // Update token balance ownership
       prisma.tokenBalance.updateMany({
         where: { walletAddress: address },
         data: { ownerDiscordId: user.discordId }
