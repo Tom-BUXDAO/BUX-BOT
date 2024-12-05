@@ -4,6 +4,21 @@ import styles from '@/styles/MyRoles.module.css';
 import { FaCrown } from 'react-icons/fa';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
+// Map role IDs to their display names
+const ROLE_NAMES: { [key: string]: string } = {
+  '1093607056696692828': 'Squirrels',
+  '1093606438674382858': 'CelebCatz',
+  '1095033759612547133': 'Energy Apes',
+  '1095034117877399686': 'Money Monsters',
+  '1095033899492573274': 'Candy Bots',
+  '1093607187454111825': 'BUX Holder',
+  '1093606579355525252': 'NFT Holder',
+  '1095335098112561234': 'FCKED CATZ',
+  '1300968964276621313': 'Money Monsters 3D',
+  '1300969268665389157': 'RJCTD Bots',
+  '1300969353952362557': 'Doodle Bots'
+};
+
 export default function MyRoles() {
   const { data: session } = useSession();
   const { verifyResult } = useWalletVerification();
@@ -18,8 +33,10 @@ export default function MyRoles() {
     );
   }
 
-  // Use the exact roles from verifyResult
-  const roles = verifyResult?.assignedRoles || [];
+  const roles = verifyResult?.assignedRoles?.map(roleId => ({
+    id: roleId,
+    name: ROLE_NAMES[roleId] || roleId
+  }));
 
   return (
     <Layout>
@@ -31,9 +48,9 @@ export default function MyRoles() {
 
         <div className={styles.infoContainer}>
           <div className={styles.roleList}>
-            {roles.map((role, index) => (
-              <div key={index} className={styles.roleItem}>
-                {role}
+            {roles?.map(role => (
+              <div key={role.id} className={styles.roleItem}>
+                {role.name}
               </div>
             ))}
           </div>
