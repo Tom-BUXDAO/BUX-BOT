@@ -42,37 +42,39 @@ export default async function handler(
       return res.status(400).json({ error: 'Discord ID not found' });
     }
 
-    // First, delete any empty wallet placeholders
-    if (user.wallets.some(w => w.address === '')) {
-      await prisma.userWallet.deleteMany({
+    // Run everything in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Delete empty wallet placeholder
+      await tx.userWallet.deleteMany({
         where: { 
           userId: user.id,
           address: '' 
         }
       });
-    }
 
-    // Then add the new wallet
-    const wallet = await prisma.userWallet.create({
-      data: {
-        address,
-        userId: user.id
-      }
-    });
+      // Add new wallet
+      const wallet = await tx.userWallet.create({
+        data: {
+          address,
+          userId: user.id
+        }
+      });
 
-    console.log('Wallet connected:', wallet);
-
-    // Update NFT and token ownership
-    await prisma.$transaction([
-      prisma.nFT.updateMany({
+      // Update NFT and token ownership
+      await tx.nFT.updateMany({
         where: { ownerWallet: address },
         data: { ownerDiscordId: user.discordId }
-      }),
-      prisma.tokenBalance.updateMany({
+      });
+
+      await tx.tokenBalance.updateMany({
         where: { walletAddress: address },
         data: { ownerDiscordId: user.discordId }
-      })
-    ]);
+      });
+
+      return wallet;
+    });
+
+    console.log('Wallet connection completed:', result);
 
     // Run verification
     const verificationResult = await verifyHolder(address, user.discordId);
@@ -80,7 +82,7 @@ export default async function handler(
     
     return res.status(200).json({ 
       success: true,
-      wallet,
+      wallet: result,
       verification: verificationResult 
     });
 
