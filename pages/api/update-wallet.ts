@@ -39,40 +39,57 @@ export default async function handler(
     });
 
     if (!user) {
+      console.error('User not found:', session.user.id);
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Run everything in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Delete empty wallet placeholder
-      await tx.userWallet.deleteMany({
-        where: {
-          userId: user.id,
-          address: ''
-        }
-      });
-
-      // Create new wallet
-      const wallet = await tx.userWallet.create({
-        data: {
-          address,
-          userId: user.id
-        }
-      });
-
-      return wallet;
+    console.log('Found user:', {
+      id: user.id,
+      discordId: user.discordId,
+      existingWallets: user.wallets.length
     });
 
-    console.log('Wallet connection completed:', result);
+    try {
+      // Run everything in a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        console.log('Deleting empty wallets...');
+        // Delete empty wallet placeholder
+        const deleted = await tx.userWallet.deleteMany({
+          where: {
+            userId: user.id,
+            address: ''
+          }
+        });
+        console.log('Deleted wallets:', deleted);
 
-    // Run verification
-    const verificationResult = await verifyHolder(address, user.discordId!);
-    
-    return res.status(200).json({ 
-      success: true,
-      wallet: result,
-      verification: verificationResult 
-    });
+        console.log('Creating new wallet...');
+        // Create new wallet
+        const wallet = await tx.userWallet.create({
+          data: {
+            address,
+            userId: user.id
+          }
+        });
+        console.log('Created wallet:', wallet);
+
+        return wallet;
+      });
+
+      console.log('Transaction completed successfully');
+
+      // Run verification
+      const verificationResult = await verifyHolder(address, user.discordId!);
+      
+      return res.status(200).json({ 
+        success: true,
+        wallet: result,
+        verification: verificationResult 
+      });
+
+    } catch (txError: any) {
+      console.error('Transaction error:', txError);
+      throw txError;
+    }
 
   } catch (error: any) {
     console.error('Error in update-wallet:', error);
