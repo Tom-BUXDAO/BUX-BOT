@@ -4,24 +4,24 @@ import styles from '@/styles/MyRoles.module.css';
 import { FaCrown } from 'react-icons/fa';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
-// Map role IDs to their exact display names from RoleNotification
-const ROLE_NAMES: { [key: string]: string } = {
-  '1095034117877399686': 'MONSTER',
-  '1095034117877399687': 'MONSTER 🐋',
-  '1093606438674382858': 'CAT',
-  '1095033566070583457': 'BITBOT',
-  '1095033566070583458': 'MEGA BOT 🐋',
-  '1300968964276621313': 'MONSTER 3D',
-  '1300968964276621314': 'MONSTER 3D 🐋',
-  '1093606438674382859': 'CELEB',
-  '1093607056696692828': 'AI squirrel',
-  '1095033759612547133': 'AI energy ape',
-  '1300969268665389157': 'Rjctd bot',
-  '1095033899492573274': 'Candy bot',
-  '1300969353952362557': 'Doodle bot',
-  '1248428373487784006': 'BUX$DAO 5',
-  '1095363984581984357': 'BUX BANKER'
-};
+// Map role IDs to their exact display names in exact order
+const ROLE_ORDER = [
+  { id: '1093607056696692828', name: 'AI squirrel' },
+  { id: '1093606438674382858', name: 'CAT' },
+  { id: '1095033759612547133', name: 'AI energy ape' },
+  { id: '1095034117877399686', name: 'MONSTER' },
+  { id: '1095033899492573274', name: 'Candy bot' },
+  { id: '1093607187454111825', name: '1093607187454111825' },
+  { id: '1093606579355525252', name: '1093606579355525252' },
+  { id: '1095335098112561234', name: '1095335098112561234' },
+  { id: '1300968613179686943', name: '1300968613179686943' },
+  { id: '1300968964276621313', name: 'MONSTER 3D' },
+  { id: '1300969147441610773', name: '1300969147441610773' },
+  { id: '1300969268665389157', name: 'Rjctd bot' },
+  { id: '1300969353952362557', name: 'Doodle bot' },
+  { id: '1248428373487784006', name: 'BUX$DAO 5' },
+  { id: '1095363984581984357', name: 'BUX BANKER' }
+];
 
 export default function MyRoles() {
   const { data: session } = useSession();
@@ -37,11 +37,10 @@ export default function MyRoles() {
     );
   }
 
-  // Get filtered roles from verifyResult
-  const roles = verifyResult?.assignedRoles?.map(roleId => ({
-    id: roleId,
-    name: ROLE_NAMES[roleId] || roleId
-  }));
+  // Filter and sort roles in exact order
+  const roles = ROLE_ORDER.filter(role => 
+    verifyResult?.assignedRoles?.includes(role.id)
+  );
 
   return (
     <Layout>
@@ -53,7 +52,7 @@ export default function MyRoles() {
 
         <div className={styles.infoContainer}>
           <div className={styles.roleList}>
-            {roles?.map(role => (
+            {roles.map(role => (
               <div key={role.id} className={styles.roleItem}>
                 {role.name}
               </div>
