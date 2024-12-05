@@ -62,8 +62,7 @@ export const authOptions: NextAuthOptions = {
           include: {
             wallets: {
               select: {
-                address: true,
-                isPrimary: true
+                address: true
               }
             }
           }
