@@ -16,10 +16,11 @@ export default function Home() {
   const { data: session } = useSession();
   const wallet = useWallet();
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const { verifyResult } = useWalletVerification();
+  const { verifyResult, verifyWallet } = useWalletVerification();
   const [showRoleNotification, setShowRoleNotification] = useState(false);
   const [roleUpdate, setRoleUpdate] = useState<RoleUpdate | null>(null);
   const [lastVerification, setLastVerification] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const handleRoleUpdate = useCallback((update: RoleUpdate) => {
     // Only show notification if roles actually changed
@@ -59,6 +60,16 @@ export default function Home() {
     setRoleUpdate(null);
   }, []);
 
+  const handleVerifyWallet = useCallback(async () => {
+    if (!walletAddress) return;
+    setIsVerifying(true);
+    try {
+      await verifyWallet(walletAddress);
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [walletAddress, verifyWallet]);
+
   return (
     <div className={styles.container}>
       <main className={styles.main}>
@@ -88,7 +99,16 @@ export default function Home() {
           </button>
         ) : (
           <>
-            <WalletMultiButton className={styles.walletButton} />
+            <WalletMultiButton 
+              className={styles.walletButton} 
+              disabled={isVerifying}
+            />
+            {isVerifying && (
+              <div className={styles.verifying}>
+                <div className={styles.spinner} />
+                <span>Verifying...</span>
+              </div>
+            )}
             <UserProfile walletAddress={walletAddress} />
           </>
         )}

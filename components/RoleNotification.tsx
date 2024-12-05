@@ -13,17 +13,17 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
       <div className={styles.content}>
         <div className={styles.header}>
           <h3>Role Update</h3>
-          <button onClick={onClose} className={styles.closeButton}>
-            Close
-          </button>
         </div>
         <div className={styles.roles}>
-          {roleUpdate.added.map((role, index) => (
-            <div key={`added-${index}`} className={styles.role}>
+          {roleUpdate.newRoles.map((role, index) => (
+            <div key={`role-${index}`} className={styles.role}>
               {role}
             </div>
           ))}
         </div>
+        <button onClick={onClose} className={styles.closeButton}>
+          Close
+        </button>
       </div>
     </div>
   );
