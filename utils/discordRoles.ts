@@ -1,102 +1,48 @@
-import { Client, GuildMember, GatewayIntentBits } from 'discord.js';
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v10';
+import type { RoleUpdate } from '@/types/verification';
 
-const DISCORD_API = 'https://discord.com/api/v10';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
-const RATE_LIMIT_DELAY = 1000;
+const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
-// Keep REST API for role verification
-async function getGuildRoles(): Promise<Record<string, string>> {
-  const response = await fetch(
-    `${DISCORD_API}/guilds/${GUILD_ID}/roles`,
-    {
-      headers: {
-        Authorization: `Bot ${DISCORD_BOT_TOKEN}`
-      }
-    }
-  );
+const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN!);
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch guild roles');
-  }
-
-  const roles = await response.json();
-  return roles.reduce((acc: Record<string, string>, role: any) => {
-    acc[role.id] = role.name;
-    return acc;
-  }, {});
-}
-
-export async function updateDiscordRoles(discordId: string, newRoles: string[]) {
+export async function updateDiscordRoles(discordId: string, newRoles: string[]): Promise<RoleUpdate> {
   try {
-    // Get current member roles
-    const memberResponse = await fetch(
-      `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}`,
-      {
-        headers: {
-          Authorization: `Bot ${DISCORD_BOT_TOKEN}`
-        }
+    // Get current member data
+    const member = await rest.get(
+      Routes.guildMember(GUILD_ID!, discordId)
+    ) as { roles: string[] };
+
+    const currentRoles = member.roles;
+    console.log('Current roles:', currentRoles);
+    console.log('New roles to assign:', newRoles);
+
+    // Update member roles with exactly the roles they should have
+    await rest.patch(Routes.guildMember(GUILD_ID!, discordId), {
+      body: {
+        roles: newRoles
       }
-    );
+    });
 
-    if (!memberResponse.ok) {
-      throw new Error('Failed to fetch member roles');
-    }
+    // Calculate added and removed for display
+    const added = newRoles.filter(role => !currentRoles.includes(role));
+    const removed = currentRoles.filter(role => !newRoles.includes(role));
 
-    const memberData = await memberResponse.json();
-    const currentRoles: string[] = memberData.roles || [];
-    const roleNames = await getGuildRoles();
+    // Log changes
+    added.forEach(role => {
+      console.log(`Successfully added role ${role} to ${discordId}`);
+    });
 
-    // Get managed role IDs
-    const managedRoleIds = Object.values(process.env)
-      .filter(id => id && typeof id === 'string' && id.match(/^\d{17,19}$/))
-      .map(id => id as string);
-
-    // Remove managed roles first
-    const rolesToRemove = currentRoles.filter(roleId => managedRoleIds.includes(roleId));
-    for (const roleId of rolesToRemove) {
-      try {
-        await fetch(
-          `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
-          {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bot ${DISCORD_BOT_TOKEN}`
-            }
-          }
-        );
-        console.log(`Successfully removed role ${roleId} (${roleNames[roleId]}) from ${discordId}`);
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
-      } catch (error) {
-        console.error(`Error removing role ${roleId}:`, error);
-      }
-    }
-
-    // Add new roles
-    const rolesToAdd = newRoles.filter(roleId => !currentRoles.includes(roleId));
-    for (const roleId of rolesToAdd) {
-      try {
-        await fetch(
-          `${DISCORD_API}/guilds/${GUILD_ID}/members/${discordId}/roles/${roleId}`,
-          {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bot ${DISCORD_BOT_TOKEN}`
-            }
-          }
-        );
-        console.log(`Successfully added role ${roleId} (${roleNames[roleId]}) to ${discordId}`);
-        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY));
-      } catch (error) {
-        console.error(`Error adding role ${roleId}:`, error);
-      }
-    }
+    removed.forEach(role => {
+      console.log(`Successfully removed role ${role} from ${discordId}`);
+    });
 
     return {
-      added: rolesToAdd.map(id => roleNames[id] || id),
-      removed: rolesToRemove.map(id => roleNames[id] || id),
-      previousRoles: currentRoles.map(id => roleNames[id] || id),
-      newRoles: newRoles.map(id => roleNames[id] || id)
+      added,
+      removed,
+      previousRoles: currentRoles,
+      newRoles: newRoles
     };
 
   } catch (error) {
