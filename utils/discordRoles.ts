@@ -19,10 +19,11 @@ async function getRoleNames(): Promise<Map<string, string>> {
     ) as { roles: { id: string, name: string }[] };
 
     cachedRoleNames = new Map(guild.roles.map(r => [r.id, r.name]));
+    console.log('Cached role names:', Object.fromEntries(cachedRoleNames));
     return cachedRoleNames;
   } catch (error) {
     console.error('Error fetching role names:', error);
-    throw error;
+    return new Map();
   }
 }
 
