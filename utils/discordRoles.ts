@@ -115,6 +115,7 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]):
     const added = newRoles.filter(role => !currentRoles.includes(role));
     const removed = rolesToRemove;
 
+    // Return role names instead of IDs
     return {
       added: added.map(id => roleNameMap.get(id) || id),
       removed: removed.map(id => roleNameMap.get(id) || id),
