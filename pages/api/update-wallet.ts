@@ -13,7 +13,16 @@ export default async function handler(
   }
 
   try {
+    console.log('\n=== Wallet Connection Request ===');
+    console.log('Request body:', req.body);
+    console.log('Request method:', req.method);
+
     const session = await getServerSession(req, res, authOptions);
+    console.log('Session:', {
+      userId: session?.user?.id,
+      discordId: session?.user?.discordId
+    });
+
     if (!session?.user?.id) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -23,18 +32,14 @@ export default async function handler(
       return res.status(400).json({ error: 'Wallet address is required' });
     }
 
-    console.log('Connecting wallet:', {
-      userId: session.user.id,
-      address
-    });
-
     // First delete empty wallet placeholder
-    await prisma.userWallet.deleteMany({
+    const deleted = await prisma.userWallet.deleteMany({
       where: {
         userId: session.user.id,
         address: ''
       }
     });
+    console.log('Deleted empty wallets:', deleted);
 
     // Then create new wallet connection
     const wallet = await prisma.userWallet.create({
@@ -43,8 +48,7 @@ export default async function handler(
         userId: session.user.id
       }
     });
-
-    console.log('Wallet connected:', wallet);
+    console.log('Created new wallet:', wallet);
 
     // Run verification
     const verificationResult = await verifyHolder(address, session.user.discordId!);
