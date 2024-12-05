@@ -1,13 +1,15 @@
 .notification {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: white;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a1a;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e1e1;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
   z-index: 1000;
   min-width: 300px;
+  color: #fff;
 }
 
 .content {
@@ -15,42 +17,43 @@
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .header h3 {
   margin: 0;
   font-size: 1.2rem;
-  color: #333;
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  color: #666;
-  cursor: pointer;
-  padding: 5px 10px;
-  font-size: 0.9rem;
-}
-
-.closeButton:hover {
-  color: #333;
 }
 
 .roles {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
 .role {
   padding: 8px 12px;
-  background: #f5f5f5;
+  background: #2a2a2a;
   border-radius: 4px;
   font-size: 0.9rem;
-  color: #333;
+  text-align: center;
+}
+
+.closeButton {
+  width: 100%;
+  background: #333;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 0.9rem;
+  border-radius: 0 0 8px 8px;
+  border-top: 1px solid #444;
+}
+
+.closeButton:hover {
+  background: #444;
 }
   
