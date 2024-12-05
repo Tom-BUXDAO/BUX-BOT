@@ -1,14 +1,11 @@
 import { useSession } from 'next-auth/react';
-import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 import Layout from '@/components/Layout';
 import styles from '@/styles/Profile.module.css';
 import Image from 'next/image';
-import { FaDiscord, FaWallet, FaCoins, FaImage, FaUserCircle } from 'react-icons/fa';
-import { CollectionInfo } from '@/types/verification';
+import { FaDiscord, FaWallet, FaUserCircle } from 'react-icons/fa';
 
 export default function Profile() {
   const { data: session } = useSession();
-  const { verifyResult } = useWalletVerification();
 
   if (!session?.user) {
     return (
@@ -62,28 +59,6 @@ export default function Profile() {
                         {wallet.address.slice(0, 4)}...{wallet.address.slice(-4)}
                       </div>
                     )
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.statCard}>
-              <FaCoins className={styles.icon} />
-              <div className={styles.statInfo}>
-                <h3>BUX Balance</h3>
-                <p>{verifyResult?.buxBalance?.toLocaleString() || 0} BUX</p>
-              </div>
-            </div>
-
-            <div className={styles.statCard}>
-              <FaImage className={styles.icon} />
-              <div className={styles.statInfo}>
-                <h3>NFT Collections</h3>
-                <div className={styles.collectionList}>
-                  {verifyResult?.collections?.map((collection: CollectionInfo) => (
-                    <div key={collection.name} className={styles.collectionItem}>
-                      {collection.name}
-                    </div>
                   ))}
                 </div>
               </div>
