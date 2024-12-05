@@ -22,7 +22,7 @@ export default async function handler(
 
     const roleMap = new Map(guild.roles.map(r => [r.id, r.name]));
     
-    // Map role IDs from .env to their Discord names
+    // Map env role IDs to their Discord names
     const roleMapping = {
       MONEY_MONSTERS: roleMap.get(process.env.MONEY_MONSTERS_ROLE_ID!),
       MONEY_MONSTERS_WHALE: roleMap.get(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!),
@@ -39,8 +39,14 @@ export default async function handler(
       CANDY_BOTS: roleMap.get(process.env.CANDY_BOTS_ROLE_ID!),
       DOODLE_BOTS: roleMap.get(process.env.DOODLE_BOTS_ROLE_ID!),
       BUXDAO_5: roleMap.get(process.env.BUXDAO_5_ROLE_ID!),
-      BUX_BANKER: roleMap.get(process.env.BUX_BANKER_ROLE_ID!)
+      BUX_BANKER: roleMap.get(process.env.BUX_BANKER_ROLE_ID!),
+      BUX_BEGINNER: roleMap.get(process.env.BUX_BEGINNER_ROLE_ID!),
+      BUX_SAVER: roleMap.get(process.env.BUX_SAVER_ROLE_ID!),
+      BUX_BUILDER: roleMap.get(process.env.BUX_BUILDER_ROLE_ID!)
     };
+
+    // Log the mapping for debugging
+    console.log('Role ID to name mapping:', roleMapping);
 
     return res.status(200).json(roleMapping);
   } catch (error) {
