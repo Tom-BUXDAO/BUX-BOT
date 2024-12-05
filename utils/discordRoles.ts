@@ -8,6 +8,26 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN!);
 
+let cachedRoleNames: Map<string, string> | null = null;
+
+async function getRoleNames(): Promise<Map<string, string>> {
+  if (cachedRoleNames) return cachedRoleNames;
+
+  try {
+    const guild = await rest.get(
+      Routes.guild(GUILD_ID!)
+    ) as { roles: { id: string, name: string }[] };
+
+    cachedRoleNames = new Map(guild.roles.map(r => [r.id, r.name]));
+    return cachedRoleNames;
+  } catch (error) {
+    console.error('Error fetching role names:', error);
+    throw error;
+  }
+}
+
+export { getRoleNames };
+
 interface WhaleConfig {
   holder: string | undefined;
   whale: {

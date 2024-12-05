@@ -1,41 +1,52 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from '../styles/RoleNotification.module.css';
 import type { RoleUpdate } from '@/types/verification';
+import { getRoleNames } from '@/utils/discordRoles';
 
 interface RoleNotificationProps {
   roleUpdate: RoleUpdate;
   onClose: () => void;
 }
 
-// Define the ordered role display names - EXACT order as specified
-const ORDERED_ROLES = [
-  'MONSTER',          // Money Monsters holder
-  'MONSTER 🐋',       // Money Monsters whale
-  'CAT',             // CAT role
-  'CAT 🐋',          // CAT whale role
-  'BITBOT',          // AI BitBots holder
-  'MEGA BOT 🐋',     // AI BitBots whale
-  'MONSTER 3D',      // Money Monsters 3D holder
-  'MONSTER 3D 🐋',   // Money Monsters 3D whale
-  'CELEB',           // CelebCatz
-  'AI squirrel',     // Squirrels
-  'AI energy ape',   // Energy Apes
-  'Rjctd bot',       // RJCTD Bots
-  'Candy bot',       // Candy Bots
-  'Doodle bot',      // Doodle Bots
-  'BUX$DAO 5',       // BUX DAO 5 collections
-  'BUX BANKER'       // BUX token role
+// Define the role display order
+const ROLE_ORDER = [
+  'MONSTER',
+  'MONSTER 🐋',
+  'CAT',
+  'BITBOT',
+  'MEGA BOT 🐋',
+  'MONSTER 3D',
+  'MONSTER 3D 🐋',
+  'CELEB',
+  'AI squirrel',
+  'AI energy ape',
+  'Rjctd bot',
+  'Candy bot',
+  'Doodle bot',
+  'BUX$DAO 5',
+  'BUX BANKER'
 ];
 
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
+  const [roleNames, setRoleNames] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    getRoleNames().then(names => {
+      setRoleNames(names);
+    }).catch(error => {
+      console.error('Failed to fetch role names:', error);
+    });
+  }, []);
+
   // Filter and sort roles based on our order
   const displayRoles = roleUpdate.newRoles
-    .filter(role => ORDERED_ROLES.includes(role))
+    .map(id => roleNames.get(id) || id)
+    .filter(name => ROLE_ORDER.includes(name))
     .sort((a, b) => 
-      ORDERED_ROLES.indexOf(a) - ORDERED_ROLES.indexOf(b)
+      ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b)
     );
 
-  console.log('All roles:', roleUpdate.newRoles);
+  console.log('All roles:', roleUpdate.newRoles.map(id => roleNames.get(id) || id));
   console.log('Filtered roles:', displayRoles);
 
   return (
