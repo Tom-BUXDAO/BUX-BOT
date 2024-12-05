@@ -45,7 +45,6 @@ model User {
   discordId     String?   @unique
   discordName   String?
   wallets       UserWallet[]
-  roles         String[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   ownedNFTs     NFT[]     @relation("Ownership")
