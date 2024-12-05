@@ -9,6 +9,7 @@
   border: 1px solid #333;
   z-index: 1000;
   min-width: 300px;
+  max-height: 70vh;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -16,6 +17,9 @@
 
 .content {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
 }
 
 .header {
@@ -33,6 +37,8 @@
   flex-direction: column;
   gap: 10px;
   margin-bottom: 20px;
+  overflow-y: auto;
+  padding-right: 10px; /* Space for scrollbar */
 }
 
 .role {
@@ -46,7 +52,7 @@
 .closeButton {
   width: auto;
   min-width: 100px;
-  margin: 0 auto 20px;
+  margin: 0 auto;
   background: #333;
   border: none;
   color: #fff;
@@ -54,9 +60,28 @@
   padding: 8px 20px;
   font-size: 0.9rem;
   border-radius: 4px;
+  align-self: center;
 }
 
 .closeButton:hover {
+  background: #444;
+}
+
+/* Custom scrollbar */
+.roles::-webkit-scrollbar {
+  width: 6px;
+}
+
+.roles::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.roles::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+.roles::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
   
