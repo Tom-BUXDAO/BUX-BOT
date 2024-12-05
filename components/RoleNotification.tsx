@@ -26,7 +26,7 @@ const ORDERED_ROLES = [
   'Doodle bot',      // Doodle Bots
   'BUX$DAO 5',       // BUX DAO 5 collections
   'BUX BANKER',      // BUX token role
-  'FCKED CATZ'       // Added missing role
+  'CAT'              // CAT role
 ];
 
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
