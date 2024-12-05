@@ -18,31 +18,47 @@ export async function updateDiscordRoles(discordId: string, newRoles: string[]):
     console.log('Current roles:', currentRoles);
     console.log('New roles to assign:', newRoles);
 
-    // Update member roles with exactly the roles they should have
-    await rest.patch(Routes.guildMember(GUILD_ID!, discordId), {
-      body: {
-        roles: newRoles
+    // Add roles one by one
+    for (const role of newRoles) {
+      if (!currentRoles.includes(role)) {
+        try {
+          await rest.put(
+            Routes.guildMemberRole(GUILD_ID!, discordId, role)
+          );
+          console.log(`Successfully added role ${role} to ${discordId}`);
+        } catch (error) {
+          console.error(`Failed to add role ${role}:`, error);
+        }
       }
-    });
+    }
 
-    // Calculate added and removed for display
+    // Remove roles one by one
+    for (const role of currentRoles) {
+      if (!newRoles.includes(role)) {
+        try {
+          await rest.delete(
+            Routes.guildMemberRole(GUILD_ID!, discordId, role)
+          );
+          console.log(`Successfully removed role ${role} from ${discordId}`);
+        } catch (error) {
+          console.error(`Failed to remove role ${role}:`, error);
+        }
+      }
+    }
+
+    // Get final roles after changes
+    const updatedMember = await rest.get(
+      Routes.guildMember(GUILD_ID!, discordId)
+    ) as { roles: string[] };
+
     const added = newRoles.filter(role => !currentRoles.includes(role));
     const removed = currentRoles.filter(role => !newRoles.includes(role));
-
-    // Log changes
-    added.forEach(role => {
-      console.log(`Successfully added role ${role} to ${discordId}`);
-    });
-
-    removed.forEach(role => {
-      console.log(`Successfully removed role ${role} from ${discordId}`);
-    });
 
     return {
       added,
       removed,
       previousRoles: currentRoles,
-      newRoles: newRoles
+      newRoles: updatedMember.roles
     };
 
   } catch (error) {
