@@ -22,7 +22,7 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
   const { disconnect } = useWallet();
   const [showMenu, setShowMenu] = useState(false);
   const wallet = useWallet();
-  const { verifyResult, verifyWallet: contextVerifyWallet } = useWalletVerification();
+  const { verifyResult, connectWallet } = useWalletVerification();
   const router = useRouter();
 
   const menuItems: MenuItem[] = [
@@ -60,13 +60,13 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
 
   useEffect(() => {
     if (session && walletAddress) {
-      contextVerifyWallet(walletAddress);
+      connectWallet(walletAddress);
     }
-  }, [contextVerifyWallet, session, walletAddress]);
+  }, [connectWallet, session, walletAddress]);
 
   const handleMenuClick = (item: MenuItem) => {
     if (item.label === 'Holder Verify') {
-      contextVerifyWallet(walletAddress);
+      connectWallet(walletAddress);
     }
     router.push(item.path);
     setShowMenu(false);
