@@ -23,11 +23,9 @@ export default function Home() {
   const [isVerifying, setIsVerifying] = useState(false);
 
   const handleRoleUpdate = useCallback((update: RoleUpdate) => {
-    // Only show notification if roles actually changed
-    if (update.added.length > 0 || update.removed.length > 0) {
-      setRoleUpdate(update);
-      setShowRoleNotification(true);
-    }
+    // Always show notification with current roles
+    setRoleUpdate(update);
+    setShowRoleNotification(true);
   }, []);
 
   useEffect(() => {
