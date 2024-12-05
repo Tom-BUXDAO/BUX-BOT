@@ -59,13 +59,13 @@ export default function UserProfile({ walletAddress }: UserProfileProps) {
   ];
 
   useEffect(() => {
-    if (session && walletAddress) {
+    if (session && walletAddress && !verifyResult) {
       connectWallet(walletAddress);
     }
-  }, [connectWallet, session, walletAddress]);
+  }, [connectWallet, session, walletAddress, verifyResult]);
 
   const handleMenuClick = (item: MenuItem) => {
-    if (item.label === 'Holder Verify') {
+    if (item.label === 'Holder Verify' && walletAddress) {
       connectWallet(walletAddress);
     }
     router.push(item.path);
