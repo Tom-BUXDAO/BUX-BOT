@@ -7,25 +7,25 @@ interface RoleNotificationProps {
   onClose: () => void;
 }
 
-// Define the ordered role display names
+// Define the ordered role display names - EXACT Discord role names
 const ORDERED_ROLES = [
-  'MONSTER',
-  'MONSTER 🐋',
-  'FCKED CATZ',
-  'FCKED CATZ 🐋',
-  'MEGA BOT',
-  'MEGA BOT 🐋',
-  'MONSTER 3D',
-  'MONSTER 3D 🐋',
-  'CELEB',
-  'AI warrior',
-  'AI squirrel',
-  'AI energy ape',
-  'RJCTD bot',
-  'Candy bot',
-  'Doodle bot',
-  'BUX$DAO 5',
-  'BUX BANKER'
+  'MONSTER',          // Money Monsters holder
+  'MONSTER 🐋',       // Money Monsters whale
+  'FCKED CATZ',      // FCKED CATZ holder
+  'FCKED CATZ 🐋',   // FCKED CATZ whale
+  'BITBOT',          // AI BitBots holder
+  'MEGA BOT 🐋',     // AI BitBots whale
+  'MONSTER 3D',      // Money Monsters 3D holder
+  'MONSTER 3D 🐋',   // Money Monsters 3D whale
+  'CELEB',           // CelebCatz
+  'AI warrior',      // Warriors
+  'AI squirrel',     // Squirrels
+  'AI energy ape',   // Energy Apes
+  'Rjctd bot',       // RJCTD Bots
+  'Candy bot',       // Candy Bots
+  'Doodle bot',      // Doodle Bots
+  'BUX$DAO 5',       // BUX DAO 5 collections
+  'BUX BANKER'       // BUX token role
 ];
 
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
