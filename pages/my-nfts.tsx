@@ -62,10 +62,14 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
     if (verifyResult?.collections) {
       console.log('Raw verification result:', verifyResult);
       console.log('Collections from DB:', collections);
+      console.log('Verification collections keys:', Object.keys(verifyResult.collections));
       
       const newCollections = collections.map(collection => {
-        const count = verifyResult.collections[collection.name]?.count ?? 0;
-        console.log(`Looking up ${collection.name}: found count = ${count}`);
+        // Try both lowercase and original case since API might normalize
+        const count = verifyResult.collections[collection.name.toLowerCase()]?.count ?? 
+                     verifyResult.collections[collection.name]?.count ?? 0;
+        
+        console.log(`Looking up ${collection.name} (${collection.name.toLowerCase()}): found count = ${count}`);
         
         return {
           ...collection,
