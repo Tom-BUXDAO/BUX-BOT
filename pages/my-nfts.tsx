@@ -13,8 +13,14 @@ interface CollectionStats {
   order: number;
 }
 
-// Define collection display names and order
-const COLLECTION_CONFIG = {
+interface CollectionConfig {
+  displayName: string;
+  order: number;
+  symbol: string;
+}
+
+// Define collection display names and order with proper typing
+const COLLECTION_CONFIG: { [key: string]: CollectionConfig } = {
   'Money Monsters': { displayName: 'Money Monsters', order: 1, symbol: 'monsters' },
   'FCKED CATZ': { displayName: 'Fcked Catz', order: 2, symbol: 'fckedcatz' },
   'AI BitBots': { displayName: 'AI BitBots', order: 3, symbol: 'aibitbots' },
