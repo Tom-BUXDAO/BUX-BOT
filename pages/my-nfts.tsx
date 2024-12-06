@@ -44,11 +44,26 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
-      const collectionData = verifyResult.collections as Record<string, { count: number }>;
+      const dbToDisplayMap: Record<string, string> = {
+        'money_monsters': 'Money Monsters',
+        'money_monsters3d': 'Money Monsters 3D',
+        'celebcatz': 'CelebCatz',
+        'fcked_catz': 'FCKED CATZ',
+        'ai_bitbots': 'AI BitBots',
+        'warriors': 'Warriors',
+        'squirrels': 'Squirrels',
+        'energy_apes': 'Energy Apes',
+        'rjctd_bots': 'RJCTD Bots',
+        'candy_bots': 'Candy Bots',
+        'doodle_bot': 'Doodle Bots'
+      };
+
       const newCollections = collections.map(collection => ({
         ...collection,
-        count: collectionData[collection.name]?.count ?? 0
+        count: verifyResult.collections[dbToDisplayMap[collection.name]]?.count ?? 0
       }));
+      
+      console.log('Updating collections with counts:', newCollections);
       setUpdatedCollections(newCollections);
     }
   }, [verifyResult, collections]);
