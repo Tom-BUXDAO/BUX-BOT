@@ -5,21 +5,51 @@ import { FaImage } from 'react-icons/fa';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 import { prisma } from '@/lib/prisma';
 import { GetServerSideProps } from 'next';
+import { useEffect, useState } from 'react';
 
 interface CollectionData {
   name: string;
+  displayName: string;
   count: number;
   floorPrice: bigint;
   listedCount: number;
+  isMain: boolean;
 }
 
 interface MyNFTsProps {
   collections: CollectionData[];
 }
 
+const DISPLAY_NAMES: { [key: string]: string } = {
+  'money_monsters': 'Money Monsters',
+  'money_monsters3d': 'Money Monsters 3D',
+  'celebcatz': 'Celeb Catz',
+  'fcked_catz': 'Fcked Catz',
+  'ai_bitbots': 'AI BitBots',
+  'warriors': 'Warriors',
+  'squirrels': 'Squirrels',
+  'energy_apes': 'Energy Apes',
+  'rjctd_bots': 'RJCTD Bots',
+  'candy_bots': 'Candy Bots',
+  'doodle_bot': 'Doodle Bots',
+  'MM_top10': 'MM Top 10',
+  'MM3D_top10': 'MM3D Top 10'
+};
+
 export default function MyNFTs({ collections }: MyNFTsProps) {
   const { data: session } = useSession();
   const { verifyResult } = useWalletVerification();
+  const [updatedCollections, setUpdatedCollections] = useState(collections);
+
+  useEffect(() => {
+    if (verifyResult?.collections) {
+      const newCollections = collections.map(collection => ({
+        ...collection,
+        count: verifyResult.collections[collection.name]?.count || 0
+      }));
+      setUpdatedCollections(newCollections);
+    }
+  }, [verifyResult, collections]);
 
   if (!session?.user) {
     return (
@@ -31,9 +61,19 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
     );
   }
 
-  const totalValue = collections.reduce((sum, collection) => 
+  const totalValue = updatedCollections.reduce((sum, collection) => 
     sum + (collection.count * Number(collection.floorPrice)), 0
   );
+
+  const totalNFTs = updatedCollections.reduce((sum, collection) => 
+    sum + collection.count, 0
+  );
+
+  // Sort collections: main collections first, then alphabetically
+  const sortedCollections = [...updatedCollections].sort((a, b) => {
+    if (a.isMain !== b.isMain) return b.isMain ? 1 : -1;
+    return a.displayName.localeCompare(b.displayName);
+  });
 
   return (
     <Layout>
@@ -55,16 +95,16 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
                 </tr>
               </thead>
               <tbody>
-                {collections.map(collection => (
+                {sortedCollections.map(collection => (
                   <tr key={collection.name}>
-                    <td>{collection.name}</td>
+                    <td>{collection.displayName}</td>
                     <td>{collection.count}</td>
                     <td>{Number(collection.floorPrice) / 1e9} SOL</td>
                     <td>{(collection.count * Number(collection.floorPrice) / 1e9).toFixed(2)} SOL</td>
                   </tr>
                 ))}
                 <tr className={styles.totalRow}>
-                  <td colSpan={3}>Total Portfolio Value</td>
+                  <td colSpan={3}>Total Portfolio Value ({totalNFTs} NFTs)</td>
                   <td>{(totalValue / 1e9).toFixed(2)} SOL</td>
                 </tr>
               </tbody>
@@ -81,16 +121,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     select: {
       name: true,
       floorPrice: true,
-      listedCount: true
+      listedCount: true,
+      isMain: true
     },
     orderBy: {
       name: 'asc'
     }
   });
 
-  // Convert BigInt to string for JSON serialization
+  // Convert BigInt to string for JSON serialization and add display names
   const serializedCollections = collections.map(c => ({
     ...c,
+    displayName: DISPLAY_NAMES[c.name] || c.name,
     floorPrice: c.floorPrice.toString(),
     count: 0 // This will be updated from verifyResult on client side
   }));
