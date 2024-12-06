@@ -12,24 +12,24 @@ export const config = {
   }
 };
 
-// Add proper type for role mapping
-const ROLE_NAMES: { [key: string]: string } = {
-  '1095034117877399686': 'MONSTER',
-  '1095034117877399687': 'MONSTER 🐋',
-  '1093606438674382858': 'CAT',
-  '1095033566070583457': 'BITBOT',
-  '1095033566070583458': 'MEGA BOT 🐋',
-  '1300968964276621313': 'MONSTER 3D',
-  '1300968964276621314': 'MONSTER 3D 🐋',
-  '1093606438674382859': 'CELEB',
-  '1093607056696692828': 'AI squirrel',
-  '1095033759612547133': 'AI energy ape',
-  '1300969268665389157': 'Rjctd bot',
-  '1095033899492573274': 'Candy bot',
-  '1300969353952362557': 'Doodle bot',
-  '1248428373487784006': 'BUX$DAO 5',
-  '1095363984581984357': 'BUX BANKER'
-} as const;
+// Use the exact role names from the popup
+const ROLE_DISPLAY_NAMES = [
+  'MONSTER',
+  'MONSTER 🐋',
+  'CAT',
+  'BITBOT',
+  'MEGA BOT 🐋',
+  'MONSTER 3D',
+  'MONSTER 3D 🐋',
+  'CELEB',
+  'AI squirrel',
+  'AI energy ape',
+  'Rjctd bot',
+  'Candy bot',
+  'Doodle bot',
+  'BUX$DAO 5',
+  'BUX BANKER'
+];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -58,15 +58,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const result = await verifyHolder(address, user.discordId);
 
-    // Map role IDs to display names before sending response
-    const mappedRoles = result.assignedRoles.map(roleId => ROLE_NAMES[roleId] || roleId);
-
+    // Use the exact role names that appear in the popup
     const verification = {
       isHolder: true,
       collections: result.collections,
       buxBalance: result.buxBalance,
       totalNFTs: result.totalNFTs,
-      assignedRoles: mappedRoles,  // Send display names instead of IDs
+      assignedRoles: ROLE_DISPLAY_NAMES,  // Use the exact role names
       qualifyingBuxRoles: result.qualifyingBuxRoles,
       roleUpdate: result.roleUpdate
     };
