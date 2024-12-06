@@ -16,9 +16,14 @@ interface CollectionData {
   isMain: boolean;
 }
 
-interface VerifyResultCollections {
-  [key: string]: {
-    count: number;
+interface CollectionInfo {
+  name: string;
+  count: number;
+}
+
+interface VerifyResult {
+  collections: {
+    [key: string]: CollectionInfo;
   };
 }
 
@@ -49,10 +54,9 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
-      const verifyCollections = verifyResult.collections as VerifyResultCollections;
       const newCollections = collections.map(collection => ({
         ...collection,
-        count: verifyCollections[collection.name]?.count || 0
+        count: verifyResult.collections[collection.name]?.count || 0
       }));
       setUpdatedCollections(newCollections);
     }
