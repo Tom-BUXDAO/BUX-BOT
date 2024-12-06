@@ -138,15 +138,15 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
                     <tr key={collection.name}>
                       <td>{collection.displayName}</td>
                       <td>{collection.count}</td>
-                      <td>{Number(collection.floorPrice) / 1e9} SOL</td>
-                      <td>{solValue.toFixed(2)} SOL</td>
+                      <td>◎{Number(collection.floorPrice) / 1e9}</td>
+                      <td>◎{solValue.toFixed(2)}</td>
                       <td>${usdValue.toFixed(2)}</td>
                     </tr>
                   );
                 })}
                 <tr className={styles.totalRow}>
                   <td colSpan={3}>TOTAL ({totalNFTs} NFTs)</td>
-                  <td>{(totalValue / 1e9).toFixed(2)} SOL</td>
+                  <td>◎{(totalValue / 1e9).toFixed(2)}</td>
                   <td>${totalUsdValue.toFixed(2)}</td>
                 </tr>
               </tbody>
