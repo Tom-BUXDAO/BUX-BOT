@@ -40,7 +40,6 @@ function getHighestBuxRole(buxBalance: number): string | undefined {
 
 export async function verifyHolder(walletAddress: string, discordId: string): Promise<VerificationResult> {
   try {
-    // Get NFT counts and token balances
     const [nftCounts, tokenBalances] = await Promise.all([
       prisma.nFT.groupBy({
         by: ['collection'],
@@ -57,11 +56,12 @@ export async function verifyHolder(walletAddress: string, discordId: string): Pr
     const buxBalance = Number(tokenBalances.reduce((sum, { balance }) => sum + balance, BigInt(0))) / 1e9;
     const totalNFTs = nftCounts.reduce((sum, { _count }) => sum + _count, 0);
 
-    // Convert array to Collections object
+    // Convert array to Collections object using DB names directly
     const collectionsObj: Collections = {};
     nftCounts.forEach(({ collection, _count }) => {
-      collectionsObj[collection] = {  // Use DB name directly
-        count: _count,
+      // Use the raw DB name from the database query
+      collectionsObj[collection] = {
+        count: _count
       };
     });
 
