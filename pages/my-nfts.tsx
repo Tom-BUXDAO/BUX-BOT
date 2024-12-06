@@ -6,7 +6,7 @@ import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 import { prisma } from '@/lib/prisma';
 import { GetServerSideProps } from 'next';
 import { useEffect, useState } from 'react';
-import { VerificationResult, Collections } from '@/types/verification';
+import { Collections } from '@/types/verification';
 
 interface CollectionData {
   name: string;
@@ -21,7 +21,7 @@ interface MyNFTsProps {
   collections: CollectionData[];
 }
 
-const DISPLAY_NAMES: { [key: string]: string } = {
+const DISPLAY_NAMES: Record<string, string> = {
   'money_monsters': 'Money Monsters',
   'money_monsters3d': 'Money Monsters 3D',
   'celebcatz': 'Celeb Catz',
@@ -35,7 +35,7 @@ const DISPLAY_NAMES: { [key: string]: string } = {
   'doodle_bot': 'Doodle Bots',
   'MM_top10': 'MM Top 10',
   'MM3D_top10': 'MM3D Top 10'
-};
+} as const;
 
 export default function MyNFTs({ collections }: MyNFTsProps) {
   const { data: session } = useSession();
@@ -44,9 +44,10 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
+      const collectionData = verifyResult.collections as Record<string, { count: number }>;
       const newCollections = collections.map(collection => ({
         ...collection,
-        count: verifyResult.collections[collection.name]?.count || 0
+        count: collectionData[collection.name]?.count ?? 0
       }));
       setUpdatedCollections(newCollections);
     }
