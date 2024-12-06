@@ -16,14 +16,24 @@ interface CollectionData {
   isMain: boolean;
 }
 
-interface CollectionInfo {
-  name: string;
-  count: number;
+interface VerifyResultCollections {
+  [key: string]: {
+    count: number;
+  };
 }
 
 interface VerifyResult {
-  collections: {
-    [key: string]: CollectionInfo;
+  isHolder: boolean;
+  collections: VerifyResultCollections;
+  buxBalance: number;
+  totalNFTs: number;
+  assignedRoles: string[];
+  qualifyingBuxRoles: string[];
+  roleUpdate: {
+    added: string[];
+    removed: string[];
+    previousRoles: string[];
+    newRoles: string[];
   };
 }
 
@@ -54,9 +64,10 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
+      const collections_data = verifyResult.collections as VerifyResultCollections;
       const newCollections = collections.map(collection => ({
         ...collection,
-        count: verifyResult.collections[collection.name]?.count || 0
+        count: collections_data[collection.name]?.count || 0
       }));
       setUpdatedCollections(newCollections);
     }
