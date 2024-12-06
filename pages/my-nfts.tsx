@@ -41,6 +41,24 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
   const { data: session } = useSession();
   const { verifyResult } = useWalletVerification();
   const [updatedCollections, setUpdatedCollections] = useState(collections);
+  const [solPrice, setSolPrice] = useState<number>(0);
+
+  // Fetch SOL price
+  useEffect(() => {
+    async function fetchSolPrice() {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const data = await response.json();
+        setSolPrice(data.solana.usd);
+      } catch (error) {
+        console.error('Error fetching SOL price:', error);
+      }
+    }
+    fetchSolPrice();
+    // Refresh price every 5 minutes
+    const interval = setInterval(fetchSolPrice, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (verifyResult?.collections) {
@@ -86,6 +104,8 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
     sum + collection.count, 0
   );
 
+  const totalUsdValue = (totalValue / 1e9) * solPrice;
+
   // Sort collections: main collections first, then alphabetically
   const sortedCollections = [...updatedCollections].sort((a, b) => {
     if (a.isMain !== b.isMain) return b.isMain ? 1 : -1;
@@ -109,20 +129,27 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
                   <th>Quantity</th>
                   <th>Floor Price</th>
                   <th>Total Value</th>
+                  <th>USD Value</th>
                 </tr>
               </thead>
               <tbody>
-                {sortedCollections.map(collection => (
-                  <tr key={collection.name}>
-                    <td>{collection.displayName}</td>
-                    <td>{collection.count}</td>
-                    <td>{Number(collection.floorPrice) / 1e9} SOL</td>
-                    <td>{(collection.count * Number(collection.floorPrice) / 1e9).toFixed(2)} SOL</td>
-                  </tr>
-                ))}
+                {sortedCollections.map(collection => {
+                  const solValue = collection.count * Number(collection.floorPrice) / 1e9;
+                  const usdValue = solValue * solPrice;
+                  return (
+                    <tr key={collection.name}>
+                      <td>{collection.displayName}</td>
+                      <td>{collection.count}</td>
+                      <td>{Number(collection.floorPrice) / 1e9} SOL</td>
+                      <td>{solValue.toFixed(2)} SOL</td>
+                      <td>${usdValue.toFixed(2)}</td>
+                    </tr>
+                  );
+                })}
                 <tr className={styles.totalRow}>
                   <td colSpan={3}>Total Portfolio Value ({totalNFTs} NFTs)</td>
                   <td>{(totalValue / 1e9).toFixed(2)} SOL</td>
+                  <td>${totalUsdValue.toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
