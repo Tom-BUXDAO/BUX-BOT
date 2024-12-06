@@ -38,6 +38,20 @@ function getHighestBuxRole(buxBalance: number): string | undefined {
   return sortedTiers.find(tier => buxBalance >= tier.threshold)?.roleId;
 }
 
+const DISPLAY_TO_DB_NAMES: Record<string, string> = {
+  'Money Monsters': 'money_monsters',
+  'Money Monsters 3D': 'money_monsters3d',
+  'Celeb Catz': 'celebcatz',
+  'FCKED CATZ': 'fcked_catz',
+  'AI BitBots': 'ai_bitbots',
+  'A.I Warriors': 'warriors',
+  'A.I Squirrels': 'squirrels',
+  'A.I Energy Apes': 'energy_apes',
+  'RJCTD Bots': 'rjctd_bots',
+  'Candy Bots': 'candy_bots',
+  'Doodle Bots': 'doodle_bot'
+};
+
 export async function verifyHolder(walletAddress: string, discordId: string): Promise<VerificationResult> {
   try {
     // Get NFT counts and token balances
@@ -57,19 +71,19 @@ export async function verifyHolder(walletAddress: string, discordId: string): Pr
     const buxBalance = Number(tokenBalances.reduce((sum, { balance }) => sum + balance, BigInt(0))) / 1e9;
     const totalNFTs = nftCounts.reduce((sum, { _count }) => sum + _count, 0);
 
-    // Convert array to Collections object
+    // Convert array to Collections object using DB names
     const collectionsObj: Collections = {};
     nftCounts.forEach(({ collection, _count }) => {
-      const normalizedName = normalizeCollectionName(collection);
-      const config = NFT_THRESHOLDS[normalizedName];
-      collectionsObj[normalizedName] = {
+      // Use DB name for storing counts
+      const dbName = DISPLAY_TO_DB_NAMES[collection] || collection;
+      collectionsObj[dbName] = {
         count: _count,
       };
     });
 
     return {
       isHolder: totalNFTs > 0 || buxBalance > 0,
-      collections: collectionsObj,
+      collections: collectionsObj,  // Now using DB names
       buxBalance,
       totalNFTs,
       assignedRoles: [],
