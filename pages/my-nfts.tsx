@@ -6,6 +6,7 @@ import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 import { prisma } from '@/lib/prisma';
 import { GetServerSideProps } from 'next';
 import { useEffect, useState } from 'react';
+import { VerificationResult } from '@/types/verification';
 
 interface CollectionData {
   name: string;
@@ -14,27 +15,6 @@ interface CollectionData {
   floorPrice: bigint;
   listedCount: number;
   isMain: boolean;
-}
-
-interface VerifyResultCollections {
-  [key: string]: {
-    count: number;
-  };
-}
-
-interface VerifyResult {
-  isHolder: boolean;
-  collections: VerifyResultCollections;
-  buxBalance: number;
-  totalNFTs: number;
-  assignedRoles: string[];
-  qualifyingBuxRoles: string[];
-  roleUpdate: {
-    added: string[];
-    removed: string[];
-    previousRoles: string[];
-    newRoles: string[];
-  };
 }
 
 interface MyNFTsProps {
@@ -64,10 +44,9 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
-      const collections_data = verifyResult.collections as VerifyResultCollections;
       const newCollections = collections.map(collection => ({
         ...collection,
-        count: collections_data[collection.name]?.count || 0
+        count: verifyResult.collections[collection.name]?.count || 0
       }));
       setUpdatedCollections(newCollections);
     }
