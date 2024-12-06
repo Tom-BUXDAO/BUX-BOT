@@ -6,7 +6,7 @@ import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 import { prisma } from '@/lib/prisma';
 import { GetServerSideProps } from 'next';
 import { useEffect, useState } from 'react';
-import { VerificationResult } from '@/types/verification';
+import { VerificationResult, Collections } from '@/types/verification';
 
 interface CollectionData {
   name: string;

@@ -8,19 +8,26 @@ export interface RoleUpdate {
 }
 
 export interface CollectionInfo {
-  name: string;
   count: number;
-  isWhale: boolean;
+}
+
+export interface Collections {
+  [key: string]: CollectionInfo;
 }
 
 export interface VerificationResult {
   isHolder: boolean;
-  collections: CollectionInfo[];
+  collections: Collections;
   buxBalance: number;
   totalNFTs: number;
   assignedRoles: string[];
-  roleUpdate: RoleUpdate;
   qualifyingBuxRoles: string[];
+  roleUpdate: {
+    added: string[];
+    removed: string[];
+    previousRoles: string[];
+    newRoles: string[];
+  };
 }
 
 export interface WalletVerification {
