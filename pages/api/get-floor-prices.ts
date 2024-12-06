@@ -79,7 +79,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ floorPrice });
   } catch (error) {
     console.error('Error fetching floor price:', error);
-    return res.status(500).json({ error: 'Failed to fetch floor price', details: error.message });
+    // Type-safe error handling
+    if (error instanceof Error) {
+      return res.status(500).json({ 
+        error: 'Failed to fetch floor price', 
+        details: error.message 
+      });
+    }
+    // Generic error if not an Error instance
+    return res.status(500).json({ 
+      error: 'Failed to fetch floor price',
+      details: 'Unknown error occurred'
+    });
   }
 }
 
