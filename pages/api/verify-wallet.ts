@@ -12,8 +12,8 @@ export const config = {
   }
 };
 
-// Map role IDs to display names
-const ROLE_NAMES = {
+// Add proper type for role mapping
+const ROLE_NAMES: { [key: string]: string } = {
   '1095034117877399686': 'MONSTER',
   '1095034117877399687': 'MONSTER 🐋',
   '1093606438674382858': 'CAT',
@@ -29,7 +29,7 @@ const ROLE_NAMES = {
   '1300969353952362557': 'Doodle bot',
   '1248428373487784006': 'BUX$DAO 5',
   '1095363984581984357': 'BUX BANKER'
-};
+} as const;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
