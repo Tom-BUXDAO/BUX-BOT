@@ -60,25 +60,11 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
-      // Create reverse mapping from display to DB names
-      const displayToDb = Object.entries(DB_TO_DISPLAY_NAMES).reduce((acc, [dbName, displayName]) => {
-        acc[displayName] = dbName;
-        return acc;
-      }, {} as Record<string, string>);
-
-      const newCollections = collections.map(collection => {
-        // Get the display name for this collection
-        const displayName = DB_TO_DISPLAY_NAMES[collection.name];
-        // Look up count using display name since that's what the API returns
-        const count = verifyResult.collections[displayName]?.count ?? 0;
-        
-        return {
-          ...collection,
-          displayName: displayName || collection.name,
-          count
-        };
-      });
-      
+      const newCollections = collections.map(collection => ({
+        ...collection,
+        displayName: DB_TO_DISPLAY_NAMES[collection.name] || collection.name,
+        count: verifyResult.collections[collection.name]?.count ?? 0
+      }));
       setUpdatedCollections(newCollections);
     }
   }, [verifyResult, collections]);
