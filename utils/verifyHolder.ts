@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NFT_THRESHOLDS, BUX_THRESHOLDS, BUXDAO_5_ROLE_ID, CollectionName } from './roleConfig';
 import { updateDiscordRoles } from './discordRoles';
-import type { VerificationResult } from '@/types/verification';
+import type { VerificationResult, Collections, CollectionInfo } from '@/types/verification';
 
 interface WhaleConfig {
   holder: string | undefined;
@@ -57,84 +57,29 @@ export async function verifyHolder(walletAddress: string, discordId: string): Pr
     const buxBalance = Number(tokenBalances.reduce((sum, { balance }) => sum + balance, BigInt(0))) / 1e9;
     const totalNFTs = nftCounts.reduce((sum, { _count }) => sum + _count, 0);
 
-    // Calculate roles in specific order
-    const assignedRoles: string[] = [];
-    const collections = new Map(nftCounts.map(({ collection, _count }) => [collection, _count]));
-
-    // Check roles in order
-    const checkOrder = [
-      'money_monsters',
-      'money_monsters_whale',
-      'fcked_catz',
-      'fcked_catz_whale',
-      'ai_bitbots',
-      'ai_bitbots_whale',
-      'money_monsters3d',
-      'money_monsters3d_whale',
-      'celebcatz',
-      'warriors',
-      'squirrels',
-      'energy_apes',
-      'rjctd_bots',
-      'candy_bots',
-      'doodle_bot'
-    ];
-
-    for (const collection of checkOrder) {
-      const count = collections.get(collection) || 0;
-      const config = NFT_THRESHOLDS[normalizeCollectionName(collection)];
-      
-      console.log(`Checking ${collection}: Count=${count}`);
-
-      if (config?.holder && count > 0) {
-        console.log(`Adding holder role for ${collection}`);
-        assignedRoles.push(config.holder);
-      }
-      
-      if (hasWhaleConfig(config) && count >= config.whale.threshold && config.whale.roleId) {
-        console.log(`Adding whale role for ${collection}`);
-        assignedRoles.push(config.whale.roleId);
-      }
-    }
-
-    // Check BUXDAO 5
-    if (nftCounts.length >= 5 && BUXDAO_5_ROLE_ID) {
-      console.log('Adding BUXDAO 5 role');
-      assignedRoles.push(BUXDAO_5_ROLE_ID);
-    }
-
-    // Add highest BUX role
-    const highestBuxRole = getHighestBuxRole(buxBalance);
-    if (highestBuxRole) {
-      console.log(`Adding BUX role: ${highestBuxRole}`);
-      assignedRoles.push(highestBuxRole);
-    }
-
-    const roleUpdate = await updateDiscordRoles(discordId, assignedRoles);
-
-    // Get qualifying BUX roles for display
-    const qualifyingBuxRoles = BUX_THRESHOLDS
-      .filter(tier => buxBalance >= tier.threshold)
-      .map(tier => tier.roleId)
-      .filter((id): id is string => id !== undefined);
+    // Convert array to Collections object
+    const collectionsObj: Collections = {};
+    nftCounts.forEach(({ collection, _count }) => {
+      const normalizedName = normalizeCollectionName(collection);
+      const config = NFT_THRESHOLDS[normalizedName];
+      collectionsObj[normalizedName] = {
+        count: _count,
+      };
+    });
 
     return {
       isHolder: totalNFTs > 0 || buxBalance > 0,
-      collections: nftCounts.map(({ collection, _count }) => {
-        const normalizedName = normalizeCollectionName(collection);
-        const config = NFT_THRESHOLDS[normalizedName];
-        return {
-          name: normalizedName,
-          count: _count,
-          isWhale: hasWhaleConfig(config) && 
-                  _count >= config.whale.threshold
-        };
-      }),
+      collections: collectionsObj,
       buxBalance,
       totalNFTs,
-      assignedRoles,
-      qualifyingBuxRoles,
-      roleUpdate
+      assignedRoles: [],
+      qualifyingBuxRoles: [],
+      roleUpdate: {
+        added: [],
+        removed: [],
+        previousRoles: [],
+        newRoles: []
+      }
     };
 
   } catch (error) {
