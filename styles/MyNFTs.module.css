@@ -1,94 +1,79 @@
 .container {
-  width: 100%;
+  padding: 1rem;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.titleIcon {
+  font-size: 2.5rem;
+  margin-right: 1rem;
+  color: #fff;
+}
+
+.title {
+  font-size: 2.5rem;
+  margin: 0;
+  color: #fff;
+}
+
+.infoContainer {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
   padding: 2rem;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  justify-content: center;
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
 }
 
-.header h2 {
-  color: white;
-  margin: 0;
-  font-size: 2.5rem;
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #fff;
 }
 
-.icon {
-  color: #FFD700;
-  font-size: 1.5rem;
+.table th,
+.table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.statCard {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 1.5rem;
-  border-radius: 1rem;
-  text-align: center;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.statCard h3 {
-  color: #b8a7d9;
-  margin-bottom: 0.5rem;
+.table th {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
   font-size: 0.9rem;
 }
 
-.statCard p {
-  color: #FFD700;
-  font-size: 1.5rem;
-  font-weight: 500;
-}
-
-.collectionSelect {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.collectionSelect select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  width: 100%;
-  max-width: 400px;
+.table td {
   font-size: 1rem;
-  cursor: pointer;
 }
 
-.nftGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
-  padding: 1rem;
+.totalRow {
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.loading, .placeholder {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.6);
-  grid-column: 1 / -1;
-  padding: 3rem;
+.totalRow td {
+  padding: 1.5rem 1rem;
 }
 
-@media (max-width: 640px) {
-  .container {
-    padding: 1rem;
+@media (max-width: 768px) {
+  .table {
+    font-size: 0.9rem;
   }
   
-  .stats {
-    grid-template-columns: 1fr;
+  .table th,
+  .table td {
+    padding: 0.75rem;
   }
 } 

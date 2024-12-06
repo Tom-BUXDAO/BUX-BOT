@@ -1,87 +1,88 @@
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import styles from '@/styles/MyNFTs.module.css';
 import { FaImage } from 'react-icons/fa';
-import layoutStyles from '@/styles/Layout.module.css';
+import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
-interface NFTCollection {
+interface CollectionStats {
   name: string;
   count: number;
-  floorPrice?: number;
+  floorPrice: number;
 }
 
-export default function MyNFTsPage() {
+export default function MyNFTs() {
   const { data: session } = useSession();
-  const [collections, setCollections] = useState<NFTCollection[]>([]);
-  const [selectedCollection, setSelectedCollection] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+  const { verifyResult } = useWalletVerification();
 
-  useEffect(() => {
-    async function fetchNFTs() {
-      if (session?.user?.id) {
-        try {
-          const response = await fetch(`/api/users/${session.user.id}/nfts`);
-          const data = await response.json();
-          setCollections(data.collections);
-        } catch (error) {
-          console.error('Error fetching NFTs:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    }
-    fetchNFTs();
-  }, [session]);
+  // Mock floor prices - these would come from an API
+  const floorPrices: { [key: string]: number } = {
+    'Money Monsters': 25,
+    'Money Monsters 3D': 35,
+    'AI BitBots': 15,
+    'Candy Bots': 12,
+    'Energy Apes': 20,
+    'Squirrels': 18,
+    'CelebCatz': 30,
+    'FCKED CATZ': 10,
+    'RJCTD Bots': 8,
+    'Doodle Bots': 14
+  };
 
-  const totalValue = collections.reduce((sum, col) => 
-    sum + (col.count * (col.floorPrice || 0)), 0
+  if (!session?.user) {
+    return (
+      <Layout>
+        <div className={styles.container}>
+          <h1>Please sign in to view your NFTs</h1>
+        </div>
+      </Layout>
+    );
+  }
+
+  const collections = verifyResult?.collections?.map(collection => ({
+    name: collection.name,
+    count: collection.count,
+    floorPrice: floorPrices[collection.name] || 0
+  })) || [];
+
+  const totalValue = collections.reduce((sum, collection) => 
+    sum + (collection.count * collection.floorPrice), 0
   );
 
   return (
     <Layout>
       <div className={styles.container}>
-        <div className={layoutStyles.pageHeader}>
-          <FaImage className={layoutStyles.pageIcon} />
-          <h2>My NFTs</h2>
+        <div className={styles.titleContainer}>
+          <FaImage className={styles.titleIcon} />
+          <h2 className={styles.title}>NFT Holdings</h2>
         </div>
 
-        <div className={styles.stats}>
-          <div className={styles.statCard}>
-            <h3>Total NFTs</h3>
-            <p>{collections.reduce((sum, col) => sum + col.count, 0)}</p>
+        <div className={styles.infoContainer}>
+          <div className={styles.tableContainer}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Collection</th>
+                  <th>Quantity</th>
+                  <th>Floor Price</th>
+                  <th>Total Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {collections.map(collection => (
+                  <tr key={collection.name}>
+                    <td>{collection.name}</td>
+                    <td>{collection.count}</td>
+                    <td>{collection.floorPrice} SOL</td>
+                    <td>{(collection.count * collection.floorPrice).toFixed(2)} SOL</td>
+                  </tr>
+                ))}
+                <tr className={styles.totalRow}>
+                  <td colSpan={3}>Total Portfolio Value</td>
+                  <td>{totalValue.toFixed(2)} SOL</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div className={styles.statCard}>
-            <h3>Total Value</h3>
-            <p>{totalValue.toFixed(2)} SOL</p>
-          </div>
-        </div>
-
-        <div className={styles.collectionSelect}>
-          <select 
-            value={selectedCollection}
-            onChange={(e) => setSelectedCollection(e.target.value)}
-            aria-label="Select NFT Collection"
-            title="Select NFT Collection"
-          >
-            <option value="">All Collections</option>
-            {collections.map(col => (
-              <option key={col.name} value={col.name}>
-                {col.name} ({col.count})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.nftGrid}>
-          {loading ? (
-            <div className={styles.loading}>Loading NFTs...</div>
-          ) : (
-            // NFT grid will be populated here
-            <div className={styles.placeholder}>
-              Select a collection to view NFTs
-            </div>
-          )}
         </div>
       </div>
     </Layout>
