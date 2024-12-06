@@ -1,20 +1,40 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import rateLimit from 'express-rate-limit';
 
 // Cache floor prices for 5 minutes
 const cache = new Map<string, { price: number; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Rate limit to 10 requests per minute
-const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: { error: 'Too many requests, please try again later' }
-});
+// Simple rate limiting
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 10;
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const requestData = requestCounts.get(ip);
+
+  if (!requestData || now > requestData.resetTime) {
+    requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return false;
+  }
+
+  if (requestData.count >= MAX_REQUESTS) {
+    return true;
+  }
+
+  requestData.count++;
+  return false;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limiting
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (isRateLimited(clientIp as string)) {
+    return res.status(429).json({ error: 'Too many requests, please try again later' });
   }
 
   try {
