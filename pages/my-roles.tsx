@@ -4,25 +4,6 @@ import styles from '@/styles/MyRoles.module.css';
 import { FaCrown } from 'react-icons/fa';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
 
-// Exact role names and order from RoleNotification
-const ROLE_ORDER = [
-  { id: '1095034117877399686', name: 'MONSTER' },
-  { id: '1095034117877399687', name: 'MONSTER 🐋' },
-  { id: '1093606438674382858', name: 'CAT' },
-  { id: '1095033566070583457', name: 'BITBOT' },
-  { id: '1095033566070583458', name: 'MEGA BOT 🐋' },
-  { id: '1300968964276621313', name: 'MONSTER 3D' },
-  { id: '1300968964276621314', name: 'MONSTER 3D 🐋' },
-  { id: '1093606438674382859', name: 'CELEB' },
-  { id: '1093607056696692828', name: 'AI squirrel' },
-  { id: '1095033759612547133', name: 'AI energy ape' },
-  { id: '1300969268665389157', name: 'Rjctd bot' },
-  { id: '1095033899492573274', name: 'Candy bot' },
-  { id: '1300969353952362557', name: 'Doodle bot' },
-  { id: '1248428373487784006', name: 'BUX$DAO 5' },
-  { id: '1095363984581984357', name: 'BUX BANKER' }
-];
-
 export default function MyRoles() {
   const { data: session } = useSession();
   const { verifyResult } = useWalletVerification();
@@ -37,10 +18,8 @@ export default function MyRoles() {
     );
   }
 
-  // Filter and sort roles in exact order
-  const roles = ROLE_ORDER.filter(role => 
-    verifyResult?.assignedRoles?.includes(role.id)
-  );
+  // Use the filtered roles directly from verifyResult
+  const roles = verifyResult?.assignedRoles || [];
 
   return (
     <Layout>
@@ -52,9 +31,9 @@ export default function MyRoles() {
 
         <div className={styles.infoContainer}>
           <div className={styles.roleList}>
-            {roles.map(role => (
-              <div key={role.id} className={styles.roleItem}>
-                {role.name}
+            {roles.map((role, index) => (
+              <div key={index} className={styles.roleItem}>
+                {role}
               </div>
             ))}
           </div>
