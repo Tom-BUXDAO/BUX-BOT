@@ -42,12 +42,11 @@ export default function MyNFTs() {
   useEffect(() => {
     const fetchFloorPrices = async () => {
       try {
-        // Fetch floor prices for each collection from Magic Eden
         const prices: {[key: string]: number} = {};
         for (const [_, config] of Object.entries(COLLECTION_CONFIG)) {
-          const response = await fetch(`https://api-mainnet.magiceden.dev/v2/collections/${config.symbol}/stats`);
+          const response = await fetch(`/api/get-floor-prices?symbol=${config.symbol}`);
           const data = await response.json();
-          prices[config.symbol] = data.floorPrice / 1e9; // Convert from lamports to SOL
+          prices[config.symbol] = data.floorPrice;
         }
         setFloorPrices(prices);
       } catch (error) {
