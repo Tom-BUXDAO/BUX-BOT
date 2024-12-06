@@ -27,14 +27,12 @@ const DISPLAY_NAMES: Record<string, string> = {
   'celebcatz': 'Celeb Catz',
   'fcked_catz': 'Fcked Catz',
   'ai_bitbots': 'AI BitBots',
-  'warriors': 'Warriors',
-  'squirrels': 'Squirrels',
-  'energy_apes': 'Energy Apes',
+  'warriors': 'A.I Warriors',
+  'squirrels': 'A.I Squirrels',
+  'energy_apes': 'A.I Energy Apes',
   'rjctd_bots': 'RJCTD Bots',
   'candy_bots': 'Candy Bots',
-  'doodle_bot': 'Doodle Bots',
-  'MM_top10': 'MM Top 10',
-  'MM3D_top10': 'MM3D Top 10'
+  'doodle_bot': 'Doodle Bots'
 } as const;
 
 export default function MyNFTs({ collections }: MyNFTsProps) {
@@ -68,9 +66,9 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
         'celebcatz': 'CelebCatz',
         'fcked_catz': 'FCKED CATZ',
         'ai_bitbots': 'AI BitBots',
-        'warriors': 'Warriors',
-        'squirrels': 'Squirrels',
-        'energy_apes': 'Energy Apes',
+        'warriors': 'A.I Warriors',
+        'squirrels': 'A.I Squirrels',
+        'energy_apes': 'A.I Energy Apes',
         'rjctd_bots': 'RJCTD Bots',
         'candy_bots': 'Candy Bots',
         'doodle_bot': 'Doodle Bots'
@@ -147,7 +145,7 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
                   );
                 })}
                 <tr className={styles.totalRow}>
-                  <td colSpan={3}>Total Portfolio Value ({totalNFTs} NFTs)</td>
+                  <td colSpan={3}>TOTAL ({totalNFTs} NFTs)</td>
                   <td>{(totalValue / 1e9).toFixed(2)} SOL</td>
                   <td>${totalUsdValue.toFixed(2)}</td>
                 </tr>
