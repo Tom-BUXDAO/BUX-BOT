@@ -3,59 +3,23 @@ import Layout from '@/components/Layout';
 import styles from '@/styles/MyNFTs.module.css';
 import { FaImage } from 'react-icons/fa';
 import { useWalletVerification } from '@/contexts/WalletVerificationContext';
-import { useEffect, useState } from 'react';
+import { prisma } from '@/lib/prisma';
+import { GetServerSideProps } from 'next';
 
-interface CollectionStats {
+interface CollectionData {
   name: string;
-  displayName: string;
   count: number;
-  floorPrice: number;
-  order: number;
+  floorPrice: bigint;
+  listedCount: number;
 }
 
-interface CollectionConfig {
-  displayName: string;
-  order: number;
-  symbol: string;
+interface MyNFTsProps {
+  collections: CollectionData[];
 }
 
-// Define collection display names and order with proper typing
-const COLLECTION_CONFIG: { [key: string]: CollectionConfig } = {
-  'Money Monsters': { displayName: 'Money Monsters', order: 1, symbol: 'monsters' },
-  'FCKED CATZ': { displayName: 'Fcked Catz', order: 2, symbol: 'fckedcatz' },
-  'AI BitBots': { displayName: 'AI BitBots', order: 3, symbol: 'aibitbots' },
-  'Money Monsters 3D': { displayName: 'Money Monsters 3D', order: 4, symbol: 'monsters3d' },
-  'CelebCatz': { displayName: 'Celeb Catz', order: 5, symbol: 'celebcatz' },
-  'Warriors': { displayName: 'Warriors', order: 6, symbol: 'warriors' },
-  'Squirrels': { displayName: 'Squirrels', order: 7, symbol: 'squirrels' },
-  'Energy Apes': { displayName: 'Energy Apes', order: 8, symbol: 'energyapes' },
-  'RJCTD Bots': { displayName: 'RJCTD Bots', order: 9, symbol: 'rjctdbots' },
-  'Candy Bots': { displayName: 'Candy Bots', order: 10, symbol: 'candybots' },
-  'Doodle Bots': { displayName: 'Doodle Bots', order: 11, symbol: 'doodlebots' }
-};
-
-export default function MyNFTs() {
+export default function MyNFTs({ collections }: MyNFTsProps) {
   const { data: session } = useSession();
   const { verifyResult } = useWalletVerification();
-  const [floorPrices, setFloorPrices] = useState<{[key: string]: number}>({});
-
-  useEffect(() => {
-    const fetchFloorPrices = async () => {
-      try {
-        const prices: {[key: string]: number} = {};
-        for (const [_, config] of Object.entries(COLLECTION_CONFIG)) {
-          const response = await fetch(`/api/get-floor-prices?symbol=${config.symbol}`);
-          const data = await response.json();
-          prices[config.symbol] = data.floorPrice;
-        }
-        setFloorPrices(prices);
-      } catch (error) {
-        console.error('Error fetching floor prices:', error);
-      }
-    };
-
-    fetchFloorPrices();
-  }, []);
 
   if (!session?.user) {
     return (
@@ -67,18 +31,8 @@ export default function MyNFTs() {
     );
   }
 
-  const collections = verifyResult?.collections
-    ?.map(collection => ({
-      name: collection.name,
-      displayName: COLLECTION_CONFIG[collection.name]?.displayName || collection.name,
-      count: collection.count,
-      floorPrice: floorPrices[COLLECTION_CONFIG[collection.name]?.symbol] || 0,
-      order: COLLECTION_CONFIG[collection.name]?.order || 999
-    }))
-    .sort((a, b) => a.order - b.order) || [];
-
   const totalValue = collections.reduce((sum, collection) => 
-    sum + (collection.count * collection.floorPrice), 0
+    sum + (collection.count * Number(collection.floorPrice)), 0
   );
 
   return (
@@ -103,15 +57,15 @@ export default function MyNFTs() {
               <tbody>
                 {collections.map(collection => (
                   <tr key={collection.name}>
-                    <td>{collection.displayName}</td>
+                    <td>{collection.name}</td>
                     <td>{collection.count}</td>
-                    <td>{collection.floorPrice.toFixed(2)} SOL</td>
-                    <td>{(collection.count * collection.floorPrice).toFixed(2)} SOL</td>
+                    <td>{Number(collection.floorPrice) / 1e9} SOL</td>
+                    <td>{(collection.count * Number(collection.floorPrice) / 1e9).toFixed(2)} SOL</td>
                   </tr>
                 ))}
                 <tr className={styles.totalRow}>
                   <td colSpan={3}>Total Portfolio Value</td>
-                  <td>{totalValue.toFixed(2)} SOL</td>
+                  <td>{(totalValue / 1e9).toFixed(2)} SOL</td>
                 </tr>
               </tbody>
             </table>
@@ -120,4 +74,30 @@ export default function MyNFTs() {
       </div>
     </Layout>
   );
-} 
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const collections = await prisma.collection.findMany({
+    select: {
+      name: true,
+      floorPrice: true,
+      listedCount: true
+    },
+    orderBy: {
+      name: 'asc'
+    }
+  });
+
+  // Convert BigInt to string for JSON serialization
+  const serializedCollections = collections.map(c => ({
+    ...c,
+    floorPrice: c.floorPrice.toString(),
+    count: 0 // This will be updated from verifyResult on client side
+  }));
+
+  return {
+    props: {
+      collections: serializedCollections
+    }
+  };
+}; 

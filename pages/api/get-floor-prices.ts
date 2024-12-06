@@ -49,13 +49,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ floorPrice: cached.price });
     }
 
+    // Use AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(`https://api-mainnet.magiceden.dev/v2/collections/${symbol}/stats`, {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'BUX DAO NFT Bot'
       },
-      timeout: 5000 // 5 second timeout
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Magic Eden API error: ${response.status}`);
