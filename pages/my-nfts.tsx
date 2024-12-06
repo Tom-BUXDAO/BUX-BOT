@@ -60,11 +60,21 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
-      const newCollections = collections.map(collection => ({
-        ...collection,
-        displayName: DB_TO_DISPLAY_NAMES[collection.name] || collection.name,
-        count: verifyResult.collections[collection.name]?.count ?? 0
-      }));
+      console.log('Raw verification result:', verifyResult);
+      console.log('Collections from DB:', collections);
+      
+      const newCollections = collections.map(collection => {
+        const count = verifyResult.collections[collection.name]?.count ?? 0;
+        console.log(`Looking up ${collection.name}: found count = ${count}`);
+        
+        return {
+          ...collection,
+          displayName: DB_TO_DISPLAY_NAMES[collection.name] || collection.name,
+          count
+        };
+      });
+      
+      console.log('Updated collections:', newCollections);
       setUpdatedCollections(newCollections);
     }
   }, [verifyResult, collections]);
