@@ -21,7 +21,7 @@ interface MyNFTsProps {
   collections: CollectionData[];
 }
 
-const DISPLAY_NAMES: Record<string, string> = {
+const DB_TO_DISPLAY_NAMES: Record<string, string> = {
   'money_monsters': 'Money Monsters',
   'money_monsters3d': 'Money Monsters 3D',
   'celebcatz': 'Celeb Catz',
@@ -33,7 +33,7 @@ const DISPLAY_NAMES: Record<string, string> = {
   'rjctd_bots': 'RJCTD Bots',
   'candy_bots': 'Candy Bots',
   'doodle_bot': 'Doodle Bots'
-} as const;
+};
 
 export default function MyNFTs({ collections }: MyNFTsProps) {
   const { data: session } = useSession();
@@ -60,26 +60,11 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
 
   useEffect(() => {
     if (verifyResult?.collections) {
-      const dbToDisplayMap: Record<string, string> = {
-        'money_monsters': 'Money Monsters',
-        'money_monsters3d': 'Money Monsters 3D',
-        'celebcatz': 'CelebCatz',
-        'fcked_catz': 'FCKED CATZ',
-        'ai_bitbots': 'AI BitBots',
-        'warriors': 'A.I Warriors',
-        'squirrels': 'A.I Squirrels',
-        'energy_apes': 'A.I Energy Apes',
-        'rjctd_bots': 'RJCTD Bots',
-        'candy_bots': 'Candy Bots',
-        'doodle_bot': 'Doodle Bots'
-      };
-
       const newCollections = collections.map(collection => ({
         ...collection,
-        count: verifyResult.collections[dbToDisplayMap[collection.name]]?.count ?? 0
+        displayName: DB_TO_DISPLAY_NAMES[collection.name] || collection.name,
+        count: verifyResult.collections[collection.name]?.count ?? 0
       }));
-      
-      console.log('Updating collections with counts:', newCollections);
       setUpdatedCollections(newCollections);
     }
   }, [verifyResult, collections]);
@@ -174,7 +159,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   // Convert BigInt to string for JSON serialization and add display names
   const serializedCollections = collections.map(c => ({
     ...c,
-    displayName: DISPLAY_NAMES[c.name] || c.name,
+    displayName: DB_TO_DISPLAY_NAMES[c.name] || c.name,
     floorPrice: c.floorPrice.toString(),
     count: 0 // This will be updated from verifyResult on client side
   }));
