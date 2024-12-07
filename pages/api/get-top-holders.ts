@@ -87,10 +87,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create final leaderboard
     const leaderboard = Object.entries(holdingsMap)
       .map(([key, data]) => {
-        if (data.discordId) {
+        if (data.discordId && data.name) {
           return {
             discordId: data.discordId,
-            name: data.name!, // We know this exists because of the JOIN
+            name: data.name,
             image: data.image,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
