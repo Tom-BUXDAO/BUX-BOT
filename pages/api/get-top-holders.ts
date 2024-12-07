@@ -23,23 +23,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get NFT counts grouped by discord ID
-    const nftHoldings = await prisma.$queryRaw<NFTHolding[]>`
-      SELECT "ownerDiscordId", COUNT(*) as count
-      FROM "NFT"
-      WHERE "ownerDiscordId" IS NOT NULL
-      GROUP BY "ownerDiscordId"
-    `;
-    console.log('NFT holdings by discord:', JSON.stringify(nftHoldings, null, 2));
+    // First, let's check if we have any NFTs at all
+    const nftCount = await prisma.nFT.count();
+    console.log('Total NFTs in database:', nftCount);
 
-    // Get NFT counts grouped by wallet for unlinked wallets
-    const walletHoldings = await prisma.$queryRaw<WalletHolding[]>`
-      SELECT "ownerAddress", COUNT(*) as count
-      FROM "NFT"
-      WHERE "ownerDiscordId" IS NULL AND "ownerAddress" IS NOT NULL
-      GROUP BY "ownerAddress"
-    `;
-    console.log('NFT holdings by wallet:', JSON.stringify(walletHoldings, null, 2));
+    // Get NFT counts grouped by discord ID using Prisma instead of raw SQL
+    const nftHoldings = await prisma.nFT.groupBy({
+      by: ['ownerDiscordId'],
+      _count: true,
+      where: {
+        ownerDiscordId: { not: null }
+      }
+    });
+    console.log('NFT holdings by discord:', nftHoldings);
+
+    // Get NFT counts grouped by wallet using Prisma
+    const walletHoldings = await prisma.nFT.groupBy({
+      by: ['ownerAddress'],
+      _count: true,
+      where: {
+        ownerDiscordId: null,
+        ownerAddress: { not: null }
+      }
+    });
+    console.log('NFT holdings by wallet:', walletHoldings);
 
     // Get collection floor prices
     const collections = await prisma.collection.findMany({
@@ -48,71 +55,61 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         floorPrice: true
       }
     });
-    console.log('Collection floor prices:', JSON.stringify(collections, null, 2));
+    console.log('Collections:', collections);
 
     const floorPrices = collections.reduce((acc, col) => {
       acc[col.name] = Number(col.floorPrice);
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate total value per holder (Discord users)
+    // Process Discord holders
     const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
-      try {
-        const nfts = await prisma.$queryRaw<NFTCount[]>`
-          SELECT collection, COUNT(*) as count
-          FROM "NFT"
-          WHERE "ownerDiscordId" = ${holding.ownerDiscordId}
-          GROUP BY collection
-        `;
-        console.log(`NFTs for discord ${holding.ownerDiscordId}:`, JSON.stringify(nfts, null, 2));
+      const nfts = await prisma.nFT.groupBy({
+        by: ['collection'],
+        _count: true,
+        where: {
+          ownerDiscordId: holding.ownerDiscordId
+        }
+      });
 
-        const totalValue = nfts.reduce((sum, nft) => 
-          sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
-        );
+      const totalValue = nfts.reduce((sum, nft) => 
+        sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
+      );
 
-        return {
-          discordId: holding.ownerDiscordId,
-          totalNFTs: Number(holding.count),
-          totalValue,
-          collections: nfts.reduce((acc, nft) => {
-            acc[nft.collection] = Number(nft.count);
-            return acc;
-          }, {} as Record<string, number>)
-        };
-      } catch (error) {
-        console.error(`Error processing discord holder ${holding.ownerDiscordId}:`, error);
-        throw error;
-      }
+      return {
+        discordId: holding.ownerDiscordId,
+        totalNFTs: holding._count,
+        totalValue,
+        collections: nfts.reduce((acc, nft) => {
+          acc[nft.collection] = nft._count;
+          return acc;
+        }, {} as Record<string, number>)
+      };
     }));
 
-    // Calculate total value per wallet (unlinked wallets)
+    // Process wallet holders
     const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
-      try {
-        const nfts = await prisma.$queryRaw<NFTCount[]>`
-          SELECT collection, COUNT(*) as count
-          FROM "NFT"
-          WHERE "ownerAddress" = ${holding.ownerAddress}
-          GROUP BY collection
-        `;
-        console.log(`NFTs for wallet ${holding.ownerAddress}:`, JSON.stringify(nfts, null, 2));
+      const nfts = await prisma.nFT.groupBy({
+        by: ['collection'],
+        _count: true,
+        where: {
+          ownerAddress: holding.ownerAddress
+        }
+      });
 
-        const totalValue = nfts.reduce((sum, nft) => 
-          sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
-        );
+      const totalValue = nfts.reduce((sum, nft) => 
+        sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
+      );
 
-        return {
-          address: holding.ownerAddress,
-          totalNFTs: Number(holding.count),
-          totalValue,
-          collections: nfts.reduce((acc, nft) => {
-            acc[nft.collection] = Number(nft.count);
-            return acc;
-          }, {} as Record<string, number>)
-        };
-      } catch (error) {
-        console.error(`Error processing wallet holder ${holding.ownerAddress}:`, error);
-        throw error;
-      }
+      return {
+        address: holding.ownerAddress,
+        totalNFTs: holding._count,
+        totalValue,
+        collections: nfts.reduce((acc, nft) => {
+          acc[nft.collection] = nft._count;
+          return acc;
+        }, {} as Record<string, number>)
+      };
     }));
 
     // Get Discord usernames
@@ -128,7 +125,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         image: true
       }
     });
-    console.log('Discord users:', JSON.stringify(users, null, 2));
 
     // Create final leaderboard
     const leaderboard = [
@@ -155,10 +151,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 10);
 
-    console.log('Final leaderboard:', JSON.stringify(leaderboard, null, 2));
+    console.log('Final leaderboard:', leaderboard);
     return res.status(200).json(leaderboard);
   } catch (error) {
     console.error('Error in get-top-holders:', error);
+    if (error instanceof Error) {
+      console.error('Stack trace:', error.stack);
+    }
     return res.status(500).json({ 
       error: 'Failed to get top holders',
       details: error instanceof Error ? error.message : 'Unknown error',
