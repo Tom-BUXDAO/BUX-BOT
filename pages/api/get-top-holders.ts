@@ -9,24 +9,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Get NFT counts grouped by discord ID
-    const nftHoldings = await prisma.nFT.groupBy({
-      by: ['ownerDiscordId'],
-      _count: true,
-      where: {
-        ownerDiscordId: {
-          not: null
-        }
-      }
-    });
+    const nftHoldings = await prisma.$queryRaw<Array<{ ownerDiscordId: string; _count: number }>>`
+      SELECT "ownerDiscordId", COUNT(*) as _count
+      FROM "NFT"
+      WHERE "ownerDiscordId" IS NOT NULL
+      GROUP BY "ownerDiscordId"
+    `;
 
     // Get NFT counts grouped by wallet for unlinked wallets
-    const walletHoldings = await prisma.nFT.groupBy({
-      by: ['ownerAddress'],
-      _count: true,
-      where: {
-        ownerDiscordId: null
-      }
-    });
+    const walletHoldings = await prisma.$queryRaw<Array<{ ownerAddress: string; _count: number }>>`
+      SELECT "ownerAddress", COUNT(*) as _count
+      FROM "NFT"
+      WHERE "ownerDiscordId" IS NULL
+      GROUP BY "ownerAddress"
+    `;
 
     // Get collection floor prices
     const collections = await prisma.collection.findMany({
@@ -43,13 +39,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Calculate total value per holder (Discord users)
     const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
-      const nfts = await prisma.nFT.groupBy({
-        by: ['collection'],
-        where: {
-          ownerDiscordId: holding.ownerDiscordId
-        },
-        _count: true
-      });
+      const nfts = await prisma.$queryRaw<Array<{ collection: string; _count: number }>>`
+        SELECT collection, COUNT(*) as _count
+        FROM "NFT"
+        WHERE "ownerDiscordId" = ${holding.ownerDiscordId}
+        GROUP BY collection
+      `;
 
       const totalValue = nfts.reduce((sum, nft) => 
         sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
@@ -57,10 +52,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       return {
         discordId: holding.ownerDiscordId,
-        totalNFTs: holding._count,
+        totalNFTs: Number(holding._count),
         totalValue,
         collections: nfts.reduce((acc, nft) => {
-          acc[nft.collection] = nft._count;
+          acc[nft.collection] = Number(nft._count);
           return acc;
         }, {} as Record<string, number>)
       };
@@ -68,13 +63,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Calculate total value per wallet (unlinked wallets)
     const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
-      const nfts = await prisma.nFT.groupBy({
-        by: ['collection'],
-        where: {
-          ownerAddress: holding.ownerAddress
-        },
-        _count: true
-      });
+      const nfts = await prisma.$queryRaw<Array<{ collection: string; _count: number }>>`
+        SELECT collection, COUNT(*) as _count
+        FROM "NFT"
+        WHERE "ownerAddress" = ${holding.ownerAddress}
+        GROUP BY collection
+      `;
 
       const totalValue = nfts.reduce((sum, nft) => 
         sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
@@ -82,10 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       return {
         address: holding.ownerAddress,
-        totalNFTs: holding._count,
+        totalNFTs: Number(holding._count),
         totalValue,
         collections: nfts.reduce((acc, nft) => {
-          acc[nft.collection] = nft._count;
+          acc[nft.collection] = Number(nft._count);
           return acc;
         }, {} as Record<string, number>)
       };
@@ -95,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const users = await prisma.user.findMany({
       where: {
         discordId: {
-          in: discordHolders.map(h => h.discordId!)
+          in: discordHolders.map(h => h.discordId)
         }
       },
       select: {
