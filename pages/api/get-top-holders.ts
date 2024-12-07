@@ -87,20 +87,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create final leaderboard
     const leaderboard = Object.entries(holdingsMap)
       .map(([key, data]) => {
-        if (data.discordId && data.name) {
+        if (data.discordId) {  // If we have a Discord ID, we must have user data
           return {
             discordId: data.discordId,
-            name: data.name,
+            name: data.name!, // We know this exists because Discord users must have names
             image: data.image,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
             collections: data.collections
           };
-        } else {
-          const address = data.wallet || 'Unknown Wallet';
+        } else if (data.wallet) {  // Only use wallet if no Discord ID
           return {
-            address,
-            name: `${address.slice(0, 4)}...${address.slice(-4)}`,
+            address: data.wallet,
+            name: `${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}`,
+            image: null,
+            totalValue: data.totalValue,
+            totalNFTs: data.totalNFTs,
+            collections: data.collections
+          };
+        } else {
+          return {
+            address: 'Unknown Wallet',
+            name: 'Unknown Wallet',
             image: null,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
