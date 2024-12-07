@@ -30,16 +30,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       WHERE "ownerDiscordId" IS NOT NULL
       GROUP BY "ownerDiscordId"
     `;
-    console.log('NFT holdings by discord:', nftHoldings);
+    console.log('NFT holdings by discord:', JSON.stringify(nftHoldings, null, 2));
 
     // Get NFT counts grouped by wallet for unlinked wallets
     const walletHoldings = await prisma.$queryRaw<WalletHolding[]>`
       SELECT "ownerAddress", COUNT(*) as count
       FROM "NFT"
-      WHERE "ownerDiscordId" IS NULL
+      WHERE "ownerDiscordId" IS NULL AND "ownerAddress" IS NOT NULL
       GROUP BY "ownerAddress"
     `;
-    console.log('NFT holdings by wallet:', walletHoldings);
+    console.log('NFT holdings by wallet:', JSON.stringify(walletHoldings, null, 2));
 
     // Get collection floor prices
     const collections = await prisma.collection.findMany({
@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         floorPrice: true
       }
     });
-    console.log('Collection floor prices:', collections);
+    console.log('Collection floor prices:', JSON.stringify(collections, null, 2));
 
     const floorPrices = collections.reduce((acc, col) => {
       acc[col.name] = Number(col.floorPrice);
@@ -57,52 +57,62 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Calculate total value per holder (Discord users)
     const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
-      const nfts = await prisma.$queryRaw<NFTCount[]>`
-        SELECT collection, COUNT(*) as count
-        FROM "NFT"
-        WHERE "ownerDiscordId" = ${holding.ownerDiscordId}
-        GROUP BY collection
-      `;
-      console.log(`NFTs for discord ${holding.ownerDiscordId}:`, nfts);
+      try {
+        const nfts = await prisma.$queryRaw<NFTCount[]>`
+          SELECT collection, COUNT(*) as count
+          FROM "NFT"
+          WHERE "ownerDiscordId" = ${holding.ownerDiscordId}
+          GROUP BY collection
+        `;
+        console.log(`NFTs for discord ${holding.ownerDiscordId}:`, JSON.stringify(nfts, null, 2));
 
-      const totalValue = (nfts as any[]).reduce((sum, nft) => 
-        sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
-      );
+        const totalValue = nfts.reduce((sum, nft) => 
+          sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
+        );
 
-      return {
-        discordId: holding.ownerDiscordId,
-        totalNFTs: Number(holding.count),
-        totalValue,
-        collections: (nfts as any[]).reduce((acc, nft) => {
-          acc[nft.collection] = Number(nft.count);
-          return acc;
-        }, {} as Record<string, number>)
-      };
+        return {
+          discordId: holding.ownerDiscordId,
+          totalNFTs: Number(holding.count),
+          totalValue,
+          collections: nfts.reduce((acc, nft) => {
+            acc[nft.collection] = Number(nft.count);
+            return acc;
+          }, {} as Record<string, number>)
+        };
+      } catch (error) {
+        console.error(`Error processing discord holder ${holding.ownerDiscordId}:`, error);
+        throw error;
+      }
     }));
 
     // Calculate total value per wallet (unlinked wallets)
     const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
-      const nfts = await prisma.$queryRaw<NFTCount[]>`
-        SELECT collection, COUNT(*) as count
-        FROM "NFT"
-        WHERE "ownerAddress" = ${holding.ownerAddress}
-        GROUP BY collection
-      `;
-      console.log(`NFTs for wallet ${holding.ownerAddress}:`, nfts);
+      try {
+        const nfts = await prisma.$queryRaw<NFTCount[]>`
+          SELECT collection, COUNT(*) as count
+          FROM "NFT"
+          WHERE "ownerAddress" = ${holding.ownerAddress}
+          GROUP BY collection
+        `;
+        console.log(`NFTs for wallet ${holding.ownerAddress}:`, JSON.stringify(nfts, null, 2));
 
-      const totalValue = (nfts as any[]).reduce((sum, nft) => 
-        sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
-      );
+        const totalValue = nfts.reduce((sum, nft) => 
+          sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
+        );
 
-      return {
-        address: holding.ownerAddress,
-        totalNFTs: Number(holding.count),
-        totalValue,
-        collections: (nfts as any[]).reduce((acc, nft) => {
-          acc[nft.collection] = Number(nft.count);
-          return acc;
-        }, {} as Record<string, number>)
-      };
+        return {
+          address: holding.ownerAddress,
+          totalNFTs: Number(holding.count),
+          totalValue,
+          collections: nfts.reduce((acc, nft) => {
+            acc[nft.collection] = Number(nft.count);
+            return acc;
+          }, {} as Record<string, number>)
+        };
+      } catch (error) {
+        console.error(`Error processing wallet holder ${holding.ownerAddress}:`, error);
+        throw error;
+      }
     }));
 
     // Get Discord usernames
@@ -118,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         image: true
       }
     });
-    console.log('Discord users:', users);
+    console.log('Discord users:', JSON.stringify(users, null, 2));
 
     // Create final leaderboard
     const leaderboard = [
@@ -145,12 +155,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 10);
 
+    console.log('Final leaderboard:', JSON.stringify(leaderboard, null, 2));
     return res.status(200).json(leaderboard);
   } catch (error) {
     console.error('Error in get-top-holders:', error);
     return res.status(500).json({ 
       error: 'Failed to get top holders',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     });
   }
 } 
