@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Get NFT counts grouped by discord ID
-    const nftHoldings = await prisma.$queryRaw
+    const nftHoldings = await prisma.$queryRaw<Array<{ ownerDiscordId: string; count: number }>>`
       SELECT "ownerDiscordId", COUNT(*) as count
       FROM "NFT"
       WHERE "ownerDiscordId" IS NOT NULL
