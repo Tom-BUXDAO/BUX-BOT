@@ -2,6 +2,21 @@ import { prisma } from '@/lib/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma } from '@prisma/client';
 
+interface NFTHolding {
+  ownerDiscordId: string;
+  count: bigint;
+}
+
+interface WalletHolding {
+  ownerAddress: string;
+  count: bigint;
+}
+
+interface NFTCount {
+  collection: string;
+  count: bigint;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -9,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Get NFT counts grouped by discord ID
-    const nftHoldings = await prisma.$queryRaw<Array<{ ownerDiscordId: string; count: number }>>`
+    const nftHoldings = await prisma.$queryRaw<NFTHolding[]>`
       SELECT "ownerDiscordId", COUNT(*) as count
       FROM "NFT"
       WHERE "ownerDiscordId" IS NOT NULL
@@ -18,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('NFT holdings by discord:', nftHoldings);
 
     // Get NFT counts grouped by wallet for unlinked wallets
-    const walletHoldings = await prisma.$queryRaw`
+    const walletHoldings = await prisma.$queryRaw<WalletHolding[]>`
       SELECT "ownerAddress", COUNT(*) as count
       FROM "NFT"
       WHERE "ownerDiscordId" IS NULL
@@ -41,8 +56,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }, {} as Record<string, number>);
 
     // Calculate total value per holder (Discord users)
-    const discordHolders = await Promise.all(nftHoldings.map(async (holding: any) => {
-      const nfts = await prisma.$queryRaw`
+    const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
+      const nfts = await prisma.$queryRaw<NFTCount[]>`
         SELECT collection, COUNT(*) as count
         FROM "NFT"
         WHERE "ownerDiscordId" = ${holding.ownerDiscordId}
@@ -66,8 +81,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }));
 
     // Calculate total value per wallet (unlinked wallets)
-    const walletUsers = await Promise.all(walletHoldings.map(async (holding: any) => {
-      const nfts = await prisma.$queryRaw`
+    const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
+      const nfts = await prisma.$queryRaw<NFTCount[]>`
         SELECT collection, COUNT(*) as count
         FROM "NFT"
         WHERE "ownerAddress" = ${holding.ownerAddress}
