@@ -199,26 +199,20 @@ export async function getCurrentDiscordRoles(userId: string): Promise<string[]> 
     const token = process.env.DISCORD_BOT_TOKEN;
 
     if (!guildId || !token) {
+      console.error('Missing Discord configuration');
       throw new Error('Missing Discord configuration');
     }
 
-    const response = await fetch(
-      `https://discord.com/api/v10/guilds/${guildId}/members/${userId}`,
-      {
-        headers: {
-          Authorization: `Bot ${token}`
-        }
-      }
-    );
+    // Use the REST instance we already have configured
+    const member = await rest.get(
+      Routes.guildMember(guildId, userId)
+    ) as { roles: string[] };
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch member roles: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.roles || [];
+    console.log('Fetched member roles:', member.roles);
+    return member.roles;
   } catch (error) {
     console.error('Error getting current Discord roles:', error);
+    // Return empty array instead of throwing to handle gracefully
     return [];
   }
 }
