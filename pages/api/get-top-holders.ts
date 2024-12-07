@@ -75,6 +75,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(h => h.discordId)
       .filter((id): id is string => id !== null);
 
+    console.log('Looking up Discord IDs:', discordIds);
+
     const users = await prisma.user.findMany({
       where: {
         discordId: {
@@ -88,11 +90,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
+    console.log('Found users:', users);
+    console.log('Missing users for Discord IDs:', 
+      discordIds.filter(id => !users.find(u => u.discordId === id))
+    );
+
     // Create final leaderboard
     const leaderboard = Object.entries(holdingsMap)
       .map(([key, data]) => {
         if (data.discordId) {
           const user = users.find(u => u.discordId === data.discordId);
+          if (!user) {
+            console.log('No user found for Discord ID:', data.discordId);
+          }
           return {
             discordId: data.discordId,
             name: user?.name || 'Unknown User',
