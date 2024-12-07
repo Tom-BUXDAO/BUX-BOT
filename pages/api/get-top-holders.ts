@@ -7,46 +7,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get all data in a single query with INNER JOIN for Discord users
+    // Get all data in a single query
     const [nftHoldingsData, collections] = await Promise.all([
       prisma.$queryRaw<Array<{
         ownerDiscordId: string | null;
         ownerWallet: string | null;
         collection: string;
         count: bigint;
-        userName: string | null;
-        userImage: string | null;
       }>>`
-        WITH holder_totals AS (
-          SELECT 
-            "ownerDiscordId",
-            "ownerWallet",
-            SUM(COUNT(*)) OVER (PARTITION BY COALESCE("ownerDiscordId", "ownerWallet")) as total_nfts
-          FROM "NFT"
-          GROUP BY "ownerDiscordId", "ownerWallet"
-        ),
-        holdings AS (
-          SELECT 
-            n."ownerDiscordId",
-            n."ownerWallet",
-            n.collection,
-            COUNT(*) as count,
-            ht.total_nfts
-          FROM "NFT" n
-          JOIN holder_totals ht ON 
-            COALESCE(n."ownerDiscordId", n."ownerWallet") = COALESCE(ht."ownerDiscordId", ht."ownerWallet")
-          GROUP BY n."ownerDiscordId", n."ownerWallet", n.collection, ht.total_nfts
-        )
         SELECT 
-          h."ownerDiscordId",
-          h."ownerWallet",
-          h.collection,
-          h.count,
-          u.name as "userName",
-          u.image as "userImage"
-        FROM holdings h
-        LEFT JOIN "User" u ON h."ownerDiscordId" = u."discordId"
-        ORDER BY h.total_nfts DESC
+          "ownerDiscordId",
+          "ownerWallet",
+          collection,
+          COUNT(*) as count
+        FROM "NFT"
+        GROUP BY "ownerDiscordId", "ownerWallet", collection
       `,
       prisma.collection.findMany({
         select: {
@@ -55,6 +30,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       })
     ]);
+
+    // Get Discord usernames for any NFTs with Discord IDs
+    const discordIds = [...new Set(nftHoldingsData
+      .map(h => h.ownerDiscordId)
+      .filter((id): id is string => id !== null)
+    )];
+
+    const users = await prisma.user.findMany({
+      where: {
+        discordId: {
+          in: discordIds
+        }
+      },
+      select: {
+        discordId: true,
+        name: true,
+        image: true
+      }
+    });
+
+    // Create lookup for Discord usernames
+    const discordNames = users.reduce((acc, user) => {
+      acc[user.discordId] = user.name;
+      return acc;
+    }, {} as Record<string, string>);
 
     // Create floor price lookup
     const floorPrices = collections.reduce((acc, col) => {
@@ -71,8 +71,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         acc[key] = {
           discordId: holding.ownerDiscordId,
           wallet: holding.ownerWallet,
-          name: holding.userName,
-          image: holding.userImage,
           totalNFTs: 0,
           totalValue: 0,
           collections: {}
@@ -88,8 +86,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }, {} as Record<string, {
       discordId: string | null;
       wallet: string | null;
-      name: string | null;
-      image: string | null;
       totalNFTs: number;
       totalValue: number;
       collections: Record<string, number>;
@@ -98,28 +94,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create final leaderboard
     const leaderboard = Object.entries(holdingsMap)
       .map(([key, data]) => {
-        if (data.discordId && data.name) {  // If we have both Discord ID and name
+        if (data.discordId) {
           return {
             discordId: data.discordId,
-            name: data.name,  // Use the name from the JOIN
-            image: data.image,
-            totalValue: data.totalValue,
-            totalNFTs: data.totalNFTs,
-            collections: data.collections
-          };
-        } else if (data.wallet) {  // Only use wallet if no Discord ID
-          return {
-            address: data.wallet,
-            name: `${data.wallet.slice(0, 4)}...${data.wallet.slice(-4)}`,
+            name: discordNames[data.discordId] || `Discord ID: ${data.discordId}`,
             image: null,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
             collections: data.collections
           };
         } else {
+          const address = data.wallet || 'Unknown Wallet';
           return {
-            address: 'Unknown Wallet',
-            name: 'Unknown Wallet',
+            address,
+            name: `${address.slice(0, 4)}...${address.slice(-4)}`,
             image: null,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
