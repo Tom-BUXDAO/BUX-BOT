@@ -45,15 +45,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       select: {
         discordId: true,
-        name: true,
-        image: true
+        discordName: true
       }
     });
 
     // Create lookup for Discord usernames
     const discordNames = users.reduce<Record<string, string>>((acc, user) => {
-      if (user.discordId && user.name) {  // Type guard to ensure both exist
-        acc[user.discordId] = user.name;
+      if (user.discordId && user.discordName) {
+        acc[user.discordId] = user.discordName;
       }
       return acc;
     }, {});
@@ -100,7 +99,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return {
             discordId: data.discordId,
             name: discordNames[data.discordId] || `Discord ID: ${data.discordId}`,
-            image: null,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
             collections: data.collections
@@ -110,7 +108,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return {
             address,
             name: `${address.slice(0, 4)}...${address.slice(-4)}`,
-            image: null,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
             collections: data.collections
