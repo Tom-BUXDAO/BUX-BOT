@@ -3,24 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
-import { calculateQualifyingRoles, getCurrentDiscordRoles, calculateRoleUpdates, updateDiscordRoles } from '@/utils/discordRoles';
+import { calculateQualifyingRoles, getCurrentDiscordRoles, calculateRoleUpdates, updateDiscordRoles, getRoleNames } from '@/utils/discordRoles';
 
 export const config = {
-  maxDuration: 60, // Maximum allowed for hobby plan
+  maxDuration: 60,
   api: {
     responseLimit: false,
     bodyParser: true
   }
-};
-
-// Map role IDs to display names
-const ROLE_ID_TO_NAME: Record<string, string> = {
-  '1248416679504117861': 'MONSTER',
-  '1248417674476916809': 'MONSTER 🐋',
-  '1248417591215784019': 'CAT',
-  '1095363984581984357': 'BITBOT',
-  '1248428373487784006': 'MEGA BOT 🐋',
-  // Add other role mappings here
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -50,20 +40,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const result = await verifyHolder(address, user.discordId);
 
-    // Convert collections to Record<string, number> before role calculation
+    // Convert collections to Record<string, number>
     const nftCounts = Object.entries(result.collections).reduce((acc, [collection, info]) => {
       acc[collection] = info.count;
       return acc;
     }, {} as Record<string, number>);
 
-    // Add logging for role calculation
-    console.log('Calculating roles for user:', {
-      discordId: session.user.id,
-      nftCounts,
-      buxBalance: result.buxBalance
-    });
-
-    // Get qualifying roles with correct type
+    // Get qualifying roles
     const qualifyingRoles = calculateQualifyingRoles(nftCounts, result.buxBalance);
     console.log('Qualifying roles:', qualifyingRoles);
 
@@ -80,21 +63,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Updating Discord roles...');
       await updateDiscordRoles(session.user.id, roleUpdate);
       console.log('Discord roles updated successfully');
-    } else {
-      console.log('No role updates needed');
     }
 
-    // Convert role IDs to display names
+    // Get role names from Discord
+    const roleNames = await getRoleNames();
     const assignedRoleNames = qualifyingRoles
-      .map(roleId => ROLE_ID_TO_NAME[roleId] || roleId)
-      .filter(name => name); // Remove any undefined values
+      .map(roleId => roleNames.get(roleId) || roleId)
+      .filter(Boolean);
 
     const verification = {
       isHolder: true,
       collections: result.collections,
       buxBalance: result.buxBalance,
       totalNFTs: result.totalNFTs,
-      assignedRoles: assignedRoleNames, // Use the mapped role names
+      assignedRoles: assignedRoleNames,
       qualifyingBuxRoles: result.qualifyingBuxRoles,
       roleUpdate: roleUpdate
     };
