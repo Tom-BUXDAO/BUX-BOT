@@ -24,6 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             collection,
             COUNT(*) as count
           FROM "NFT"
+          WHERE "ownerDiscordId" IS NOT NULL OR "ownerWallet" IS NOT NULL
           GROUP BY "ownerDiscordId", "ownerWallet", collection
         )
         SELECT 
@@ -31,11 +32,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           h."ownerWallet",
           h.collection,
           h.count,
-          u.name as "userName",
+          COALESCE(u.name, 'Unknown User') as "userName",
           u.image as "userImage"
         FROM holdings h
         LEFT JOIN "User" u ON h."ownerDiscordId" = u."discordId"
-        ORDER BY h.count DESC
+        WHERE h."ownerDiscordId" IS NOT NULL OR h."ownerWallet" IS NOT NULL
       `,
       prisma.collection.findMany({
         select: {
