@@ -70,15 +70,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       roleUpdate: result.roleUpdate
     };
 
+    // Convert collections to Record<string, number>
+    const nftCounts = Object.entries(result.collections).reduce((acc, [key, value]) => {
+      acc[key] = value.count;
+      return acc;
+    }, {} as Record<string, number>);
+
     // Add logging for role calculation
     console.log('Calculating roles for user:', {
       discordId: session.user.id,
-      nftCounts: result.collections,
+      nftCounts,
       buxBalance: result.buxBalance
     });
 
-    // Get qualifying roles
-    const qualifyingRoles = calculateQualifyingRoles(result.collections, result.buxBalance);
+    // Get qualifying roles with correct type
+    const qualifyingRoles = calculateQualifyingRoles(nftCounts, result.buxBalance);
     console.log('Qualifying roles:', qualifyingRoles);
 
     // Get current roles
