@@ -26,6 +26,8 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   white-space: nowrap;
   vertical-align: middle;
+  height: 3.5rem;
+  line-height: 1.2;
 }
 
 .table th:not(:first-child),
@@ -37,6 +39,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 2rem;
 }
 
 .avatar {
@@ -58,5 +61,6 @@
   .table th,
   .table td {
     padding: 0.5rem;
+    height: 3rem;
   }
 } 
