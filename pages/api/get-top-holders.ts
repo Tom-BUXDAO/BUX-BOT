@@ -9,20 +9,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Get NFT counts grouped by discord ID
-    const nftHoldings = await prisma.$queryRaw<Array<{ ownerDiscordId: string; _count: number }>>`
-      SELECT "ownerDiscordId", COUNT(*) as _count
+    const nftHoldings = await prisma.$queryRaw
+      SELECT "ownerDiscordId", COUNT(*) as count
       FROM "NFT"
       WHERE "ownerDiscordId" IS NOT NULL
       GROUP BY "ownerDiscordId"
     `;
+    console.log('NFT holdings by discord:', nftHoldings);
 
     // Get NFT counts grouped by wallet for unlinked wallets
-    const walletHoldings = await prisma.$queryRaw<Array<{ ownerAddress: string; _count: number }>>`
-      SELECT "ownerAddress", COUNT(*) as _count
+    const walletHoldings = await prisma.$queryRaw`
+      SELECT "ownerAddress", COUNT(*) as count
       FROM "NFT"
       WHERE "ownerDiscordId" IS NULL
       GROUP BY "ownerAddress"
     `;
+    console.log('NFT holdings by wallet:', walletHoldings);
 
     // Get collection floor prices
     const collections = await prisma.collection.findMany({
@@ -31,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         floorPrice: true
       }
     });
+    console.log('Collection floor prices:', collections);
 
     const floorPrices = collections.reduce((acc, col) => {
       acc[col.name] = Number(col.floorPrice);
@@ -38,48 +41,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }, {} as Record<string, number>);
 
     // Calculate total value per holder (Discord users)
-    const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
-      const nfts = await prisma.$queryRaw<Array<{ collection: string; _count: number }>>`
-        SELECT collection, COUNT(*) as _count
+    const discordHolders = await Promise.all(nftHoldings.map(async (holding: any) => {
+      const nfts = await prisma.$queryRaw`
+        SELECT collection, COUNT(*) as count
         FROM "NFT"
         WHERE "ownerDiscordId" = ${holding.ownerDiscordId}
         GROUP BY collection
       `;
+      console.log(`NFTs for discord ${holding.ownerDiscordId}:`, nfts);
 
-      const totalValue = nfts.reduce((sum, nft) => 
-        sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
+      const totalValue = (nfts as any[]).reduce((sum, nft) => 
+        sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
       );
 
       return {
         discordId: holding.ownerDiscordId,
-        totalNFTs: Number(holding._count),
+        totalNFTs: Number(holding.count),
         totalValue,
-        collections: nfts.reduce((acc, nft) => {
-          acc[nft.collection] = Number(nft._count);
+        collections: (nfts as any[]).reduce((acc, nft) => {
+          acc[nft.collection] = Number(nft.count);
           return acc;
         }, {} as Record<string, number>)
       };
     }));
 
     // Calculate total value per wallet (unlinked wallets)
-    const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
-      const nfts = await prisma.$queryRaw<Array<{ collection: string; _count: number }>>`
-        SELECT collection, COUNT(*) as _count
+    const walletUsers = await Promise.all(walletHoldings.map(async (holding: any) => {
+      const nfts = await prisma.$queryRaw`
+        SELECT collection, COUNT(*) as count
         FROM "NFT"
         WHERE "ownerAddress" = ${holding.ownerAddress}
         GROUP BY collection
       `;
+      console.log(`NFTs for wallet ${holding.ownerAddress}:`, nfts);
 
-      const totalValue = nfts.reduce((sum, nft) => 
-        sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
+      const totalValue = (nfts as any[]).reduce((sum, nft) => 
+        sum + (Number(nft.count) * (floorPrices[nft.collection] || 0)) / 1e9, 0
       );
 
       return {
         address: holding.ownerAddress,
-        totalNFTs: Number(holding._count),
+        totalNFTs: Number(holding.count),
         totalValue,
-        collections: nfts.reduce((acc, nft) => {
-          acc[nft.collection] = Number(nft._count);
+        collections: (nfts as any[]).reduce((acc, nft) => {
+          acc[nft.collection] = Number(nft.count);
           return acc;
         }, {} as Record<string, number>)
       };
@@ -98,6 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         image: true
       }
     });
+    console.log('Discord users:', users);
 
     // Create final leaderboard
     const leaderboard = [
@@ -126,7 +132,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json(leaderboard);
   } catch (error) {
-    console.error('Error getting top holders:', error);
-    return res.status(500).json({ error: 'Failed to get top holders' });
+    console.error('Error in get-top-holders:', error);
+    return res.status(500).json({ 
+      error: 'Failed to get top holders',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-} 
+}` 
