@@ -141,14 +141,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           collections: holder.collections
         };
       }),
-      ...walletUsers.map(holder => ({
-        address: holder.address,
-        name: `${holder.address.slice(0, 4)}...${holder.address.slice(-4)}`,
-        image: null,
-        totalValue: holder.totalValue,
-        totalNFTs: holder.totalNFTs,
-        collections: holder.collections
-      }))
+      ...walletUsers.map(holder => {
+        const address = holder.address || 'Unknown Wallet';
+        return {
+          address,
+          name: address === 'Unknown Wallet' ? address : `${address.slice(0, 4)}...${address.slice(-4)}`,
+          image: null,
+          totalValue: holder.totalValue,
+          totalNFTs: holder.totalNFTs,
+          collections: holder.collections
+        };
+      })
     ]
     .sort((a, b) => b.totalValue - a.totalValue)
     .slice(0, 10);
