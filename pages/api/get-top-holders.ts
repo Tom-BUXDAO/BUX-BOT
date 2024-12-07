@@ -17,22 +17,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userName: string | null;
         userImage: string | null;
       }>>`
+        WITH holdings AS (
+          SELECT 
+            "ownerDiscordId",
+            "ownerWallet",
+            collection,
+            COUNT(*) as count
+          FROM "NFT"
+          GROUP BY "ownerDiscordId", "ownerWallet", collection
+        )
         SELECT 
-          n."ownerDiscordId",
-          n."ownerWallet",
-          n.collection,
-          COUNT(*) as count,
-          CASE 
-            WHEN n."ownerDiscordId" IS NOT NULL THEN u.name 
-            ELSE NULL 
-          END as "userName",
-          CASE 
-            WHEN n."ownerDiscordId" IS NOT NULL THEN u.image 
-            ELSE NULL 
-          END as "userImage"
-        FROM "NFT" n
-        LEFT JOIN "User" u ON n."ownerDiscordId" = u."discordId"
-        GROUP BY n."ownerDiscordId", n."ownerWallet", n.collection, u.name, u.image
+          h."ownerDiscordId",
+          h."ownerWallet",
+          h.collection,
+          h.count,
+          u.name as "userName",
+          u.image as "userImage"
+        FROM holdings h
+        LEFT JOIN "User" u ON h."ownerDiscordId" = u."discordId"
+        ORDER BY h.count DESC
       `,
       prisma.collection.findMany({
         select: {
