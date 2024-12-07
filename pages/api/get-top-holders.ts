@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get NFT counts grouped by discord ID using Prisma instead of raw SQL
     const nftHoldings = await prisma.nFT.groupBy({
-      by: ['ownerDiscordId'] as const,
+      by: [Prisma.NFTScalarFieldEnum.ownerDiscordId],
       _count: true,
       where: {
         ownerDiscordId: { not: null }
@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get NFT counts grouped by wallet using Prisma
     const walletHoldings = await prisma.nFT.groupBy({
-      by: ['ownerAddress'] as const,
+      by: [Prisma.NFTScalarFieldEnum.ownerAddress],
       _count: true,
       where: {
         ownerDiscordId: null,
@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Process Discord holders
     const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
       const nfts = await prisma.nFT.groupBy({
-        by: ['collection'],
+        by: [Prisma.NFTScalarFieldEnum.collection],
         _count: true,
         where: {
           ownerDiscordId: holding.ownerDiscordId
@@ -90,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Process wallet holders
     const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
       const nfts = await prisma.nFT.groupBy({
-        by: ['collection'],
+        by: [Prisma.NFTScalarFieldEnum.collection],
         _count: true,
         where: {
           ownerAddress: holding.ownerAddress
