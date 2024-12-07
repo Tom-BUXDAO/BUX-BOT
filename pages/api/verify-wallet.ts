@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
+import { calculateQualifyingRoles, getCurrentDiscordRoles, calculateRoleUpdates, updateDiscordRoles } from '@/utils/discordRoles';
 
 export const config = {
   maxDuration: 60, // Maximum allowed for hobby plan
@@ -68,6 +69,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       qualifyingBuxRoles: result.qualifyingBuxRoles,
       roleUpdate: result.roleUpdate
     };
+
+    // Add logging for role calculation
+    console.log('Calculating roles for user:', {
+      discordId: session.user.id,
+      nftCounts: result.collections,
+      buxBalance: result.buxBalance
+    });
+
+    // Get qualifying roles
+    const qualifyingRoles = calculateQualifyingRoles(result.collections, result.buxBalance);
+    console.log('Qualifying roles:', qualifyingRoles);
+
+    // Get current roles
+    const currentRoles = await getCurrentDiscordRoles(session.user.id);
+    console.log('Current Discord roles:', currentRoles);
+
+    // Calculate role changes
+    const roleUpdate = calculateRoleUpdates(currentRoles, qualifyingRoles);
+    console.log('Role updates:', roleUpdate);
+
+    // Update Discord roles
+    if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
+      console.log('Updating Discord roles...');
+      await updateDiscordRoles(session.user.id, roleUpdate);
+      console.log('Discord roles updated successfully');
+    } else {
+      console.log('No role updates needed');
+    }
 
     return res.status(200).json({ success: true, verification: verification });
 

@@ -64,65 +64,51 @@ const getManagedRoleIds = () => {
   return roleIds;
 };
 
-export async function updateDiscordRoles(discordId: string, newRoles: string[]): Promise<RoleUpdate> {
+export async function updateDiscordRoles(userId: string, roleUpdate: RoleUpdate) {
+  console.log('Starting Discord role update for user:', userId);
+  
   try {
-    // Get current member data and role info
-    const [member, guild] = await Promise.all([
-      rest.get(Routes.guildMember(GUILD_ID!, discordId)) as Promise<{ roles: string[] }>,
-      rest.get(Routes.guild(GUILD_ID!)) as Promise<{ roles: { id: string, name: string }[] }>
-    ]);
+    const guildId = process.env.DISCORD_GUILD_ID;
+    const token = process.env.DISCORD_BOT_TOKEN;
 
-    const currentRoles = member.roles;
-    const managedRoleIds = getManagedRoleIds();
-    const roleNameMap = new Map(guild.roles.map(r => [r.id, r.name]));
+    if (!guildId || !token) {
+      console.error('Missing Discord configuration');
+      throw new Error('Missing Discord configuration');
+    }
 
-    console.log('Current roles:', currentRoles);
-    console.log('New roles to assign:', newRoles);
-    console.log('Managed role IDs:', managedRoleIds);
+    console.log('Role changes to apply:', roleUpdate);
 
-    // Only remove roles we manage
-    const rolesToRemove = currentRoles.filter(role => 
-      managedRoleIds.has(role) && !newRoles.includes(role)
-    );
-
-    // Add new roles
-    for (const role of newRoles) {
-      if (!currentRoles.includes(role)) {
-        try {
-          await rest.put(Routes.guildMemberRole(GUILD_ID!, discordId, role));
-          console.log(`Successfully added role ${roleNameMap.get(role)} (${role}) to ${discordId}`);
-        } catch (error) {
-          console.error(`Failed to add role ${roleNameMap.get(role)} (${role}):`, error);
+    // Add roles
+    for (const roleId of roleUpdate.added) {
+      console.log(`Adding role ${roleId} to user ${userId}`);
+      await fetch(
+        `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bot ${token}`,
+            'Content-Type': 'application/json'
+          }
         }
-      }
+      );
     }
 
-    // Remove old roles
-    for (const role of rolesToRemove) {
-      try {
-        await rest.delete(Routes.guildMemberRole(GUILD_ID!, discordId, role));
-        console.log(`Successfully removed role ${roleNameMap.get(role)} (${role}) from ${discordId}`);
-      } catch (error) {
-        console.error(`Failed to remove role ${roleNameMap.get(role)} (${role}):`, error);
-      }
+    // Remove roles
+    for (const roleId of roleUpdate.removed) {
+      console.log(`Removing role ${roleId} from user ${userId}`);
+      await fetch(
+        `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bot ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
     }
 
-    // Get final roles after changes
-    const updatedMember = await rest.get(
-      Routes.guildMember(GUILD_ID!, discordId)
-    ) as { roles: string[] };
-
-    const added = newRoles.filter(role => !currentRoles.includes(role));
-    const removed = rolesToRemove;
-
-    // Return role names instead of IDs
-    return {
-      added: added.map(id => roleNameMap.get(id) || id),
-      removed: removed.map(id => roleNameMap.get(id) || id),
-      previousRoles: currentRoles.map(id => roleNameMap.get(id) || id),
-      newRoles: updatedMember.roles.map(id => roleNameMap.get(id) || id)
-    };
-
+    console.log('Role update completed successfully');
   } catch (error) {
     console.error('Error updating Discord roles:', error);
     throw error;
