@@ -2,123 +2,83 @@ import { prisma } from '@/lib/prisma';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { Prisma } from '@prisma/client';
 
-interface NFTHolding {
-  ownerDiscordId: string;
-  count: bigint;
-}
-
-interface WalletHolding {
-  ownerAddress: string;
-  count: bigint;
-}
-
-interface NFTCount {
-  collection: string;
-  count: bigint;
-}
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // First, let's check if we have any NFTs at all
-    const nftCount = await prisma.nFT.count();
-    console.log('Total NFTs in database:', nftCount);
+    // Get all data in a single query
+    const [nftHoldingsData, collections] = await Promise.all([
+      prisma.$queryRaw<Array<{
+        ownerDiscordId: string | null;
+        ownerWallet: string | null;
+        collection: string;
+        count: bigint;
+      }>>`
+        SELECT 
+          "ownerDiscordId",
+          "ownerWallet",
+          collection,
+          COUNT(*) as count
+        FROM "NFT"
+        GROUP BY "ownerDiscordId", "ownerWallet", collection
+      `,
+      prisma.collection.findMany({
+        select: {
+          name: true,
+          floorPrice: true
+        }
+      })
+    ]);
 
-    // Get NFT counts grouped by discord ID using Prisma instead of raw SQL
-    const nftHoldings = await prisma.nFT.groupBy({
-      by: [Prisma.NFTScalarFieldEnum.ownerDiscordId],
-      _count: true,
-      where: {
-        ownerDiscordId: { not: null }
-      }
-    });
-    console.log('NFT holdings by discord:', nftHoldings);
-
-    // Get NFT counts grouped by wallet using Prisma
-    const walletHoldings = await prisma.nFT.groupBy({
-      by: [Prisma.NFTScalarFieldEnum.ownerWallet],
-      _count: true,
-      where: {
-        ownerDiscordId: null,
-        ownerWallet: { not: null }
-      }
-    });
-    console.log('NFT holdings by wallet:', walletHoldings);
-
-    // Get collection floor prices
-    const collections = await prisma.collection.findMany({
-      select: {
-        name: true,
-        floorPrice: true
-      }
-    });
+    console.log('Raw NFT holdings:', nftHoldingsData);
     console.log('Collections:', collections);
 
+    // Create floor price lookup
     const floorPrices = collections.reduce((acc, col) => {
       acc[col.name] = Number(col.floorPrice);
       return acc;
     }, {} as Record<string, number>);
 
-    // Process Discord holders
-    const discordHolders = await Promise.all(nftHoldings.map(async (holding) => {
-      const nfts = await prisma.nFT.groupBy({
-        by: [Prisma.NFTScalarFieldEnum.collection],
-        _count: true,
-        where: {
-          ownerDiscordId: holding.ownerDiscordId
-        }
-      });
+    // Process holdings into a map
+    const holdingsMap = nftHoldingsData.reduce((acc, holding) => {
+      const key = holding.ownerDiscordId || holding.ownerWallet;
+      if (!key) return acc;
 
-      const totalValue = nfts.reduce((sum, nft) => 
-        sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
-      );
+      if (!acc[key]) {
+        acc[key] = {
+          discordId: holding.ownerDiscordId,
+          wallet: holding.ownerWallet,
+          totalNFTs: 0,
+          totalValue: 0,
+          collections: {}
+        };
+      }
 
-      return {
-        discordId: holding.ownerDiscordId,
-        totalNFTs: holding._count,
-        totalValue,
-        collections: nfts.reduce((acc, nft) => {
-          acc[nft.collection] = nft._count;
-          return acc;
-        }, {} as Record<string, number>)
-      };
-    }));
+      const count = Number(holding.count);
+      acc[key].totalNFTs += count;
+      acc[key].collections[holding.collection] = count;
+      acc[key].totalValue += (count * (floorPrices[holding.collection] || 0)) / 1e9;
 
-    // Process wallet holders
-    const walletUsers = await Promise.all(walletHoldings.map(async (holding) => {
-      const nfts = await prisma.nFT.groupBy({
-        by: [Prisma.NFTScalarFieldEnum.collection],
-        _count: true,
-        where: {
-          ownerWallet: holding.ownerWallet
-        }
-      });
+      return acc;
+    }, {} as Record<string, {
+      discordId: string | null;
+      wallet: string | null;
+      totalNFTs: number;
+      totalValue: number;
+      collections: Record<string, number>;
+    }>);
 
-      const totalValue = nfts.reduce((sum, nft) => 
-        sum + (nft._count * (floorPrices[nft.collection] || 0)) / 1e9, 0
-      );
+    // Get Discord usernames for holders with discord IDs
+    const discordIds = Object.values(holdingsMap)
+      .map(h => h.discordId)
+      .filter((id): id is string => id !== null);
 
-      return {
-        address: holding.ownerWallet,
-        totalNFTs: holding._count,
-        totalValue,
-        collections: nfts.reduce((acc, nft) => {
-          acc[nft.collection] = nft._count;
-          return acc;
-        }, {} as Record<string, number>)
-      };
-    }));
-
-    // Get Discord usernames
     const users = await prisma.user.findMany({
       where: {
         discordId: {
-          in: discordHolders
-            .map(h => h.discordId)
-            .filter((id): id is string => id !== null)
+          in: discordIds
         }
       },
       select: {
@@ -129,32 +89,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Create final leaderboard
-    const leaderboard = [
-      ...discordHolders.map(holder => {
-        const user = users.find(u => u.discordId === holder.discordId);
-        return {
-          discordId: holder.discordId,
-          name: user?.name || 'Unknown User',
-          image: user?.image || null,
-          totalValue: holder.totalValue,
-          totalNFTs: holder.totalNFTs,
-          collections: holder.collections
-        };
-      }),
-      ...walletUsers.map(holder => {
-        const address = holder.address || 'Unknown Wallet';
-        return {
-          address,
-          name: address === 'Unknown Wallet' ? address : `${address.slice(0, 4)}...${address.slice(-4)}`,
-          image: null,
-          totalValue: holder.totalValue,
-          totalNFTs: holder.totalNFTs,
-          collections: holder.collections
-        };
+    const leaderboard = Object.entries(holdingsMap)
+      .map(([key, data]) => {
+        if (data.discordId) {
+          const user = users.find(u => u.discordId === data.discordId);
+          return {
+            discordId: data.discordId,
+            name: user?.name || 'Unknown User',
+            image: user?.image || null,
+            totalValue: data.totalValue,
+            totalNFTs: data.totalNFTs,
+            collections: data.collections
+          };
+        } else {
+          const address = data.wallet || 'Unknown Wallet';
+          return {
+            address,
+            name: address === 'Unknown Wallet' ? address : `${address.slice(0, 4)}...${address.slice(-4)}`,
+            image: null,
+            totalValue: data.totalValue,
+            totalNFTs: data.totalNFTs,
+            collections: data.collections
+          };
+        }
       })
-    ]
-    .sort((a, b) => b.totalValue - a.totalValue)
-    .slice(0, 10);
+      .sort((a, b) => b.totalValue - a.totalValue)
+      .slice(0, 10);
 
     console.log('Final leaderboard:', leaderboard);
     return res.status(200).json(leaderboard);
