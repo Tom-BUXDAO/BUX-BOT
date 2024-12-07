@@ -13,24 +13,15 @@ export const config = {
   }
 };
 
-// Use the exact role names from the popup
-const ROLE_DISPLAY_NAMES = [
-  'MONSTER',
-  'MONSTER 🐋',
-  'CAT',
-  'BITBOT',
-  'MEGA BOT 🐋',
-  'MONSTER 3D',
-  'MONSTER 3D 🐋',
-  'CELEB',
-  'AI squirrel',
-  'AI energy ape',
-  'Rjctd bot',
-  'Candy bot',
-  'Doodle bot',
-  'BUX$DAO 5',
-  'BUX BANKER'
-];
+// Map role IDs to display names
+const ROLE_ID_TO_NAME: Record<string, string> = {
+  '1248416679504117861': 'MONSTER',
+  '1248417674476916809': 'MONSTER 🐋',
+  '1248417591215784019': 'CAT',
+  '1095363984581984357': 'BITBOT',
+  '1248428373487784006': 'MEGA BOT 🐋',
+  // Add other role mappings here
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -93,13 +84,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('No role updates needed');
     }
 
-    // Use the exact role names that appear in the popup
+    // Convert role IDs to display names
+    const assignedRoleNames = qualifyingRoles
+      .map(roleId => ROLE_ID_TO_NAME[roleId] || roleId)
+      .filter(name => name); // Remove any undefined values
+
     const verification = {
       isHolder: true,
       collections: result.collections,
       buxBalance: result.buxBalance,
       totalNFTs: result.totalNFTs,
-      assignedRoles: ROLE_DISPLAY_NAMES,
+      assignedRoles: assignedRoleNames, // Use the mapped role names
       qualifyingBuxRoles: result.qualifyingBuxRoles,
       roleUpdate: roleUpdate
     };
