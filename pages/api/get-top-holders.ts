@@ -87,10 +87,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Create final leaderboard
     const leaderboard = Object.entries(holdingsMap)
       .map(([key, data]) => {
-        if (data.discordId) {  // If we have a Discord ID, we must have user data
+        if (data.discordId && data.name) {  // If we have both Discord ID and name
           return {
             discordId: data.discordId,
-            name: data.name!, // We know this exists because Discord users must have names
+            name: data.name,  // Use the name from the JOIN
             image: data.image,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
