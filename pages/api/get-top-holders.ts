@@ -17,26 +17,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userName: string | null;
         userImage: string | null;
       }>>`
-        WITH holdings AS (
+        WITH holder_totals AS (
           SELECT 
             "ownerDiscordId",
             "ownerWallet",
-            collection,
-            COUNT(*) as count
+            SUM(COUNT(*)) OVER (PARTITION BY COALESCE("ownerDiscordId", "ownerWallet")) as total_nfts
           FROM "NFT"
-          WHERE "ownerDiscordId" IS NOT NULL OR "ownerWallet" IS NOT NULL
-          GROUP BY "ownerDiscordId", "ownerWallet", collection
+          GROUP BY "ownerDiscordId", "ownerWallet"
+        ),
+        holdings AS (
+          SELECT 
+            n."ownerDiscordId",
+            n."ownerWallet",
+            n.collection,
+            COUNT(*) as count,
+            ht.total_nfts
+          FROM "NFT" n
+          JOIN holder_totals ht ON 
+            COALESCE(n."ownerDiscordId", n."ownerWallet") = COALESCE(ht."ownerDiscordId", ht."ownerWallet")
+          GROUP BY n."ownerDiscordId", n."ownerWallet", n.collection, ht.total_nfts
         )
         SELECT 
           h."ownerDiscordId",
           h."ownerWallet",
           h.collection,
           h.count,
-          COALESCE(u.name, 'Unknown User') as "userName",
+          u.name as "userName",
           u.image as "userImage"
         FROM holdings h
         LEFT JOIN "User" u ON h."ownerDiscordId" = u."discordId"
-        WHERE h."ownerDiscordId" IS NOT NULL OR h."ownerWallet" IS NOT NULL
+        ORDER BY h.total_nfts DESC
       `,
       prisma.collection.findMany({
         select: {
