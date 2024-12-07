@@ -116,7 +116,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const users = await prisma.user.findMany({
       where: {
         discordId: {
-          in: discordHolders.map(h => h.discordId)
+          in: discordHolders
+            .map(h => h.discordId)
+            .filter((id): id is string => id !== null)
         }
       },
       select: {
