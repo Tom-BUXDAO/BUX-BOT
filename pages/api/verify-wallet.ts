@@ -29,13 +29,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Valid wallet address is required' });
     }
 
+    // Get user with Discord ID
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { discordId: true }
+      select: { 
+        discordId: true,
+        wallets: {
+          select: {
+            address: true
+          }
+        }
+      }
     });
 
     if (!user?.discordId) {
       return res.status(400).json({ error: 'Discord account not connected' });
+    }
+
+    // Verify the Discord ID is a valid snowflake
+    if (!/^\d+$/.test(user.discordId)) {
+      return res.status(400).json({ error: 'Invalid Discord ID format' });
+    }
+
+    // Check if wallet is already connected
+    const existingWallet = user.wallets.find(w => w.address.toLowerCase() === address.toLowerCase());
+    if (!existingWallet) {
+      return res.status(400).json({ error: 'Wallet not connected to user' });
     }
 
     const result = await verifyHolder(address, user.discordId);

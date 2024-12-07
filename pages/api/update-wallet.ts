@@ -7,10 +7,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
@@ -18,56 +14,37 @@ export default async function handler(
     }
 
     const { address } = req.body;
-    if (!address) {
-      return res.status(400).json({ error: 'Wallet address is required' });
+    if (!address || typeof address !== 'string') {
+      return res.status(400).json({ error: 'Valid wallet address is required' });
     }
 
-    // Get user to get discordId
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { wallets: true }
+    // First check if wallet exists
+    const existingWallet = await prisma.userWallet.findFirst({
+      where: {
+        address: address.toLowerCase()
+      }
     });
 
-    if (!user?.discordId) {
-      return res.status(400).json({ error: 'Discord ID not found' });
+    if (existingWallet) {
+      // If wallet exists but belongs to another user
+      if (existingWallet.userId !== session.user.id) {
+        return res.status(400).json({ error: 'Wallet already connected to another user' });
+      }
+      // If wallet already belongs to this user, return success
+      return res.status(200).json({ success: true });
     }
 
-    // Run everything in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Update or create wallet
-      const wallet = await tx.userWallet.upsert({
-        where: {
-          address_userId: {
-            address,
-            userId: session.user.id
-          }
-        },
-        create: {
-          address,
-          userId: session.user.id
-        },
-        update: {} // No updates needed if exists
-      });
-
-      // Update NFT ownership
-      await tx.nFT.updateMany({
-        where: { ownerWallet: address },
-        data: { ownerDiscordId: user.discordId }
-      });
-
-      // Update token balance ownership
-      await tx.tokenBalance.updateMany({
-        where: { walletAddress: address },
-        data: { ownerDiscordId: user.discordId }
-      });
-
-      return wallet;
+    // Create new wallet connection
+    await prisma.userWallet.create({
+      data: {
+        address: address.toLowerCase(),
+        userId: session.user.id
+      }
     });
 
-    return res.status(200).json({ success: true, wallet: result });
-
-  } catch (error: any) {
+    return res.status(200).json({ success: true });
+  } catch (error) {
     console.error('Error in update-wallet:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: 'Failed to update wallet' });
   }
 } 
