@@ -69,11 +69,8 @@ export async function updateDiscordRoles(userId: string, roleUpdate: RoleUpdate)
   
   try {
     const guildId = process.env.DISCORD_GUILD_ID;
-    const token = process.env.DISCORD_BOT_TOKEN;
-
-    if (!guildId || !token) {
-      console.error('Missing Discord configuration');
-      throw new Error('Missing Discord configuration');
+    if (!guildId) {
+      throw new Error('Missing Discord guild ID');
     }
 
     console.log('Role changes to apply:', roleUpdate);
@@ -81,30 +78,16 @@ export async function updateDiscordRoles(userId: string, roleUpdate: RoleUpdate)
     // Add roles
     for (const roleId of roleUpdate.added) {
       console.log(`Adding role ${roleId} to user ${userId}`);
-      await fetch(
-        `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bot ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      await rest.put(
+        Routes.guildMemberRole(guildId, userId, roleId)
       );
     }
 
     // Remove roles
     for (const roleId of roleUpdate.removed) {
       console.log(`Removing role ${roleId} from user ${userId}`);
-      await fetch(
-        `https://discord.com/api/v10/guilds/${guildId}/members/${userId}/roles/${roleId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bot ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      await rest.delete(
+        Routes.guildMemberRole(guildId, userId, roleId)
       );
     }
 
