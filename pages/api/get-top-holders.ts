@@ -75,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(h => h.discordId)
       .filter((id): id is string => id !== null);
 
-    console.log('Looking up Discord IDs:', discordIds);
+    console.log('Found NFTs with Discord IDs:', discordIds);
 
     const users = await prisma.user.findMany({
       where: {
@@ -90,10 +90,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    console.log('Found users:', users);
-    console.log('Missing users for Discord IDs:', 
-      discordIds.filter(id => !users.find(u => u.discordId === id))
-    );
+    console.log('Found users in database:', users.map(u => ({
+      discordId: u.discordId,
+      name: u.name
+    })));
+
+    const missingDiscordIds = discordIds.filter(id => !users.find(u => u.discordId === id));
+    console.log('Discord IDs missing from users table:', missingDiscordIds);
 
     // Create final leaderboard
     const leaderboard = Object.entries(holdingsMap)
@@ -101,11 +104,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (data.discordId) {
           const user = users.find(u => u.discordId === data.discordId);
           if (!user) {
-            console.log('No user found for Discord ID:', data.discordId);
+            console.log('Missing user data for holder:', {
+              discordId: data.discordId,
+              totalNFTs: data.totalNFTs,
+              totalValue: data.totalValue
+            });
           }
           return {
             discordId: data.discordId,
-            name: user?.name || 'Unknown User',
+            name: user?.name || `Discord ID: ${data.discordId}`,
             image: user?.image || null,
             totalValue: data.totalValue,
             totalNFTs: data.totalNFTs,
