@@ -158,4 +158,80 @@ logEnvRoleNames().then(mapping => {
     console.log('Role mapping completed successfully');
   }
 });
+
+export function calculateQualifyingRoles(nftCounts: Record<string, number>, buxBalance: number) {
+  const qualifyingRoles = new Set<string>();
+
+  // Check NFT collection thresholds
+  Object.entries(nftCounts).forEach(([collection, count]) => {
+    const config = NFT_THRESHOLDS[collection as CollectionName];
+    if (!config) return;
+
+    // Add holder role if threshold met
+    if (config.holder && count >= 1) {
+      qualifyingRoles.add(config.holder);
+    }
+
+    // Add whale role if threshold met
+    if (hasWhaleConfig(config) && count >= config.whale.threshold) {
+      qualifyingRoles.add(config.whale.roleId!);
+    }
+  });
+
+  // Check BUX balance thresholds
+  BUX_THRESHOLDS.forEach(tier => {
+    if (tier.roleId && buxBalance >= tier.threshold) {
+      qualifyingRoles.add(tier.roleId);
+    }
+  });
+
+  // Add BUXDAO 5 role if any NFTs held
+  if (BUXDAO_5_ROLE_ID && Object.values(nftCounts).some(count => count > 0)) {
+    qualifyingRoles.add(BUXDAO_5_ROLE_ID);
+  }
+
+  return Array.from(qualifyingRoles);
+}
+
+export async function getCurrentDiscordRoles(userId: string): Promise<string[]> {
+  try {
+    const guildId = process.env.DISCORD_GUILD_ID;
+    const token = process.env.DISCORD_BOT_TOKEN;
+
+    if (!guildId || !token) {
+      throw new Error('Missing Discord configuration');
+    }
+
+    const response = await fetch(
+      `https://discord.com/api/v10/guilds/${guildId}/members/${userId}`,
+      {
+        headers: {
+          Authorization: `Bot ${token}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch member roles: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.roles || [];
+  } catch (error) {
+    console.error('Error getting current Discord roles:', error);
+    return [];
+  }
+}
+
+export function calculateRoleUpdates(currentRoles: string[], qualifyingRoles: string[]): RoleUpdate {
+  const managedRoles = getManagedRoleIds();
+  const currentManagedRoles = currentRoles.filter(id => managedRoles.has(id));
+  
+  return {
+    added: qualifyingRoles.filter(id => !currentManagedRoles.includes(id)),
+    removed: currentManagedRoles.filter(id => !qualifyingRoles.includes(id)),
+    previousRoles: currentManagedRoles,
+    newRoles: qualifyingRoles
+  };
+}
  
