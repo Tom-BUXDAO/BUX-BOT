@@ -39,11 +39,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get NFT counts grouped by wallet using Prisma
     const walletHoldings = await prisma.nFT.groupBy({
-      by: [Prisma.NFTScalarFieldEnum.ownerAddress],
+      by: [Prisma.NFTScalarFieldEnum.ownerWallet],
       _count: true,
       where: {
         ownerDiscordId: null,
-        ownerAddress: { not: null }
+        ownerWallet: { not: null }
       }
     });
     console.log('NFT holdings by wallet:', walletHoldings);
@@ -93,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         by: [Prisma.NFTScalarFieldEnum.collection],
         _count: true,
         where: {
-          ownerAddress: holding.ownerAddress
+          ownerWallet: holding.ownerWallet
         }
       });
 
@@ -102,7 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
 
       return {
-        address: holding.ownerAddress,
+        address: holding.ownerWallet,
         totalNFTs: holding._count,
         totalValue,
         collections: nfts.reduce((acc, nft) => {
