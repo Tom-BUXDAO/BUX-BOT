@@ -51,10 +51,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Create lookup for Discord usernames
-    const discordNames = users.reduce((acc, user) => {
-      acc[user.discordId] = user.name;
+    const discordNames = users.reduce<Record<string, string>>((acc, user) => {
+      if (user.discordId && user.name) {  // Type guard to ensure both exist
+        acc[user.discordId] = user.name;
+      }
       return acc;
-    }, {} as Record<string, string>);
+    }, {});
 
     // Create floor price lookup
     const floorPrices = collections.reduce((acc, col) => {
