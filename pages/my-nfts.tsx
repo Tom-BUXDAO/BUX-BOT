@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { GetServerSideProps } from 'next';
 import { useEffect, useState } from 'react';
 import { Collections } from '@/types/verification';
+import TopHolders from '@/components/TopHolders';
 
 interface CollectionData {
   name: string;
@@ -137,6 +138,10 @@ export default function MyNFTs({ collections }: MyNFTsProps) {
               </tbody>
             </table>
           </div>
+        </div>
+
+        <div className={styles.infoContainer}>
+          <TopHolders />
         </div>
       </div>
     </Layout>
