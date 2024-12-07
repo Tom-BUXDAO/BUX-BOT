@@ -59,20 +59,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const result = await verifyHolder(address, user.discordId);
 
-    // Use the exact role names that appear in the popup
-    const verification = {
-      isHolder: true,
-      collections: result.collections,
-      buxBalance: result.buxBalance,
-      totalNFTs: result.totalNFTs,
-      assignedRoles: ROLE_DISPLAY_NAMES,  // Use the exact role names
-      qualifyingBuxRoles: result.qualifyingBuxRoles,
-      roleUpdate: result.roleUpdate
-    };
-
-    // Convert collections to Record<string, number>
-    const nftCounts = Object.entries(result.collections).reduce((acc, [key, value]) => {
-      acc[key] = value.count;
+    // Convert collections to Record<string, number> before role calculation
+    const nftCounts = Object.entries(result.collections).reduce((acc, [collection, info]) => {
+      acc[collection] = info.count;
       return acc;
     }, {} as Record<string, number>);
 
@@ -104,7 +93,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('No role updates needed');
     }
 
-    return res.status(200).json({ success: true, verification: verification });
+    // Use the exact role names that appear in the popup
+    const verification = {
+      isHolder: true,
+      collections: result.collections,
+      buxBalance: result.buxBalance,
+      totalNFTs: result.totalNFTs,
+      assignedRoles: ROLE_DISPLAY_NAMES,
+      qualifyingBuxRoles: result.qualifyingBuxRoles,
+      roleUpdate: roleUpdate
+    };
+
+    return res.status(200).json({ success: true, verification });
 
   } catch (error) {
     console.error('Error verifying wallet:', error);
