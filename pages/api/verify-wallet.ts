@@ -50,18 +50,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const qualifyingRoles = calculateQualifyingRoles(nftCounts, result.buxBalance);
     console.log('Qualifying roles:', qualifyingRoles);
 
-    // Get current roles
-    const currentRoles = await getCurrentDiscordRoles(session.user.id);
+    // Get current roles using Discord ID
+    const currentRoles = await getCurrentDiscordRoles(user.discordId);
     console.log('Current Discord roles:', currentRoles);
 
     // Calculate role changes
     const roleUpdate = calculateRoleUpdates(currentRoles, qualifyingRoles);
     console.log('Role updates:', roleUpdate);
 
-    // Update Discord roles
+    // Update Discord roles using Discord ID
     if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
       console.log('Updating Discord roles...');
-      await updateDiscordRoles(session.user.id, roleUpdate);
+      await updateDiscordRoles(user.discordId, roleUpdate);
       console.log('Discord roles updated successfully');
     }
 
