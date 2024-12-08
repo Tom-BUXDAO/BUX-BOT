@@ -322,34 +322,37 @@ export async function syncUserRoles(discordId: string) {
       return acc;
     }, {} as Record<string, number>);
 
-    // Set NFT-based roles
+    // Set NFT-based roles using correct collection names
     roleData.aiBitbotsHolder = (holdings['ai_bitbots'] || 0) > 0;
-    roleData.aiBitbotsWhale = (holdings['ai_bitbots'] || 0) >= 20;
+    roleData.aiBitbotsWhale = (holdings['ai_bitbots'] || 0) >= Number(process.env.AI_BITBOTS_WHALE_THRESHOLD || 10);
     
     roleData.fckedCatzHolder = (holdings['fcked_catz'] || 0) > 0;
-    roleData.fckedCatzWhale = (holdings['fcked_catz'] || 0) >= 20;
+    roleData.fckedCatzWhale = (holdings['fcked_catz'] || 0) >= Number(process.env.FCKED_CATZ_WHALE_THRESHOLD || 25);
     
     roleData.moneyMonstersHolder = (holdings['money_monsters'] || 0) > 0;
-    roleData.moneyMonstersWhale = (holdings['money_monsters'] || 0) >= 20;
+    roleData.moneyMonstersWhale = (holdings['money_monsters'] || 0) >= Number(process.env.MONEY_MONSTERS_WHALE_THRESHOLD || 25);
     
-    roleData.moneyMonsters3dHolder = (holdings['money_monsters_3d'] || 0) > 0;
-    roleData.moneyMonsters3dWhale = (holdings['money_monsters_3d'] || 0) >= 20;
+    roleData.moneyMonsters3dHolder = (holdings['money_monsters3d'] || 0) > 0;
+    roleData.moneyMonsters3dWhale = (holdings['money_monsters3d'] || 0) >= Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD || 25);
     
-    roleData.celebCatzHolder = (holdings['celeb_catz'] || 0) > 0;
+    roleData.celebCatzHolder = (holdings['celebcatz'] || 0) > 0;
     roleData.candyBotsHolder = (holdings['candy_bots'] || 0) > 0;
-    roleData.doodleBotsHolder = (holdings['doodle_bots'] || 0) > 0;
+    roleData.doodleBotsHolder = (holdings['doodle_bot'] || 0) > 0;
     roleData.energyApesHolder = (holdings['energy_apes'] || 0) > 0;
     roleData.rjctdBotsHolder = (holdings['rjctd_bots'] || 0) > 0;
     roleData.squirrelsHolder = (holdings['squirrels'] || 0) > 0;
     roleData.warriorsHolder = (holdings['warriors'] || 0) > 0;
 
-    // Set BUX roles based on balance
+    // Set BUX roles based on balance using env thresholds
     const balance = buxBalance?.balance || 0;
-    roleData.buxBeginner = balance >= 1000;
-    roleData.buxSaver = balance >= 5000;
-    roleData.buxBuilder = balance >= 10000;
-    roleData.buxBanker = balance >= 50000;
+    roleData.buxBeginner = balance >= Number(process.env.BUX_BEGINNER_THRESHOLD || 2500);
+    roleData.buxSaver = balance >= Number(process.env.BUX_SAVER_THRESHOLD || 25000);
+    roleData.buxBuilder = balance >= Number(process.env.BUX_BUILDER_THRESHOLD || 10000);
+    roleData.buxBanker = balance >= Number(process.env.BUX_BANKER_THRESHOLD || 50000);
     roleData.buxDao5 = balance >= 100000;
+
+    // Log NFT counts for debugging
+    console.log('NFT counts across all wallets:', nftHoldings);
 
     // Upsert to roles table
     await prisma.roles.upsert({
