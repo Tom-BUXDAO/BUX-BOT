@@ -159,38 +159,45 @@ logEnvRoleNames().then(mapping => {
   }
 });
 
-export function calculateQualifyingRoles(nftCounts: Record<string, number>, buxBalance: number) {
-  const qualifyingRoles = new Set<string>();
+export function calculateQualifyingRoles(nftCounts: Record<string, number>, buxBalance: number): string[] {
+  const qualifyingRoles = new Set<string>();  // Initialize the Set
 
-  // Check NFT collection thresholds
-  Object.entries(nftCounts).forEach(([collection, count]) => {
-    const config = NFT_THRESHOLDS[collection as CollectionName];
-    if (!config) return;
+  // NFT Holder roles
+  if (nftCounts['ai_bitbots'] > 0) qualifyingRoles.add(process.env.AI_BITBOTS_ROLE_ID!);
+  if (nftCounts['fcked_catz'] > 0) qualifyingRoles.add(process.env.FCKED_CATZ_ROLE_ID!);
+  if (nftCounts['money_monsters'] > 0) qualifyingRoles.add(process.env.MONEY_MONSTERS_ROLE_ID!);
+  if (nftCounts['money_monsters3d'] > 0) qualifyingRoles.add(process.env.MONEY_MONSTERS3D_ROLE_ID!);
+  if (nftCounts['celebcatz'] > 0) qualifyingRoles.add(process.env.CELEBCATZ_ROLE_ID!);
+  if (nftCounts['candy_bots'] > 0) qualifyingRoles.add(process.env.CANDY_BOTS_ROLE_ID!);
+  if (nftCounts['doodle_bot'] > 0) qualifyingRoles.add(process.env.DOODLE_BOTS_ROLE_ID!);
+  if (nftCounts['energy_apes'] > 0) qualifyingRoles.add(process.env.ENERGY_APES_ROLE_ID!);
+  if (nftCounts['rjctd_bots'] > 0) qualifyingRoles.add(process.env.RJCTD_BOTS_ROLE_ID!);
+  if (nftCounts['squirrels'] > 0) qualifyingRoles.add(process.env.SQUIRRELS_ROLE_ID!);
+  if (nftCounts['warriors'] > 0) qualifyingRoles.add(process.env.WARRIORS_ROLE_ID!);
 
-    // Add holder role if threshold met
-    if (config.holder && count >= 1) {
-      qualifyingRoles.add(config.holder);
-    }
+  // Whale roles - using thresholds from env
+  if (nftCounts['ai_bitbots'] >= Number(process.env.AI_BITBOTS_WHALE_THRESHOLD)) 
+    qualifyingRoles.add(process.env.AI_BITBOTS_WHALE_ROLE_ID!);
+  if (nftCounts['fcked_catz'] >= Number(process.env.FCKED_CATZ_WHALE_THRESHOLD)) 
+    qualifyingRoles.add(process.env.FCKED_CATZ_WHALE_ROLE_ID!);
+  if (nftCounts['money_monsters'] >= Number(process.env.MONEY_MONSTERS_WHALE_THRESHOLD)) 
+    qualifyingRoles.add(process.env.MONEY_MONSTERS_WHALE_ROLE_ID!);
+  if (nftCounts['money_monsters3d'] >= Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD)) 
+    qualifyingRoles.add(process.env.MONEY_MONSTERS3D_WHALE_ROLE_ID!);
 
-    // Add whale role if threshold met
-    if (hasWhaleConfig(config) && count >= config.whale.threshold) {
-      qualifyingRoles.add(config.whale.roleId!);
-    }
-  });
+  // BUX roles - using thresholds from env
+  if (buxBalance >= Number(process.env.BUX_BEGINNER_THRESHOLD)) 
+    qualifyingRoles.add(process.env.BUX_BEGINNER_ROLE_ID!);
+  if (buxBalance >= Number(process.env.BUX_BUILDER_THRESHOLD)) 
+    qualifyingRoles.add(process.env.BUX_BUILDER_ROLE_ID!);
+  if (buxBalance >= Number(process.env.BUX_SAVER_THRESHOLD)) 
+    qualifyingRoles.add(process.env.BUX_SAVER_ROLE_ID!);
+  if (buxBalance >= Number(process.env.BUX_BANKER_THRESHOLD)) 
+    qualifyingRoles.add(process.env.BUX_BANKER_ROLE_ID!);
+  if (buxBalance >= 100000) 
+    qualifyingRoles.add(process.env.BUXDAO_5_ROLE_ID!);
 
-  // Check BUX balance thresholds
-  BUX_THRESHOLDS.forEach(tier => {
-    if (tier.roleId && buxBalance >= tier.threshold) {
-      qualifyingRoles.add(tier.roleId);
-    }
-  });
-
-  // Add BUXDAO 5 role if any NFTs held
-  if (BUXDAO_5_ROLE_ID && Object.values(nftCounts).some(count => count > 0)) {
-    qualifyingRoles.add(BUXDAO_5_ROLE_ID);
-  }
-
-  return Array.from(qualifyingRoles);
+  return Array.from(qualifyingRoles).filter(Boolean);  // Remove any undefined roles
 }
 
 export async function getCurrentDiscordRoles(userId: string): Promise<string[]> {
