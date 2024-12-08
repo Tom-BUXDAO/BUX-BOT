@@ -314,8 +314,8 @@ export async function syncUserRoles(discordId: string) {
     roleData.buxBuilder = balance >= 10000;
     roleData.buxBanker = balance >= 50000;
 
-    // Upsert to Roles table using correct capitalization
-    await prisma.Roles.upsert({
+    // Upsert to roles table using lowercase name
+    await prisma.roles.upsert({
       where: { discordId },
       create: roleData,
       update: roleData
