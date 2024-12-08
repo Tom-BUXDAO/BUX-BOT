@@ -276,7 +276,8 @@ export async function syncUserRoles(discordId: string) {
       where: {
         ownerDiscordId: discordId,
         walletAddress: {
-          contains: 'bux'
+          contains: 'bux',
+          mode: 'insensitive'
         }
       },
       select: {
@@ -344,7 +345,7 @@ export async function syncUserRoles(discordId: string) {
     roleData.warriorsHolder = (holdings['warriors'] || 0) > 0;
 
     // Set BUX roles based on balance - only set highest qualifying role
-    const balance = buxBalance?.balance || 0;
+    const balance = Number(buxBalance?.balance || 0);
     console.log('BUX balance:', balance);
 
     // Reset all BUX roles to false first
@@ -363,6 +364,24 @@ export async function syncUserRoles(discordId: string) {
     } else if (balance >= 2500) {   // BUX_BEGINNER_THRESHOLD
       roleData.buxBeginner = true;
     }
+
+    // Log BUX role assignments and balance details
+    console.log('BUX token details:', {
+      rawBalance: buxBalance?.balance,
+      parsedBalance: balance,
+      thresholds: {
+        banker: 50000,
+        saver: 25000,
+        builder: 10000,
+        beginner: 2500
+      },
+      roles: {
+        buxBanker: roleData.buxBanker,
+        buxSaver: roleData.buxSaver,
+        buxBuilder: roleData.buxBuilder,
+        buxBeginner: roleData.buxBeginner
+      }
+    });
 
     // Set BUX DAO 5 role based on holding all 5 main collections
     roleData.buxDao5 = (
