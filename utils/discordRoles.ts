@@ -230,8 +230,13 @@ const getManagedRoleIds = () => MANAGED_ROLE_IDS;
 
 export async function syncUserRoles(discordId: string) {
   try {
-    // Get all NFTs owned by this Discord ID
-    const nftCounts = await prisma.nFT.groupBy({
+    // Get user's Discord name
+    const guild = await rest.get(
+      Routes.guildMember(GUILD_ID!, discordId)
+    ) as { user: { username: string } };
+
+    // Get NFT holdings
+    const nftHoldings = await prisma.nFT.groupBy({
       by: ['collection'],
       where: {
         ownerDiscordId: discordId
@@ -252,12 +257,7 @@ export async function syncUserRoles(discordId: string) {
       }
     });
 
-    // Get user's Discord name
-    const guild = await rest.get(
-      Routes.guildMember(GUILD_ID!, discordId)
-    ) as { user: { username: string } };
-
-    // Prepare role data
+    // Initialize all roles as false
     const roleData = {
       discordId,
       discordName: guild.user.username,
@@ -286,54 +286,35 @@ export async function syncUserRoles(discordId: string) {
       buxBeginner: false,
       buxSaver: false,
       buxBuilder: false,
-      buxDao5: false,
+      buxDao5: false
     };
 
-    // Set holder roles based on NFT counts
-    nftCounts.forEach(count => {
-      const collection = count.collection;
-      const nftCount = count._count;
+    // Create holdings map for easier access
+    const holdings = nftHoldings.reduce((acc, item) => {
+      acc[item.collection] = item._count;
+      return acc;
+    }, {} as Record<string, number>);
 
-      switch (collection) {
-        case 'ai_bitbots':
-          roleData.aiBitbotsHolder = nftCount > 0;
-          roleData.aiBitbotsWhale = nftCount >= 20;
-          break;
-        case 'fcked_catz':
-          roleData.fckedCatzHolder = nftCount > 0;
-          roleData.fckedCatzWhale = nftCount >= 20;
-          break;
-        case 'money_monsters':
-          roleData.moneyMonstersHolder = nftCount > 0;
-          roleData.moneyMonstersWhale = nftCount >= 20;
-          break;
-        case 'money_monsters_3d':
-          roleData.moneyMonsters3dHolder = nftCount > 0;
-          roleData.moneyMonsters3dWhale = nftCount >= 20;
-          break;
-        case 'celeb_catz':
-          roleData.celebCatzHolder = nftCount > 0;
-          break;
-        case 'candy_bots':
-          roleData.candyBotsHolder = nftCount > 0;
-          break;
-        case 'doodle_bots':
-          roleData.doodleBotsHolder = nftCount > 0;
-          break;
-        case 'energy_apes':
-          roleData.energyApesHolder = nftCount > 0;
-          break;
-        case 'rjctd_bots':
-          roleData.rjctdBotsHolder = nftCount > 0;
-          break;
-        case 'squirrels':
-          roleData.squirrelsHolder = nftCount > 0;
-          break;
-        case 'warriors':
-          roleData.warriorsHolder = nftCount > 0;
-          break;
-      }
-    });
+    // Set NFT-based roles
+    roleData.aiBitbotsHolder = (holdings['ai_bitbots'] || 0) > 0;
+    roleData.aiBitbotsWhale = (holdings['ai_bitbots'] || 0) >= 20;
+    
+    roleData.fckedCatzHolder = (holdings['fcked_catz'] || 0) > 0;
+    roleData.fckedCatzWhale = (holdings['fcked_catz'] || 0) >= 20;
+    
+    roleData.moneyMonstersHolder = (holdings['money_monsters'] || 0) > 0;
+    roleData.moneyMonstersWhale = (holdings['money_monsters'] || 0) >= 20;
+    
+    roleData.moneyMonsters3dHolder = (holdings['money_monsters_3d'] || 0) > 0;
+    roleData.moneyMonsters3dWhale = (holdings['money_monsters_3d'] || 0) >= 20;
+    
+    roleData.celebCatzHolder = (holdings['celeb_catz'] || 0) > 0;
+    roleData.candyBotsHolder = (holdings['candy_bots'] || 0) > 0;
+    roleData.doodleBotsHolder = (holdings['doodle_bots'] || 0) > 0;
+    roleData.energyApesHolder = (holdings['energy_apes'] || 0) > 0;
+    roleData.rjctdBotsHolder = (holdings['rjctd_bots'] || 0) > 0;
+    roleData.squirrelsHolder = (holdings['squirrels'] || 0) > 0;
+    roleData.warriorsHolder = (holdings['warriors'] || 0) > 0;
 
     // Set BUX roles based on balance
     const balance = buxBalance?.balance || 0;
@@ -341,15 +322,16 @@ export async function syncUserRoles(discordId: string) {
     roleData.buxSaver = balance >= 5000;
     roleData.buxBuilder = balance >= 10000;
     roleData.buxBanker = balance >= 50000;
+    roleData.buxDao5 = balance >= 100000;
 
-    // Upsert to roles table using lowercase name
+    // Upsert to roles table
     await prisma.roles.upsert({
       where: { discordId },
       create: roleData,
       update: roleData
     });
 
-    console.log(`Synced roles for user ${discordId}`);
+    console.log(`Synced roles for user ${discordId}:`, roleData);
     return roleData;
   } catch (error) {
     console.error('Error syncing user roles:', error);
