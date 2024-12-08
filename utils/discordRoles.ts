@@ -303,7 +303,35 @@ export async function syncUserRoles(discordId: string) {
           roleData.fckedCatzHolder = nftCount > 0;
           roleData.fckedCatzWhale = nftCount >= 20;
           break;
-        // ... add other collections ...
+        case 'money_monsters':
+          roleData.moneyMonstersHolder = nftCount > 0;
+          roleData.moneyMonstersWhale = nftCount >= 20;
+          break;
+        case 'money_monsters_3d':
+          roleData.moneyMonsters3dHolder = nftCount > 0;
+          roleData.moneyMonsters3dWhale = nftCount >= 20;
+          break;
+        case 'celeb_catz':
+          roleData.celebCatzHolder = nftCount > 0;
+          break;
+        case 'candy_bots':
+          roleData.candyBotsHolder = nftCount > 0;
+          break;
+        case 'doodle_bots':
+          roleData.doodleBotsHolder = nftCount > 0;
+          break;
+        case 'energy_apes':
+          roleData.energyApesHolder = nftCount > 0;
+          break;
+        case 'rjctd_bots':
+          roleData.rjctdBotsHolder = nftCount > 0;
+          break;
+        case 'squirrels':
+          roleData.squirrelsHolder = nftCount > 0;
+          break;
+        case 'warriors':
+          roleData.warriorsHolder = nftCount > 0;
+          break;
       }
     });
 
