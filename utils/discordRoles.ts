@@ -345,35 +345,48 @@ export async function syncUserRoles(discordId: string) {
 
     // Set BUX roles based on balance - only set highest qualifying role
     const balance = buxBalance?.balance || 0;
-    
+    console.log('BUX balance:', balance);
+
     // Reset all BUX roles to false first
     roleData.buxBeginner = false;
     roleData.buxSaver = false;
     roleData.buxBuilder = false;
     roleData.buxBanker = false;
-    roleData.buxDao5 = false;
 
-    // Assign only the highest qualifying role
-    if (balance >= 100000) {
-      roleData.buxDao5 = true;
-    } else if (balance >= Number(process.env.BUX_BANKER_THRESHOLD || 50000)) {
+    // Assign only the highest qualifying BUX role
+    if (balance >= 50000) {  // BUX_BANKER_THRESHOLD
       roleData.buxBanker = true;
-    } else if (balance >= Number(process.env.BUX_SAVER_THRESHOLD || 25000)) {
+    } else if (balance >= 25000) {  // BUX_SAVER_THRESHOLD
       roleData.buxSaver = true;
-    } else if (balance >= Number(process.env.BUX_BUILDER_THRESHOLD || 10000)) {
+    } else if (balance >= 10000) {  // BUX_BUILDER_THRESHOLD
       roleData.buxBuilder = true;
-    } else if (balance >= Number(process.env.BUX_BEGINNER_THRESHOLD || 2500)) {
+    } else if (balance >= 2500) {   // BUX_BEGINNER_THRESHOLD
       roleData.buxBeginner = true;
     }
 
-    // Log BUX balance and role assignment
-    console.log('BUX balance:', balance);
+    // Set BUX DAO 5 role based on holding all 5 main collections
+    roleData.buxDao5 = (
+      (holdings['ai_bitbots'] || 0) > 0 &&
+      (holdings['fcked_catz'] || 0) > 0 &&
+      (holdings['money_monsters'] || 0) > 0 &&
+      (holdings['money_monsters3d'] || 0) > 0 &&
+      (holdings['celebcatz'] || 0) > 0
+    );
+
+    // Log role assignments
     console.log('BUX roles assigned:', {
       buxDao5: roleData.buxDao5,
       buxBanker: roleData.buxBanker,
       buxSaver: roleData.buxSaver,
       buxBuilder: roleData.buxBuilder,
-      buxBeginner: roleData.buxBeginner
+      buxBeginner: roleData.buxBeginner,
+      holdings: {
+        ai_bitbots: holdings['ai_bitbots'] || 0,
+        fcked_catz: holdings['fcked_catz'] || 0,
+        money_monsters: holdings['money_monsters'] || 0,
+        money_monsters3d: holdings['money_monsters3d'] || 0,
+        celebcatz: holdings['celebcatz'] || 0
+      }
     });
 
     // Log NFT counts for debugging
