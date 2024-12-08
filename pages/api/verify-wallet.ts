@@ -14,10 +14,6 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.id) {
@@ -29,17 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Valid wallet address is required' });
     }
 
-    // Get user with Discord ID
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { 
-        discordId: true,
-        wallets: {
-          select: {
-            address: true
-          }
-        }
-      }
+      select: { discordId: true }
     });
 
     if (!user?.discordId) {
@@ -51,30 +39,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid Discord ID format' });
     }
 
-    // Check if wallet is already connected
-    const existingWallet = user.wallets.find(w => w.address.toLowerCase() === address.toLowerCase());
-    if (!existingWallet) {
-      return res.status(400).json({ error: 'Wallet not connected to user' });
-    }
-
     const result = await verifyHolder(address, user.discordId);
 
-    // Convert collections to Record<string, number>
-    const nftCounts = Object.entries(result.collections).reduce((acc, [collection, info]) => {
-      acc[collection] = info.count;
-      return acc;
-    }, {} as Record<string, number>);
+    // Get current Discord roles
+    const currentRoles = await getCurrentDiscordRoles(user.discordId);
 
-    // Get qualifying roles
-    const qualifyingRoles = calculateQualifyingRoles(nftCounts, result.buxBalance);
+    // Calculate qualifying roles
+    const qualifyingRoles = calculateQualifyingRoles(result.collections, result.buxBalance);
     console.log('Qualifying roles:', qualifyingRoles);
 
-    // Get current roles using Discord ID
-    const currentRoles = await getCurrentDiscordRoles(user.discordId);
-    console.log('Current Discord roles:', currentRoles);
-
-    // Calculate role changes
-    const roleUpdate = calculateRoleUpdates(currentRoles, qualifyingRoles);
+    // Calculate role changes - await the Promise
+    const roleUpdate = await calculateRoleUpdates(currentRoles, qualifyingRoles);
     console.log('Role updates:', roleUpdate);
 
     // Update Discord roles using Discord ID
@@ -99,9 +74,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       qualifyingBuxRoles: result.qualifyingBuxRoles,
       roleUpdate: roleUpdate
     };
-
-    // Sync roles in database
-    await syncUserRoles(user.discordId);
 
     return res.status(200).json({ success: true, verification });
 
