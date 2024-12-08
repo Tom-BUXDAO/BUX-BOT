@@ -41,11 +41,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const result = await verifyHolder(address, user.discordId);
 
+    // Convert collections to Record<string, number>
+    const nftCounts = Object.entries(result.collections).reduce((acc, [collection, info]) => {
+      acc[collection] = info.count;
+      return acc;
+    }, {} as Record<string, number>);
+
     // Get current Discord roles
     const currentRoles = await getCurrentDiscordRoles(user.discordId);
 
-    // Calculate qualifying roles
-    const qualifyingRoles = calculateQualifyingRoles(result.collections, result.buxBalance);
+    // Calculate qualifying roles with converted collections
+    const qualifyingRoles = calculateQualifyingRoles(nftCounts, result.buxBalance);
     console.log('Qualifying roles:', qualifyingRoles);
 
     // Calculate role changes - await the Promise
