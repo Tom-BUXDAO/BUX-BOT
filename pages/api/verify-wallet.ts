@@ -41,6 +41,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const result = await verifyHolder(address, user.discordId);
 
+    // Sync roles to database
+    await syncUserRoles(user.discordId);
+
     // Convert collections to Record<string, number>
     const nftCounts = Object.entries(result.collections).reduce((acc, [collection, info]) => {
       acc[collection] = info.count;
