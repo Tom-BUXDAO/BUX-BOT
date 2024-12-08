@@ -2,6 +2,7 @@ import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v10';
 import type { RoleUpdate } from '@/types/verification';
 import { NFT_THRESHOLDS, BUX_THRESHOLDS, BUXDAO_5_ROLE_ID, CollectionName } from './roleConfig';
+import { prisma } from '@/lib/prisma';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
@@ -18,9 +19,18 @@ async function getRoleNames(): Promise<Map<string, string>> {
       Routes.guild(GUILD_ID!)
     ) as { roles: { id: string, name: string }[] };
 
-    cachedRoleNames = new Map(guild.roles.map(r => [r.id, r.name]));
-    console.log('Cached role names:', Object.fromEntries(cachedRoleNames));
-    return cachedRoleNames;
+    const newRoleNames = new Map(guild.roles.map(r => [r.id, r.name]));
+    cachedRoleNames = newRoleNames;
+    
+    // Log managed role names for debugging
+    const managedRoles = getManagedRoleIds();
+    const managedRoleNames = Array.from(managedRoles).map(id => ({
+      id,
+      name: newRoleNames.get(id) || 'Unknown'
+    }));
+    console.log('Managed roles:', managedRoleNames);
+    
+    return newRoleNames;
   } catch (error) {
     console.error('Error fetching role names:', error);
     return new Map();
@@ -41,28 +51,15 @@ function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config i
   return config !== undefined && 'whale' in config;
 }
 
-// Get all role IDs we manage
-const getManagedRoleIds = () => {
-  const roleIds = new Set<string>();
-  
-  // Add NFT roles
-  Object.values(NFT_THRESHOLDS).forEach(config => {
-    if (config.holder) roleIds.add(config.holder);
-    if (hasWhaleConfig(config) && config.whale.roleId) {
-      roleIds.add(config.whale.roleId);
-    }
-  });
-
-  // Add BUX roles
-  BUX_THRESHOLDS.forEach(tier => {
-    if (tier.roleId) roleIds.add(tier.roleId);
-  });
-
-  // Add BUXDAO 5 role
-  if (BUXDAO_5_ROLE_ID) roleIds.add(BUXDAO_5_ROLE_ID);
-
-  return roleIds;
-};
+// Create a Set of role IDs that we manage
+const MANAGED_ROLE_IDS = new Set([
+  // BUX roles
+  '1248416679504117861', // BUX BEGINNER
+  '1248417591215784019', // BUX SAVER
+  '1248417674476916809', // BUX BUILDER
+  '1248428373487784006', // BUX$DAO 5
+  // Add any other roles we manage
+]);
 
 export async function updateDiscordRoles(userId: string, roleUpdate: RoleUpdate) {
   console.log('Starting Discord role update for user:', userId);
@@ -200,15 +197,135 @@ export async function getCurrentDiscordRoles(userId: string): Promise<string[]> 
   }
 }
 
-export function calculateRoleUpdates(currentRoles: string[], qualifyingRoles: string[]): RoleUpdate {
-  const managedRoles = getManagedRoleIds();
-  const currentManagedRoles = currentRoles.filter(id => managedRoles.has(id));
+export async function calculateRoleUpdates(currentRoles: string[], qualifyingRoles: string[]): Promise<RoleUpdate> {
+  // Only consider roles that we manage
+  const currentManagedRoles = currentRoles.filter(id => MANAGED_ROLE_IDS.has(id));
   
+  // Get role names for logging
+  const roleNames = await getRoleNames();
+  console.log('Current managed roles:', currentManagedRoles.map(id => roleNames.get(id) || id));
+  console.log('Qualifying roles:', qualifyingRoles.map(id => roleNames.get(id) || id));
+  
+  const added = qualifyingRoles.filter(id => !currentManagedRoles.includes(id));
+  const removed = currentManagedRoles.filter(id => !qualifyingRoles.includes(id));
+
+  // Log role changes with names
+  if (added.length > 0) {
+    console.log('Adding roles:', added.map(id => roleNames.get(id) || id));
+  }
+  if (removed.length > 0) {
+    console.log('Removing roles:', removed.map(id => roleNames.get(id) || id));
+  }
+
   return {
-    added: qualifyingRoles.filter(id => !currentManagedRoles.includes(id)),
-    removed: currentManagedRoles.filter(id => !qualifyingRoles.includes(id)),
+    added,
+    removed,
     previousRoles: currentManagedRoles,
     newRoles: qualifyingRoles
   };
+}
+
+// Update getManagedRoleIds to use our predefined set
+const getManagedRoleIds = () => MANAGED_ROLE_IDS;
+
+export async function syncUserRoles(discordId: string) {
+  try {
+    // Get all NFTs owned by this Discord ID
+    const nftCounts = await prisma.nFT.groupBy({
+      by: ['collection'],
+      where: {
+        ownerDiscordId: discordId
+      },
+      _count: true
+    });
+
+    // Get BUX balance
+    const buxBalance = await prisma.tokenBalance.findFirst({
+      where: {
+        ownerDiscordId: discordId,
+        walletAddress: {
+          contains: 'bux'
+        }
+      },
+      select: {
+        balance: true
+      }
+    });
+
+    // Get user's Discord name
+    const guild = await rest.get(
+      Routes.guildMember(GUILD_ID!, discordId)
+    ) as { user: { username: string } };
+
+    // Prepare role data
+    const roleData = {
+      discordId,
+      discordName: guild.user.username,
+      // NFT Holder Roles
+      aiBitbotsHolder: false,
+      fckedCatzHolder: false,
+      moneyMonstersHolder: false,
+      moneyMonsters3dHolder: false,
+      celebCatzHolder: false,
+      candyBotsHolder: false,
+      doodleBotsHolder: false,
+      energyApesHolder: false,
+      rjctdBotsHolder: false,
+      squirrelsHolder: false,
+      warriorsHolder: false,
+      // Whale Roles
+      aiBitbotsWhale: false,
+      fckedCatzWhale: false,
+      moneyMonstersWhale: false,
+      moneyMonsters3dWhale: false,
+      // Special Roles
+      mmTop10: false,
+      mm3dTop10: false,
+      // BUX Roles
+      buxBanker: false,
+      buxBeginner: false,
+      buxSaver: false,
+      buxBuilder: false,
+      buxDao5: false,
+    };
+
+    // Set holder roles based on NFT counts
+    nftCounts.forEach(count => {
+      const collection = count.collection;
+      const nftCount = count._count;
+
+      switch (collection) {
+        case 'ai_bitbots':
+          roleData.aiBitbotsHolder = nftCount > 0;
+          roleData.aiBitbotsWhale = nftCount >= 20;
+          break;
+        case 'fcked_catz':
+          roleData.fckedCatzHolder = nftCount > 0;
+          roleData.fckedCatzWhale = nftCount >= 20;
+          break;
+        // ... add other collections ...
+      }
+    });
+
+    // Set BUX roles based on balance
+    const balance = buxBalance?.balance || 0;
+    roleData.buxBeginner = balance >= 1000;
+    roleData.buxSaver = balance >= 5000;
+    roleData.buxBuilder = balance >= 10000;
+    roleData.buxBanker = balance >= 50000;
+
+    // Upsert to Roles table using correct capitalization
+    await prisma.Roles.upsert({
+      where: { discordId },
+      create: roleData,
+      update: roleData
+    });
+
+    console.log(`Synced roles for user ${discordId}`);
+    return roleData;
+  } catch (error) {
+    console.error('Error syncing user roles:', error);
+    throw error;
+  }
 }
  

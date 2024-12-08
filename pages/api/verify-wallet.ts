@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from './auth/[...nextauth]';
 import { prisma } from '@/lib/prisma';
 import { verifyHolder } from '@/utils/verifyHolder';
-import { calculateQualifyingRoles, getCurrentDiscordRoles, calculateRoleUpdates, updateDiscordRoles, getRoleNames } from '@/utils/discordRoles';
+import { calculateQualifyingRoles, getCurrentDiscordRoles, calculateRoleUpdates, updateDiscordRoles, getRoleNames, syncUserRoles } from '@/utils/discordRoles';
 
 export const config = {
   maxDuration: 60,
@@ -99,6 +99,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       qualifyingBuxRoles: result.qualifyingBuxRoles,
       roleUpdate: roleUpdate
     };
+
+    // Sync roles in database
+    await syncUserRoles(user.discordId);
 
     return res.status(200).json({ success: true, verification });
 

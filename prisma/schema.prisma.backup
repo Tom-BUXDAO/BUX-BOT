@@ -13,14 +13,15 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?
-  access_token      String?
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?
+  id_token          String? @db.Text
   session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -34,24 +35,24 @@ model Session {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  discordId     String?      @unique
-  discordName   String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id            String    @id @default(cuid())
+  name          String?
   email         String?
   emailVerified DateTime?
   image         String?
-  name          String?
   accounts      Account[]
-  ownedNFTs     NFT[]        @relation("Ownership")
   sessions      Session[]
+  discordId     String?   @unique
+  discordName   String?
   wallets       UserWallet[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  ownedNFTs     NFT[]     @relation("Ownership")
 }
 
 model UserWallet {
   id        String   @id @default(cuid())
-  address   String
+  address   String   
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -124,10 +125,10 @@ model Collection {
   description String?
   isMain      Boolean  @default(false)
   totalSupply Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   listedCount Int      @default(0)
   floorPrice  BigInt   @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model TokenBalance {
@@ -150,32 +151,41 @@ model WalletVerification {
 }
 
 model Roles {
-  discordId             String   @id
-  discordName           String
-  aiBitbotsHolder       Boolean? @default(false)
-  fckedCatzHolder       Boolean? @default(false)
-  moneyMonstersHolder   Boolean? @default(false)
-  moneyMonsters3dHolder Boolean? @default(false)
-  celebCatzHolder       Boolean? @default(false)
-  candyBotsHolder       Boolean? @default(false)
-  doodleBotsHolder      Boolean? @default(false)
-  energyApesHolder      Boolean? @default(false)
-  rjctdBotsHolder       Boolean? @default(false)
-  squirrelsHolder       Boolean? @default(false)
-  warriorsHolder        Boolean? @default(false)
-  aiBitbotsWhale        Boolean? @default(false)
-  fckedCatzWhale        Boolean? @default(false)
-  moneyMonstersWhale    Boolean? @default(false)
-  moneyMonsters3dWhale  Boolean? @default(false)
-  mmTop10               Boolean? @default(false)
-  mm3dTop10             Boolean? @default(false)
-  buxBanker             Boolean? @default(false)
-  buxBeginner           Boolean? @default(false)
-  buxSaver              Boolean? @default(false)
-  buxBuilder            Boolean? @default(false)
-  buxDao5               Boolean? @default(false)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @default(now())
+  discordId    String   @id
+  discordName  String
+  // NFT Holder Roles
+  aiBitbotsHolder Boolean @default(false)
+  fckedCatzHolder Boolean @default(false)
+  moneyMonstersHolder Boolean @default(false)
+  moneyMonsters3dHolder Boolean @default(false)
+  celebCatzHolder Boolean @default(false)
+  candyBotsHolder Boolean @default(false)
+  doodleBotsHolder Boolean @default(false)
+  energyApesHolder Boolean @default(false)
+  rjctdBotsHolder Boolean @default(false)
+  squirrelsHolder Boolean @default(false)
+  warriorsHolder Boolean @default(false)
+  
+  // Whale Roles
+  aiBitbotsWhale Boolean @default(false)
+  fckedCatzWhale Boolean @default(false)
+  moneyMonstersWhale Boolean @default(false)
+  moneyMonsters3dWhale Boolean @default(false)
+  
+  // Special Roles
+  mmTop10 Boolean @default(false)
+  mm3dTop10 Boolean @default(false)
+  
+  // BUX Roles
+  buxBanker Boolean @default(false)
+  buxBeginner Boolean @default(false)
+  buxSaver Boolean @default(false)
+  buxBuilder Boolean @default(false)
+  buxDao5 Boolean @default(false)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([discordId])
+  @@map("roles")
 }
