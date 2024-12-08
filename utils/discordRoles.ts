@@ -271,16 +271,16 @@ export async function syncUserRoles(discordId: string) {
       _count: true
     });
 
-    // Get BUX balance
-    const buxBalance = await prisma.tokenBalance.findFirst({
+    // Get BUX balance - sum across all wallets
+    const buxBalance = await prisma.tokenBalance.aggregate({
       where: {
         ownerDiscordId: discordId,
-        walletAddress: {
-          contains: 'bux',
+        token_type: {
+          equals: 'BUX',
           mode: 'insensitive'
         }
       },
-      select: {
+      _sum: {
         balance: true
       }
     });
@@ -345,7 +345,7 @@ export async function syncUserRoles(discordId: string) {
     roleData.warriorsHolder = (holdings['warriors'] || 0) > 0;
 
     // Set BUX roles based on balance - only set highest qualifying role
-    const balance = Number(buxBalance?.balance || 0);
+    const balance = Number(buxBalance?._sum?.balance || 0);
     console.log('BUX balance:', balance);
 
     // Reset all BUX roles to false first
@@ -367,7 +367,7 @@ export async function syncUserRoles(discordId: string) {
 
     // Log BUX role assignments and balance details
     console.log('BUX token details:', {
-      rawBalance: buxBalance?.balance,
+      rawBalance: buxBalance?._sum?.balance,
       parsedBalance: balance,
       thresholds: {
         banker: 50000,
