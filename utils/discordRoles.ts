@@ -343,13 +343,38 @@ export async function syncUserRoles(discordId: string) {
     roleData.squirrelsHolder = (holdings['squirrels'] || 0) > 0;
     roleData.warriorsHolder = (holdings['warriors'] || 0) > 0;
 
-    // Set BUX roles based on balance using env thresholds
+    // Set BUX roles based on balance - only set highest qualifying role
     const balance = buxBalance?.balance || 0;
-    roleData.buxBeginner = balance >= Number(process.env.BUX_BEGINNER_THRESHOLD || 2500);
-    roleData.buxSaver = balance >= Number(process.env.BUX_SAVER_THRESHOLD || 25000);
-    roleData.buxBuilder = balance >= Number(process.env.BUX_BUILDER_THRESHOLD || 10000);
-    roleData.buxBanker = balance >= Number(process.env.BUX_BANKER_THRESHOLD || 50000);
-    roleData.buxDao5 = balance >= 100000;
+    
+    // Reset all BUX roles to false first
+    roleData.buxBeginner = false;
+    roleData.buxSaver = false;
+    roleData.buxBuilder = false;
+    roleData.buxBanker = false;
+    roleData.buxDao5 = false;
+
+    // Assign only the highest qualifying role
+    if (balance >= 100000) {
+      roleData.buxDao5 = true;
+    } else if (balance >= Number(process.env.BUX_BANKER_THRESHOLD || 50000)) {
+      roleData.buxBanker = true;
+    } else if (balance >= Number(process.env.BUX_SAVER_THRESHOLD || 25000)) {
+      roleData.buxSaver = true;
+    } else if (balance >= Number(process.env.BUX_BUILDER_THRESHOLD || 10000)) {
+      roleData.buxBuilder = true;
+    } else if (balance >= Number(process.env.BUX_BEGINNER_THRESHOLD || 2500)) {
+      roleData.buxBeginner = true;
+    }
+
+    // Log BUX balance and role assignment
+    console.log('BUX balance:', balance);
+    console.log('BUX roles assigned:', {
+      buxDao5: roleData.buxDao5,
+      buxBanker: roleData.buxBanker,
+      buxSaver: roleData.buxSaver,
+      buxBuilder: roleData.buxBuilder,
+      buxBeginner: roleData.buxBeginner
+    });
 
     // Log NFT counts for debugging
     console.log('NFT counts across all wallets:', nftHoldings);
