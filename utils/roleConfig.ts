@@ -1,13 +1,18 @@
 import { prisma } from '@/lib/prisma';
-import type { RoleConfig } from '@/types/roles';
+import type { RoleConfig, RoleType } from '@/types/roles';
 
 export async function getRoleConfigs(): Promise<RoleConfig[]> {
-  return prisma.roleConfig.findMany({
+  const configs = await prisma.roleConfig.findMany({
     orderBy: [
       { roleType: 'asc' },
       { displayName: 'asc' }
     ]
   });
+  
+  return configs.map(config => ({
+    ...config,
+    roleType: config.roleType as RoleType
+  }));
 }
 
 export async function getRoleIdByName(roleName: string): Promise<string | null> {

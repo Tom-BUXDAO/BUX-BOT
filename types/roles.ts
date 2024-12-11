@@ -1,15 +1,20 @@
-export type RoleType = 'holder' | 'whale' | 'bux' | 'top10' | 'special';
+export enum RoleType {
+  NFT = 'nft',
+  TOKEN = 'token',
+  SPECIAL = 'special',
+  WHALE = 'whale'
+}
 
 export interface RoleConfig {
   id: number;
-  roleName: string;
-  roleId: string;
-  displayName?: string | null;
-  threshold?: number | null;
-  collectionName?: string | null;
-  roleType: RoleType;
+  displayName: string | null;
   createdAt: Date;
   updatedAt: Date;
+  roleName: string;
+  roleId: string;
+  threshold: number | null;
+  collectionName: string | null;
+  roleType: RoleType;
 }
 
 export interface RoleStatus {
