@@ -7,21 +7,31 @@ interface RoleNotificationProps {
   onClose: () => void;
 }
 
+interface RoleConfig {
+  roleId: string;
+  displayName: string;
+}
+
 export default function RoleNotification({ roleUpdate, onClose }: RoleNotificationProps) {
   const [roleNames, setRoleNames] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
-    // Fetch display names from API instead of using Prisma directly
+    // Fetch display names from API
     async function fetchRoleNames() {
-      const response = await fetch('/api/roles/config');
-      const configs = await response.json();
+      try {
+        const response = await fetch('/api/roles/config');
+        const configs: RoleConfig[] = await response.json();
 
-      const nameMap = configs.reduce((acc: {[key: string]: string}, config: any) => {
-        acc[config.roleId] = config.displayName || config.roleName;
-        return acc;
-      }, {});
+        const nameMap = configs.reduce((acc: {[key: string]: string}, config) => {
+          // Just use the displayName directly from the database
+          acc[config.roleId] = config.displayName;
+          return acc;
+        }, {});
 
-      setRoleNames(nameMap);
+        setRoleNames(nameMap);
+      } catch (error) {
+        console.error('Error fetching role names:', error);
+      }
     }
 
     if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
@@ -41,7 +51,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.added.map(roleId => (
                 <div key={`added-${roleId}`} className={styles.role}>
-                  {roleNames[roleId] || 'Loading...'}
+                  {roleNames[roleId]}
                 </div>
               ))}
             </div>
@@ -53,7 +63,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.removed.map(roleId => (
                 <div key={`removed-${roleId}`} className={styles.role}>
-                  {roleNames[roleId] || 'Loading...'}
+                  {roleNames[roleId]}
                 </div>
               ))}
             </div>
