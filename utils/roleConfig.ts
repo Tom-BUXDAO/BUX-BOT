@@ -29,10 +29,15 @@ export async function getThresholdByName(roleName: string): Promise<number | nul
   return config?.threshold ?? null;
 }
 
-export async function getRolesByType(type: string): Promise<RoleConfig[]> {
-  return prisma.roleConfig.findMany({
+export async function getRolesByType(type: RoleType): Promise<RoleConfig[]> {
+  const configs = await prisma.roleConfig.findMany({
     where: { roleType: type }
   });
+  
+  return configs.map(config => ({
+    ...config,
+    roleType: config.roleType as RoleType
+  }));
 }
 
 export async function getRolesByCollection(collectionName: string): Promise<RoleConfig[]> {

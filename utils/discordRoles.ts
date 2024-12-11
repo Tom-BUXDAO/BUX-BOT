@@ -3,6 +3,7 @@ import { Routes } from 'discord-api-types/v10';
 import type { RoleUpdate } from '@/types/verification';
 import { NFT_THRESHOLDS, BUX_THRESHOLDS, BUXDAO_5_ROLE_ID, CollectionName } from './roleConfig';
 import { prisma } from '@/lib/prisma';
+import { RoleType } from '@/types/roles';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
