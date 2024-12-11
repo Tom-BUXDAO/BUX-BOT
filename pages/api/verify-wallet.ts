@@ -54,7 +54,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const currentRoles = await getCurrentDiscordRoles(user.discordId);
 
     // Calculate qualifying roles with converted collections
-    const qualifyingRoles = calculateQualifyingRoles(nftCounts, result.buxBalance);
+    const qualifyingRoles = await calculateQualifyingRoles(
+      user.discordId,
+      nftCounts,
+      result.buxBalance
+    );
     console.log('Qualifying roles:', qualifyingRoles);
 
     // Calculate role changes - await the Promise
@@ -87,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ success: true, verification });
 
   } catch (error) {
-    console.error('Error verifying wallet:', error);
-    return res.status(500).json({ error: 'Failed to verify wallet' });
+    console.error('Error in verify-wallet:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 } 
