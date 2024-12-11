@@ -1,7 +1,9 @@
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v10';
 import type { RoleUpdate } from '@/types/verification';
+import type { RoleConfig } from '@/types/roles';
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
@@ -64,5 +66,50 @@ export async function getCurrentRoles(discordId: string): Promise<string[]> {
     console.error('Error fetching member roles:', error);
     return [];
   }
+}
+
+// Add missing functions
+export async function calculateQualifyingRoles(discordId: string): Promise<string[]> {
+  return getQualifyingRoles(discordId);
+}
+
+export async function getCurrentDiscordRoles(discordId: string): Promise<string[]> {
+  return getCurrentRoles(discordId);
+}
+
+export async function calculateRoleUpdates(
+  currentRoles: string[],
+  qualifyingRoles: string[]
+): Promise<RoleUpdate> {
+  const added = qualifyingRoles.filter(role => !currentRoles.includes(role));
+  const removed = currentRoles.filter(role => !qualifyingRoles.includes(role));
+
+  return {
+    added,
+    removed,
+    previousRoles: currentRoles,
+    newRoles: qualifyingRoles
+  };
+}
+
+export async function getRoleNames(roleIds: string[]): Promise<string[]> {
+  const configs = await prisma.roleConfig.findMany({
+    where: {
+      roleId: {
+        in: roleIds
+      }
+    },
+    select: {
+      roleName: true,
+      roleId: true
+    }
+  }) as Array<Pick<RoleConfig, 'roleName' | 'roleId'>>;
+  
+  // Map to role names, falling back to roleName
+  return configs.map(config => config.roleName);
+}
+
+export async function syncUserRoles(discordId: string): Promise<void> {
+  await prisma.$queryRaw`SELECT sync_user_roles(${discordId})`;
 }
  
