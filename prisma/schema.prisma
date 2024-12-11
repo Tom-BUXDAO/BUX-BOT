@@ -185,7 +185,7 @@ model RoleConfig {
   roleName       String   @unique
   roleId         String
   displayName    String?
-  threshold      Int
+  threshold      Int      @default(0)
   collectionName String?
   roleType       String
   createdAt      DateTime @default(now())
