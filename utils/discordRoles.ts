@@ -49,9 +49,42 @@ export async function getQualifyingRoles(discordId: string): Promise<string[]> {
   // Map role flags to role IDs
   return roleConfigs
     .filter(config => {
-      // Check if user has the corresponding flag in Roles table
-      const flagName = config.roleName.replace(/[^a-zA-Z]/g, '').toLowerCase();
-      return roles[flagName as keyof typeof roles] === true;
+      const roleName = config.roleName;
+      
+      // Map database flags to role names with null checks
+      const flagMap: Record<string, boolean> = {
+        // NFT Holder roles
+        'ai_bitbots_holder': roles.aiBitbotsHolder ?? false,
+        'fcked_catz_holder': roles.fckedCatzHolder ?? false,
+        'money_monsters_holder': roles.moneyMonstersHolder ?? false,
+        'money_monsters3d_holder': roles.moneyMonsters3dHolder ?? false,
+        'celebcatz_holder': roles.celebCatzHolder ?? false,
+        'candy_bots_holder': roles.candyBotsHolder ?? false,
+        'doodle_bot_holder': roles.doodleBotsHolder ?? false,
+        'energy_apes_holder': roles.energyApesHolder ?? false,
+        'rjctd_bots_holder': roles.rjctdBotsHolder ?? false,
+        'squirrels_holder': roles.squirrelsHolder ?? false,
+        'warriors_holder': roles.warriorsHolder ?? false,
+
+        // Whale roles
+        'ai_bitbots_whale': roles.aiBitbotsWhale ?? false,
+        'fcked_catz_whale': roles.fckedCatzWhale ?? false,
+        'money_monsters_whale': roles.moneyMonstersWhale ?? false,
+        'money_monsters3d_whale': roles.moneyMonsters3dWhale ?? false,
+
+        // BUX roles
+        'bux_banker': roles.buxBanker ?? false,
+        'bux_saver': roles.buxSaver ?? false,
+        'bux_builder': roles.buxBuilder ?? false,
+        'bux_beginner': roles.buxBeginner ?? false,
+
+        // Special roles
+        'bux_dao_5': roles.buxDao5 ?? false,
+        'mm_top_10': roles.mmTop10 ?? false,
+        'mm3d_top_10': roles.mm3dTop10 ?? false
+      };
+
+      return flagMap[roleName] === true;
     })
     .map(config => config.roleId);
 }

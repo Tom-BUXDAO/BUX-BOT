@@ -5,14 +5,22 @@ export async function getRoleConfigs(): Promise<RoleConfig[]> {
   const configs = await prisma.roleConfig.findMany({
     orderBy: [
       { roleType: 'asc' },
-      { displayName: 'asc' }
+      { roleName: 'asc' }
     ]
   });
   
   return configs.map(config => ({
     ...config,
-    roleType: config.roleType as RoleType
+    roleType: config.roleType as RoleType,
+    displayName: formatRoleName(config.roleName)
   }));
+}
+
+function formatRoleName(roleName: string): string {
+  return roleName
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 export async function getRoleIdByName(roleName: string): Promise<string | null> {
@@ -36,7 +44,8 @@ export async function getRolesByType(type: RoleType): Promise<RoleConfig[]> {
   
   return configs.map(config => ({
     ...config,
-    roleType: config.roleType as RoleType
+    roleType: config.roleType as RoleType,
+    displayName: formatRoleName(config.roleName)
   }));
 }
 
@@ -47,7 +56,8 @@ export async function getRolesByCollection(collectionName: string): Promise<Role
   
   return configs.map(config => ({
     ...config,
-    roleType: config.roleType as RoleType
+    roleType: config.roleType as RoleType,
+    displayName: formatRoleName(config.roleName)
   }));
 }
 
@@ -55,7 +65,7 @@ export async function getRoleDisplayName(roleName: string): Promise<string | nul
   const config = await prisma.roleConfig.findUnique({
     where: { roleName }
   });
-  return config?.displayName ?? config?.roleName ?? null;
+  return config ? formatRoleName(config.roleName) : null;
 }
 
 export const MAIN_COLLECTIONS = [
