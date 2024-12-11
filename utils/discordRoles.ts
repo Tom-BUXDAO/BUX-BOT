@@ -135,6 +135,7 @@ export async function getRoleNames(roleIds: string[]): Promise<string[]> {
 }
 
 export async function syncUserRoles(discordId: string): Promise<void> {
-  await prisma.$queryRaw`SELECT sync_user_roles(${discordId})`;
+  // Cast void return to text to avoid Prisma deserialization error
+  await prisma.$executeRaw`SELECT sync_user_roles(${discordId}::text)::text`;
 }
  
