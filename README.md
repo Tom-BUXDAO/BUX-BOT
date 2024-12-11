@@ -131,7 +131,6 @@ npx prisma db push
 ```bash
 npm run dev
 ```
-
 ## Available Scripts
 
 - `npm run dev` - Start development server
@@ -150,3 +149,39 @@ npm run dev
 ## License
 
 MIT License - see LICENSE file for details
+
+## Role Thresholds
+
+The system manages the following role types and thresholds:
+
+### NFT Holder Roles (1 NFT)
+- Money Monsters
+- Money Monsters 3D  
+- Celeb Catz
+- Fcked Catz
+- AI BitBots
+- Collab Collections:
+  - Candy Bots
+  - Doodle Bots
+  - Energy Apes
+  - RJCTD Bots
+  - Squirrels
+  - Warriors
+
+### Whale Roles
+- AI BitBots (10+ NFTs)
+- Fcked Catz (25+ NFTs)
+- Money Monsters (25+ NFTs)
+- Money Monsters 3D (25+ NFTs)
+
+### BUX Token Roles
+- BUX Beginner (2,500+ BUX)
+- BUX Builder (10,000+ BUX)
+- BUX Saver (25,000+ BUX)
+- BUX Banker (50,000+ BUX)
+
+### Special Roles
+- BUX DAO 5 (Hold 1+ NFT from: Money Monsters, Money Monsters 3D, Celeb Catz, Fcked Catz, AI BitBots)
+- MM Top 10 (Top 10 Money Monsters holders)
+- MM3D Top 10 (Top 10 Money Monsters 3D holders)
+
