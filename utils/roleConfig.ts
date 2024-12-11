@@ -41,9 +41,14 @@ export async function getRolesByType(type: RoleType): Promise<RoleConfig[]> {
 }
 
 export async function getRolesByCollection(collectionName: string): Promise<RoleConfig[]> {
-  return prisma.roleConfig.findMany({
+  const configs = await prisma.roleConfig.findMany({
     where: { collectionName }
   });
+  
+  return configs.map(config => ({
+    ...config,
+    roleType: config.roleType as RoleType
+  }));
 }
 
 export async function getRoleDisplayName(roleName: string): Promise<string | null> {
