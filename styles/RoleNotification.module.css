@@ -84,4 +84,11 @@
 .roles::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
+
+.noChanges {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+}
   

@@ -185,3 +185,20 @@ The system manages the following role types and thresholds:
 - MM Top 10 (Top 10 Money Monsters holders)
 - MM3D Top 10 (Top 10 Money Monsters 3D holders)
 
+## Role Management
+
+### Protected Roles
+Some roles are protected and cannot be modified by the bot:
+- Server Booster (949022529551495248)
+
+The bot will:
+1. Skip any attempts to remove protected roles
+2. Continue verification even if role updates fail
+3. Log all role update attempts for debugging
+
+### Role Hierarchy
+The bot requires:
+- MANAGE_ROLES permission
+- Bot's highest role must be above roles it tries to modify
+- Proper error handling for permission issues
+

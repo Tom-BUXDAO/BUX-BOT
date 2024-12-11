@@ -31,34 +31,44 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
     fetchRoleNames();
   }, []);
 
+  const hasChanges = roleUpdate.added.length > 0 || roleUpdate.removed.length > 0;
+
   return (
     <div className={styles.notification}>
       <div className={styles.content}>
         <div className={styles.header}>
           <h3>Role Update</h3>
         </div>
-        {roleUpdate.added.length > 0 && (
+        {!hasChanges ? (
+          <div className={styles.noChanges}>
+            No role changes needed
+          </div>
+        ) : (
           <>
-            <h4>Added Roles:</h4>
-            <div className={styles.roles}>
-              {roleUpdate.added.map(roleId => (
-                <div key={`added-${roleId}`} className={styles.role}>
-                  {roleNames[roleId]}
+            {roleUpdate.added.length > 0 && (
+              <>
+                <h4>Added Roles:</h4>
+                <div className={styles.roles}>
+                  {roleUpdate.added.map(roleId => (
+                    <div key={`added-${roleId}`} className={styles.role}>
+                      {roleNames[roleId]}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-        {roleUpdate.removed.length > 0 && (
-          <>
-            <h4>Removed Roles:</h4>
-            <div className={styles.roles}>
-              {roleUpdate.removed.map(roleId => (
-                <div key={`removed-${roleId}`} className={styles.role}>
-                  {roleNames[roleId]}
+              </>
+            )}
+            {roleUpdate.removed.length > 0 && (
+              <>
+                <h4>Removed Roles:</h4>
+                <div className={styles.roles}>
+                  {roleUpdate.removed.map(roleId => (
+                    <div key={`removed-${roleId}`} className={styles.role}>
+                      {roleNames[roleId]}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </>
         )}
         <button onClick={onClose} className={styles.closeButton}>
