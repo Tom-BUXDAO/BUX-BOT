@@ -161,21 +161,36 @@ export async function calculateQualifyingRoles(
   // Get role configurations
   const roleConfigs = await prisma.roleConfig.findMany();
   
+  // Create a mapping of role names to database columns
+  const columnMap: Record<string, string> = {
+    'ai_bitbots_holder': 'aiBitbotsHolder',
+    'fcked_catz_holder': 'fckedCatzHolder',
+    'money_monsters_holder': 'moneyMonstersHolder',
+    'money_monsters3d_holder': 'moneyMonsters3dHolder',
+    'celebcatz_holder': 'celebCatzHolder',
+    'candy_bots_holder': 'candyBotsHolder',
+    'doodle_bot_holder': 'doodleBotsHolder',
+    'energy_apes_holder': 'energyApesHolder',
+    'rjctd_bots_holder': 'rjctdBotsHolder',
+    'squirrels_holder': 'squirrelsHolder',
+    'warriors_holder': 'warriorsHolder',
+    'ai_bitbots_whale': 'aiBitbotsWhale',
+    'fcked_catz_whale': 'fckedCatzWhale',
+    'money_monsters_whale': 'moneyMonstersWhale',
+    'money_monsters3d_whale': 'moneyMonsters3dWhale',
+    'bux_banker': 'buxBanker',
+    'bux_beginner': 'buxBeginner',
+    'bux_saver': 'buxSaver',
+    'bux_builder': 'buxBuilder',
+    'mm_top_10': 'mmTop10',
+    'mm3d_top_10': 'mm3dTop10',
+    'bux_dao_5': 'buxDao5'
+  };
+  
   // Map role flags to role IDs
   const qualifyingRoles = roleConfigs
     .filter(config => {
-      // Convert roleName to database column name
-      const dbColumn = config.roleName
-        .split('_')
-        .map((part, i) => i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))
-        .join('')
-        .replace('holder', 'Holder')
-        .replace('whale', 'Whale')
-        .replace('celebcatz', 'celebCatz')
-        .replace('doodle_bot', 'doodleBots')
-        .replace('bot_holder', 'BotsHolder');
-      
-      // Check if the role flag is true
+      const dbColumn = columnMap[config.roleName];
       const hasRole = userRoles[dbColumn as keyof typeof userRoles];
       console.log(`Checking role ${config.roleName} (${dbColumn}): ${hasRole}`);
       return hasRole === true;
