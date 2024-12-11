@@ -43,12 +43,16 @@ export async function getRoleDisplayName(roleName: string): Promise<string | nul
   return config?.displayName ?? config?.roleName ?? null;
 }
 
+export const MAIN_COLLECTIONS = [
+  'ai_bitbots',
+  'fcked_catz', 
+  'money_monsters',
+  'money_monsters3d',
+  'celebcatz'
+] as const;
+
 export type CollectionName = 
-  | 'ai_bitbots'
-  | 'fcked_catz'
-  | 'money_monsters'
-  | 'money_monsters3d'
-  | 'celebcatz'
+  | typeof MAIN_COLLECTIONS[number]
   | 'candy_bots'
   | 'doodle_bot'
   | 'energy_apes'
