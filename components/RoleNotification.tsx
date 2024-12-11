@@ -9,6 +9,7 @@ interface RoleNotificationProps {
 
 interface RoleConfig {
   roleId: string;
+  roleName: string;
   displayName: string;
 }
 
@@ -16,18 +17,23 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
   const [roleNames, setRoleNames] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
-    // Fetch display names from API
     async function fetchRoleNames() {
       try {
         const response = await fetch('/api/roles/config');
         const configs: RoleConfig[] = await response.json();
 
         const nameMap = configs.reduce((acc: {[key: string]: string}, config) => {
-          // Just use the displayName directly from the database
-          acc[config.roleId] = config.displayName;
+          // Use displayName if available, otherwise format roleName
+          acc[config.roleId] = config.displayName || 
+            config.roleName.split('_')
+              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+              .replace('holder', '')
+              .trim();
           return acc;
         }, {});
 
+        console.log('Role name mapping:', nameMap);
         setRoleNames(nameMap);
       } catch (error) {
         console.error('Error fetching role names:', error);
@@ -51,7 +57,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.added.map(roleId => (
                 <div key={`added-${roleId}`} className={styles.role}>
-                  {roleNames[roleId]}
+                  {roleNames[roleId] || 'Unknown Role'}
                 </div>
               ))}
             </div>
@@ -63,7 +69,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.removed.map(roleId => (
                 <div key={`removed-${roleId}`} className={styles.role}>
-                  {roleNames[roleId]}
+                  {roleNames[roleId] || 'Unknown Role'}
                 </div>
               ))}
             </div>
