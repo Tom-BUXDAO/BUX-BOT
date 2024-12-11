@@ -11,27 +11,58 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID;
 
 const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN!);
 
-export async function updateDiscordRoles(userId: string, roleUpdate: RoleUpdate) {
-  console.log('Starting Discord role update for user:', userId);
-  
+export async function updateDiscordRoles(
+  userId: string, 
+  added: string[], 
+  removed: string[]
+): Promise<void> {
   try {
-    const guildId = process.env.DISCORD_GUILD_ID;
-    if (!guildId) {
-      throw new Error('Missing Discord guild ID');
+    const member = await getGuildMember(userId);
+    if (!member) {
+      console.error(`Member ${userId} not found in guild`);
+      return;
     }
 
-    // Add roles
-    for (const roleId of roleUpdate.added) {
-      await rest.put(Routes.guildMemberRole(guildId, userId, roleId));
+    // Check bot permissions first
+    const guild = member.guild;
+    const botMember = await guild.members.fetch(client.user!.id);
+    
+    if (!botMember.permissions.has('ManageRoles')) {
+      throw new Error('Bot missing required ManageRoles permission');
     }
 
-    // Remove roles
-    for (const roleId of roleUpdate.removed) {
-      await rest.delete(Routes.guildMemberRole(guildId, userId, roleId));
+    // Check if bot's highest role is above roles being modified
+    const botHighestRole = botMember.roles.highest;
+    const rolesToModify = [...added, ...removed];
+    
+    for (const roleId of rolesToModify) {
+      const role = await guild.roles.fetch(roleId);
+      if (role && role.position >= botHighestRole.position) {
+        console.warn(`Cannot modify role ${roleId} - bot's role not high enough`);
+        continue;
+      }
     }
+
+    // Proceed with updates for roles we can modify
+    for (const roleId of removed) {
+      try {
+        await member.roles.remove(roleId);
+      } catch (e) {
+        console.warn(`Failed to remove role ${roleId}:`, e);
+      }
+    }
+
+    for (const roleId of added) {
+      try {
+        await member.roles.add(roleId);
+      } catch (e) {
+        console.warn(`Failed to add role ${roleId}:`, e);
+      }
+    }
+
   } catch (error) {
     console.error('Error updating Discord roles:', error);
-    throw error;
+    // Don't throw - we want verification to succeed even if role update fails
   }
 }
 

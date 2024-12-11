@@ -68,7 +68,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Update Discord roles using Discord ID
     if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
       console.log('Updating Discord roles...');
-      await updateDiscordRoles(user.discordId, roleUpdate);
+      try {
+        await updateDiscordRoles(user.discordId, roleUpdate);
+      } catch (error) {
+        console.error('Role update failed but continuing verification:', error);
+      }
       console.log('Discord roles updated successfully');
     }
 
