@@ -7,12 +7,12 @@ export interface RoleUpdate {
   newRoles: string[];
 }
 
-export interface CollectionInfo {
+export interface CollectionCount {
   count: number;
 }
 
 export interface Collections {
-  [key: string]: CollectionInfo;
+  [collection: string]: CollectionCount;
 }
 
 export interface VerificationResult {

@@ -40,15 +40,12 @@ async function getRoleNames(): Promise<Map<string, string>> {
 export { getRoleNames };
 
 interface WhaleConfig {
-  holder: string | undefined;
-  whale: {
-    roleId: string | undefined;
-    threshold: number;
-  };
+  threshold: number;
+  roleId: string;
 }
 
-function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config is WhaleConfig {
-  return config !== undefined && 'whale' in config;
+function hasWhaleConfig(config: number | WhaleConfig): config is WhaleConfig {
+  return typeof config === 'object' && 'threshold' in config;
 }
 
 // Create a Set of role IDs that we manage
@@ -257,39 +254,10 @@ const getManagedRoleIds = () => MANAGED_ROLE_IDS;
 
 export async function syncUserRoles(discordId: string) {
   try {
-    // Get user's Discord name
-    const guild = await rest.get(
-      Routes.guildMember(GUILD_ID!, discordId)
-    ) as { user: { username: string } };
-
-    // Get NFT holdings
-    const nftHoldings = await prisma.nFT.groupBy({
-      by: ['collection'],
-      where: {
-        ownerDiscordId: discordId
-      },
-      _count: true
-    });
-
-    // Get BUX balance - sum across all wallets
-    const buxBalance = await prisma.tokenBalance.aggregate({
-      where: {
-        ownerDiscordId: discordId,
-        token_type: {
-          equals: 'BUX',
-          mode: 'insensitive'
-        }
-      },
-      _sum: {
-        balance: true
-      }
-    });
-
-    // Initialize all roles as false
+    // Initialize role data
     const roleData = {
       discordId,
-      discordName: guild.user.username,
-      // NFT Holder Roles
+      discordName: '',
       aiBitbotsHolder: false,
       fckedCatzHolder: false,
       moneyMonstersHolder: false,
@@ -301,15 +269,12 @@ export async function syncUserRoles(discordId: string) {
       rjctdBotsHolder: false,
       squirrelsHolder: false,
       warriorsHolder: false,
-      // Whale Roles
       aiBitbotsWhale: false,
       fckedCatzWhale: false,
       moneyMonstersWhale: false,
       moneyMonsters3dWhale: false,
-      // Special Roles
       mmTop10: false,
       mm3dTop10: false,
-      // BUX Roles
       buxBanker: false,
       buxBeginner: false,
       buxSaver: false,
@@ -317,35 +282,39 @@ export async function syncUserRoles(discordId: string) {
       buxDao5: false
     };
 
-    // Create holdings map for easier access
-    const holdings = nftHoldings.reduce((acc, item) => {
-      acc[item.collection] = item._count;
+    // Get user's Discord name
+    const guild = await rest.get(
+      Routes.guildMember(GUILD_ID!, discordId)
+    ) as { user: { username: string } };
+    roleData.discordName = guild.user.username;
+
+    // Get NFT holdings
+    const nftHoldings = await prisma.nFT.groupBy({
+      by: ['collection'],
+      where: {
+        ownerDiscordId: discordId
+      },
+      _count: true
+    });
+
+    // Convert holdings to map for easier access
+    const holdings = nftHoldings.reduce((acc, curr) => {
+      acc[curr.collection] = curr._count;
       return acc;
     }, {} as Record<string, number>);
 
-    // Set NFT-based roles using correct collection names
-    roleData.aiBitbotsHolder = (holdings['ai_bitbots'] || 0) > 0;
-    roleData.aiBitbotsWhale = (holdings['ai_bitbots'] || 0) >= Number(process.env.AI_BITBOTS_WHALE_THRESHOLD || 10);
-    
-    roleData.fckedCatzHolder = (holdings['fcked_catz'] || 0) > 0;
-    roleData.fckedCatzWhale = (holdings['fcked_catz'] || 0) >= Number(process.env.FCKED_CATZ_WHALE_THRESHOLD || 25);
-    
-    roleData.moneyMonstersHolder = (holdings['money_monsters'] || 0) > 0;
-    roleData.moneyMonstersWhale = (holdings['money_monsters'] || 0) >= Number(process.env.MONEY_MONSTERS_WHALE_THRESHOLD || 25);
-    
-    roleData.moneyMonsters3dHolder = (holdings['money_monsters3d'] || 0) > 0;
-    roleData.moneyMonsters3dWhale = (holdings['money_monsters3d'] || 0) >= Number(process.env.MONEY_MONSTERS3D_WHALE_THRESHOLD || 25);
-    
-    roleData.celebCatzHolder = (holdings['celebcatz'] || 0) > 0;
-    roleData.candyBotsHolder = (holdings['candy_bots'] || 0) > 0;
-    roleData.doodleBotsHolder = (holdings['doodle_bot'] || 0) > 0;
-    roleData.energyApesHolder = (holdings['energy_apes'] || 0) > 0;
-    roleData.rjctdBotsHolder = (holdings['rjctd_bots'] || 0) > 0;
-    roleData.squirrelsHolder = (holdings['squirrels'] || 0) > 0;
-    roleData.warriorsHolder = (holdings['warriors'] || 0) > 0;
+    // Get BUX balance
+    const buxBalance = await prisma.tokenBalance.aggregate({
+      _sum: {
+        balance: true
+      },
+      where: {
+        ownerDiscordId: discordId
+      }
+    });
 
-    // Set BUX roles based on balance - only set highest qualifying role
-    const balance = Number(buxBalance?._sum?.balance || 0);
+    // Get balance with null check and convert to number
+    const balance = Number(buxBalance?._sum?.balance ?? 0);
     console.log('BUX balance:', balance);
 
     // Reset all BUX roles to false first
@@ -367,7 +336,7 @@ export async function syncUserRoles(discordId: string) {
 
     // Log BUX role assignments and balance details
     console.log('BUX token details:', {
-      rawBalance: buxBalance?._sum?.balance,
+      rawBalance: buxBalance?._sum?.balance ?? 0,
       parsedBalance: balance,
       thresholds: {
         banker: 50000,

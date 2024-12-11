@@ -1,85 +1,68 @@
 import { prisma } from '@/lib/prisma';
-import { NFT_THRESHOLDS, BUX_THRESHOLDS, BUXDAO_5_ROLE_ID, CollectionName } from './roleConfig';
-import { updateDiscordRoles } from './discordRoles';
-import type { VerificationResult, Collections, CollectionInfo } from '@/types/verification';
+import type { VerificationResult, Collections } from '@/types/verification';
+import type { RoleConfig } from '@/types/roles';
+import type { TokenBalance, NFT, Roles, Prisma } from '@prisma/client';
 
-interface WhaleConfig {
-  holder: string | undefined;
-  whale: {
-    roleId: string | undefined;
-    threshold: number;
-  };
-}
-
-function hasWhaleConfig(config: typeof NFT_THRESHOLDS[CollectionName]): config is WhaleConfig {
-  return config !== undefined && 'whale' in config;
-}
-
-function normalizeCollectionName(dbName: string): CollectionName {
-  const nameMap: Record<string, CollectionName> = {
-    'money_monsters3d': 'Money Monsters 3D',
-    'money_monsters': 'Money Monsters',
-    'ai_bitbots': 'AI BitBots',
-    'fcked_catz': 'FCKED CATZ',
-    'celebcatz': 'CelebCatz',
-    'candy_bots': 'Candy Bots',
-    'doodle_bot': 'Doodle Bots',
-    'energy_apes': 'Energy Apes',
-    'rjctd_bots': 'RJCTD Bots',
-    'squirrels': 'Squirrels',
-    'warriors': 'Warriors'
-  };
-  return nameMap[dbName] || dbName as CollectionName;
-}
-
-// Helper to get highest qualifying BUX role
-function getHighestBuxRole(buxBalance: number): string | undefined {
-  const sortedTiers = [...BUX_THRESHOLDS].sort((a, b) => b.threshold - a.threshold);
-  return sortedTiers.find(tier => buxBalance >= tier.threshold)?.roleId;
+interface NFTCount {
+  collection: string;
+  _count: number;
 }
 
 export async function verifyHolder(walletAddress: string, discordId: string): Promise<VerificationResult> {
   try {
-    const [nftCounts, tokenBalances] = await Promise.all([
-      prisma.nFT.groupBy({
-        by: ['collection'],
-        where: { ownerDiscordId: discordId },
-        _count: true
+    // Get all data in parallel
+    const [userRoles, nftCountsResult, tokenBalances, roleConfigs] = await Promise.all([
+      prisma.roles.findUnique({
+        where: { discordId }
       }),
+      prisma.$queryRaw<NFTCount[]>`
+        SELECT collection, COUNT(*) as _count
+        FROM "NFT"
+        WHERE "ownerDiscordId" = ${discordId}
+        GROUP BY collection
+      `,
       prisma.tokenBalance.findMany({
         where: { ownerDiscordId: discordId }
-      })
+      }),
+      prisma.$queryRaw<RoleConfig[]>`
+        SELECT * FROM "RoleConfig"
+      `
     ]);
 
-    console.log('NFT counts across all wallets:', nftCounts);
-    
-    const buxBalance = Number(tokenBalances.reduce((sum, { balance }) => sum + balance, BigInt(0))) / 1e9;
-    const totalNFTs = nftCounts.reduce((sum, { _count }) => sum + _count, 0);
+    // Calculate BUX balance
+    const buxBalance = Number(tokenBalances.reduce((sum: bigint, { balance }: TokenBalance) => sum + balance, BigInt(0))) / 1e9;
 
-    // Convert array to Collections object using DB names directly
-    const collectionsObj: Collections = {};
-    nftCounts.forEach(({ collection, _count }) => {
-      // Use the raw DB name from the database query
-      collectionsObj[collection] = {
-        count: _count
-      };
+    // Build collections object
+    const collections: Collections = {};
+    nftCountsResult.forEach(({ collection, _count }: NFTCount) => {
+      collections[collection] = { count: Number(_count) };
     });
 
+    // Get assigned roles from database
+    const assignedRoles = Object.entries(userRoles || {})
+      .filter(([key, value]) => value === true && !key.startsWith('_'))
+      .map(([key]) => {
+        const config = roleConfigs.find((rc: RoleConfig) => rc.roleName === key);
+        return config?.roleId ?? key;
+      });
+
+    // Calculate total NFTs
+    const totalNFTs = nftCountsResult.reduce((sum: number, { _count }: NFTCount) => sum + Number(_count), 0);
+
     return {
-      isHolder: totalNFTs > 0 || buxBalance > 0,
-      collections: collectionsObj,
+      isHolder: assignedRoles.length > 0,
+      collections,
       buxBalance,
       totalNFTs,
-      assignedRoles: [],
-      qualifyingBuxRoles: [],
+      assignedRoles,
+      qualifyingBuxRoles: [], // Now handled by database triggers
       roleUpdate: {
         added: [],
         removed: [],
         previousRoles: [],
-        newRoles: []
+        newRoles: assignedRoles
       }
     };
-
   } catch (error) {
     console.error('Error in verifyHolder:', error);
     throw error;

@@ -179,3 +179,15 @@ model Roles {
 
   @@index([discordId])
 }
+
+model RoleConfig {
+  id             Int      @id @default(autoincrement())
+  roleName       String   @unique
+  roleId         String
+  displayName    String?
+  threshold      Int?
+  collectionName String?
+  roleType       String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
