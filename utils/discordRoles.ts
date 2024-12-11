@@ -12,57 +12,58 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const rest = new REST({ version: '10' }).setToken(DISCORD_BOT_TOKEN!);
 
 export async function updateDiscordRoles(
-  userId: string, 
-  added: string[], 
-  removed: string[]
+  userId: string,
+  roleUpdate: RoleUpdate
 ): Promise<void> {
   try {
-    const member = await getGuildMember(userId);
-    if (!member) {
-      console.error(`Member ${userId} not found in guild`);
-      return;
-    }
+    // Get the guild member
+    const member = await rest.get(
+      Routes.guildMember(GUILD_ID!, userId)
+    ) as { roles: string[] };
 
-    // Check bot permissions first
-    const guild = member.guild;
-    const botMember = await guild.members.fetch(client.user!.id);
-    
-    if (!botMember.permissions.has('ManageRoles')) {
-      throw new Error('Bot missing required ManageRoles permission');
-    }
+    // Filter out roles we don't have permission for
+    const safeToRemove = roleUpdate.removed.filter(roleId => {
+      // Skip the problematic role
+      if (roleId === '949022529551495248') {
+        console.log('Skipping removal of protected role:', roleId);
+        return false;
+      }
+      return true;
+    });
 
-    // Check if bot's highest role is above roles being modified
-    const botHighestRole = botMember.roles.highest;
-    const rolesToModify = [...added, ...removed];
-    
-    for (const roleId of rolesToModify) {
-      const role = await guild.roles.fetch(roleId);
-      if (role && role.position >= botHighestRole.position) {
-        console.warn(`Cannot modify role ${roleId} - bot's role not high enough`);
-        continue;
+    // Remove roles we can modify
+    for (const roleId of safeToRemove) {
+      try {
+        await rest.delete(
+          Routes.guildMemberRole(GUILD_ID!, userId, roleId)
+        );
+      } catch (error: any) {
+        if (error.code === 50013) {
+          console.warn(`No permission to remove role ${roleId}`);
+          continue;
+        }
+        throw error;
       }
     }
 
-    // Proceed with updates for roles we can modify
-    for (const roleId of removed) {
+    // Add new roles
+    for (const roleId of roleUpdate.added) {
       try {
-        await member.roles.remove(roleId);
-      } catch (e) {
-        console.warn(`Failed to remove role ${roleId}:`, e);
-      }
-    }
-
-    for (const roleId of added) {
-      try {
-        await member.roles.add(roleId);
-      } catch (e) {
-        console.warn(`Failed to add role ${roleId}:`, e);
+        await rest.put(
+          Routes.guildMemberRole(GUILD_ID!, userId, roleId)
+        );
+      } catch (error: any) {
+        if (error.code === 50013) {
+          console.warn(`No permission to add role ${roleId}`);
+          continue;
+        }
+        throw error;
       }
     }
 
   } catch (error) {
     console.error('Error updating Discord roles:', error);
-    // Don't throw - we want verification to succeed even if role update fails
+    // Don't throw - we want verification to succeed even if role updates fail
   }
 }
 
