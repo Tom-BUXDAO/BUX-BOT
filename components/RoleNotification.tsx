@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styles from '../styles/RoleNotification.module.css';
 import type { RoleUpdate } from '@/types/verification';
-import { prisma } from '@/lib/prisma';
 
 interface RoleNotificationProps {
   roleUpdate: RoleUpdate;
@@ -12,29 +11,22 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
   const [roleNames, setRoleNames] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
-    // Fetch display names for all roles
+    // Fetch display names from API instead of using Prisma directly
     async function fetchRoleNames() {
-      const configs = await prisma.roleConfig.findMany({
-        where: {
-          roleId: {
-            in: [...roleUpdate.added, ...roleUpdate.removed]
-          }
-        },
-        select: {
-          roleId: true,
-          displayName: true
-        }
-      });
+      const response = await fetch('/api/roles/config');
+      const configs = await response.json();
 
-      const nameMap = configs.reduce((acc, config) => {
-        acc[config.roleId] = config.displayName || config.roleId;
+      const nameMap = configs.reduce((acc: {[key: string]: string}, config: any) => {
+        acc[config.roleId] = config.displayName || config.roleName;
         return acc;
-      }, {} as {[key: string]: string});
+      }, {});
 
       setRoleNames(nameMap);
     }
 
-    fetchRoleNames();
+    if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
+      fetchRoleNames();
+    }
   }, [roleUpdate]);
 
   return (
@@ -49,7 +41,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.added.map(roleId => (
                 <div key={`added-${roleId}`} className={styles.role}>
-                  {roleNames[roleId] || roleId}
+                  {roleNames[roleId] || 'Loading...'}
                 </div>
               ))}
             </div>
@@ -61,7 +53,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.removed.map(roleId => (
                 <div key={`removed-${roleId}`} className={styles.role}>
-                  {roleNames[roleId] || roleId}
+                  {roleNames[roleId] || 'Loading...'}
                 </div>
               ))}
             </div>
