@@ -15,39 +15,53 @@ DECLARE
     user_name TEXT;
     nft_counts RECORD;
 BEGIN
+    -- Log start of sync
+    RAISE NOTICE 'Starting role sync for user %', user_discord_id;
+
+    -- Skip if discord ID is null
+    IF user_discord_id IS NULL THEN
+        RAISE NOTICE 'Skipping sync - null discord ID';
+        RETURN;
+    END IF;
+
     -- Get total BUX balance
     SELECT COALESCE(SUM(balance), 0)::NUMERIC INTO bux_total
     FROM "TokenBalance"
     WHERE "ownerDiscordId" = user_discord_id;
+    
+    RAISE NOTICE 'BUX balance for %: %', user_discord_id, bux_total;
 
-    -- Get username
-    SELECT "discordName" INTO user_name
-    FROM "User"
-    WHERE "discordId" = user_discord_id;
-
-    -- Get NFT counts with proper collection names
+    -- Get NFT counts
+    WITH nft_summary AS (
+        SELECT 
+            collection,
+            COUNT(*) as count
+        FROM "NFT"
+        WHERE "ownerDiscordId" = user_discord_id
+        GROUP BY collection
+    )
     SELECT 
-        COUNT(*) FILTER (WHERE collection = 'ai_bitbots') as ai_bitbots_count,
-        COUNT(*) FILTER (WHERE collection = 'fcked_catz') as fcked_catz_count,
-        COUNT(*) FILTER (WHERE collection = 'money_monsters') as money_monsters_count,
-        COUNT(*) FILTER (WHERE collection = 'money_monsters3d') as money_monsters3d_count,
-        COUNT(*) FILTER (WHERE collection = 'celebcatz') as celebcatz_count,
-        COUNT(*) FILTER (WHERE collection = 'candy_bots') as candy_bots_count,
-        COUNT(*) FILTER (WHERE collection = 'doodle_bot') as doodle_bot_count,
-        COUNT(*) FILTER (WHERE collection = 'energy_apes') as energy_apes_count,
-        COUNT(*) FILTER (WHERE collection = 'rjctd_bots') as rjctd_bots_count,
-        COUNT(*) FILTER (WHERE collection = 'squirrels') as squirrels_count,
-        COUNT(*) FILTER (WHERE collection = 'warriors') as warriors_count
+        COALESCE(SUM(count) FILTER (WHERE collection = 'ai_bitbots'), 0) as ai_bitbots_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'fcked_catz'), 0) as fcked_catz_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'money_monsters'), 0) as money_monsters_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'money_monsters3d'), 0) as money_monsters3d_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'celebcatz'), 0) as celebcatz_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'candy_bots'), 0) as candy_bots_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'doodle_bot'), 0) as doodle_bot_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'energy_apes'), 0) as energy_apes_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'rjctd_bots'), 0) as rjctd_bots_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'squirrels'), 0) as squirrels_count,
+        COALESCE(SUM(count) FILTER (WHERE collection = 'warriors'), 0) as warriors_count
     INTO nft_counts
-    FROM "NFT"
-    WHERE "ownerDiscordId" = user_discord_id;
+    FROM nft_summary;
 
-    -- Update roles with all collections
+    RAISE NOTICE 'NFT counts for %: %', user_discord_id, nft_counts;
+
+    -- Update roles
     INSERT INTO "Roles" ("discordId", "discordName")
     VALUES (user_discord_id, COALESCE(user_name, user_discord_id))
     ON CONFLICT ("discordId") DO UPDATE
     SET 
-        "discordName" = EXCLUDED."discordName",
         "aiBitbotsHolder" = nft_counts.ai_bitbots_count > 0,
         "fckedCatzHolder" = nft_counts.fcked_catz_count > 0,
         "moneyMonstersHolder" = nft_counts.money_monsters_count > 0,
@@ -59,19 +73,30 @@ BEGIN
         "rjctdBotsHolder" = nft_counts.rjctd_bots_count > 0,
         "squirrelsHolder" = nft_counts.squirrels_count > 0,
         "warriorsHolder" = nft_counts.warriors_count > 0,
+        "aiBitbotsWhale" = nft_counts.ai_bitbots_count >= 10,
+        "fckedCatzWhale" = nft_counts.fcked_catz_count >= 25,
+        "moneyMonstersWhale" = nft_counts.money_monsters_count >= 25,
+        "moneyMonsters3dWhale" = nft_counts.money_monsters3d_count >= 25,
         "buxBanker" = bux_total >= 50000000000000::NUMERIC,
         "buxSaver" = bux_total >= 25000000000000::NUMERIC AND bux_total < 50000000000000::NUMERIC,
         "buxBuilder" = bux_total >= 10000000000000::NUMERIC AND bux_total < 25000000000000::NUMERIC,
         "buxBeginner" = bux_total >= 2500000000000::NUMERIC AND bux_total < 10000000000000::NUMERIC,
         "updatedAt" = CURRENT_TIMESTAMP;
+
+    RAISE NOTICE 'Role sync completed for %', user_discord_id;
 END;
 $$;
 
--- Create triggers
+-- Update triggers to handle NULL discord IDs
 CREATE OR REPLACE FUNCTION sync_nft_roles() 
 RETURNS TRIGGER AS $$
 BEGIN
-    PERFORM sync_user_roles(NEW."ownerDiscordId");
+    IF NEW."ownerDiscordId" IS NOT NULL THEN
+        PERFORM sync_user_roles(NEW."ownerDiscordId");
+    END IF;
+    IF OLD."ownerDiscordId" IS NOT NULL AND OLD."ownerDiscordId" != NEW."ownerDiscordId" THEN
+        PERFORM sync_user_roles(OLD."ownerDiscordId");
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -79,18 +104,23 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION sync_bux_roles() 
 RETURNS TRIGGER AS $$
 BEGIN
-    PERFORM sync_user_roles(NEW."ownerDiscordId");
+    IF NEW."ownerDiscordId" IS NOT NULL THEN
+        PERFORM sync_user_roles(NEW."ownerDiscordId");
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers
+-- Recreate triggers
+DROP TRIGGER IF EXISTS nft_role_sync ON "NFT";
+DROP TRIGGER IF EXISTS bux_role_sync ON "TokenBalance";
+
 CREATE TRIGGER nft_role_sync
 AFTER INSERT OR UPDATE OF "ownerDiscordId" ON "NFT"
 FOR EACH ROW
 EXECUTE FUNCTION sync_nft_roles();
 
 CREATE TRIGGER bux_role_sync
-AFTER INSERT OR UPDATE OF balance ON "TokenBalance"
+AFTER INSERT OR UPDATE OF balance, "ownerDiscordId" ON "TokenBalance"
 FOR EACH ROW
 EXECUTE FUNCTION sync_bux_roles(); 
