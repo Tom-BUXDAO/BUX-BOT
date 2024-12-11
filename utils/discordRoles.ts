@@ -158,23 +158,23 @@ export async function calculateQualifyingRoles(
 
   if (!userRoles) return [];
 
-  // Get ALL role configurations
+  // Get role configurations
   const roleConfigs = await prisma.roleConfig.findMany();
-
-  console.log('User roles:', userRoles);
-  console.log('Role configs:', roleConfigs);
   
   // Map role flags to role IDs
   const qualifyingRoles = roleConfigs
     .filter(config => {
-      const roleName = config.roleName;
-      const dbColumn = roleName
+      // Convert roleName to database column name
+      const dbColumn = config.roleName
         .split('_')
         .map((part, i) => i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))
-        .join('');
+        .join('')
+        .replace('holder', 'Holder')
+        .replace('whale', 'Whale');
       
+      // Check if the role flag is true
       const hasRole = userRoles[dbColumn as keyof typeof userRoles];
-      console.log(`Checking ${roleName} -> ${dbColumn}: ${hasRole}`);
+      console.log(`Checking role ${config.roleName} (${dbColumn}): ${hasRole}`);
       return hasRole === true;
     })
     .map(config => config.roleId);
