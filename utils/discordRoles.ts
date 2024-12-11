@@ -161,12 +161,18 @@ export async function calculateQualifyingRoles(
   // Get role configurations
   const roleConfigs = await prisma.roleConfig.findMany();
   
-  // Only return roles that are true in the database
+  // Map role flags to role IDs
   return roleConfigs
     .filter(config => {
       const roleName = config.roleName;
-      const roleFlag = userRoles[roleName as keyof typeof userRoles];
-      return roleFlag === true;
+      // Convert roleName to database column name (e.g., 'ai_bitbots_holder' -> 'aiBitbotsHolder')
+      const dbColumn = roleName
+        .split('_')
+        .map((part, i) => i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))
+        .join('');
+      
+      // Check if the role flag is true in userRoles
+      return userRoles[dbColumn as keyof typeof userRoles] === true;
     })
     .map(config => config.roleId);
 }
