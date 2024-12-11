@@ -185,13 +185,22 @@ export async function calculateRoleUpdates(
   currentRoles: string[],
   qualifyingRoles: string[]
 ): Promise<RoleUpdate> {
-  const added = qualifyingRoles.filter(role => !currentRoles.includes(role));
-  const removed = currentRoles.filter(role => !qualifyingRoles.includes(role));
+  // Get all valid role IDs from our database
+  const validRoleIds = await prisma.roleConfig.findMany({
+    select: { roleId: true }
+  });
+  const validRoleSet = new Set(validRoleIds.map(r => r.roleId));
+
+  // Only consider roles that exist in our RoleConfig table
+  const validCurrentRoles = currentRoles.filter(role => validRoleSet.has(role));
+  
+  const added = qualifyingRoles.filter(role => !validCurrentRoles.includes(role));
+  const removed = validCurrentRoles.filter(role => !qualifyingRoles.includes(role));
 
   return {
     added,
     removed,
-    previousRoles: currentRoles,
+    previousRoles: currentRoles, // Keep track of all roles for reference
     newRoles: qualifyingRoles
   };
 }
