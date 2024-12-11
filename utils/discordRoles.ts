@@ -16,13 +16,25 @@ export async function updateDiscordRoles(
   roleUpdate: RoleUpdate
 ): Promise<void> {
   try {
+    // Get all valid role IDs from our database
+    const validRoleIds = await prisma.roleConfig.findMany({
+      select: { roleId: true }
+    });
+    const validRoleSet = new Set(validRoleIds.map(r => r.roleId));
+
+    // Filter role updates to only include roles we manage
+    const filteredUpdate = {
+      added: roleUpdate.added.filter(id => validRoleSet.has(id)),
+      removed: roleUpdate.removed.filter(id => validRoleSet.has(id))
+    };
+
     // Get the guild member
     const member = await rest.get(
       Routes.guildMember(GUILD_ID!, userId)
     ) as { roles: string[] };
 
     // Filter out roles we don't have permission for
-    const safeToRemove = roleUpdate.removed.filter(roleId => {
+    const safeToRemove = filteredUpdate.removed.filter(roleId => {
       // Skip the problematic role
       if (roleId === '949022529551495248') {
         console.log('Skipping removal of protected role:', roleId);
@@ -47,7 +59,7 @@ export async function updateDiscordRoles(
     }
 
     // Add new roles
-    for (const roleId of roleUpdate.added) {
+    for (const roleId of filteredUpdate.added) {
       try {
         await rest.put(
           Routes.guildMemberRole(GUILD_ID!, userId, roleId)
@@ -139,28 +151,24 @@ export async function calculateQualifyingRoles(
   nftCounts?: Record<string, number>,
   buxBalance?: number
 ): Promise<string[]> {
-  if (nftCounts && buxBalance) {
-    // Calculate roles from provided counts
-    const roleConfigs = await prisma.roleConfig.findMany();
-    return roleConfigs
-      .filter(config => {
-        if (config.collectionName && nftCounts[config.collectionName]) {
-          // NFT holder role
-          const count = nftCounts[config.collectionName];
-          const threshold = config.threshold || NFT_THRESHOLDS[config.collectionName as keyof typeof NFT_THRESHOLDS] || 0;
-          return count >= threshold;
-        } else if (config.roleType === 'token' && buxBalance) {
-          // BUX token role
-          const threshold = config.threshold || BUX_THRESHOLDS[config.roleName as keyof typeof BUX_THRESHOLDS] || 0;
-          return buxBalance >= threshold;
-        }
-        return false;
-      })
-      .map(config => config.roleId);
-  }
+  // Get user's role status from database
+  const userRoles = await prisma.roles.findUnique({
+    where: { discordId }
+  });
+
+  if (!userRoles) return [];
+
+  // Get role configurations
+  const roleConfigs = await prisma.roleConfig.findMany();
   
-  // Fall back to database lookup if counts not provided
-  return getQualifyingRoles(discordId);
+  // Only return roles that are true in the database
+  return roleConfigs
+    .filter(config => {
+      const roleName = config.roleName;
+      const roleFlag = userRoles[roleName as keyof typeof userRoles];
+      return roleFlag === true;
+    })
+    .map(config => config.roleId);
 }
 
 export async function getCurrentDiscordRoles(discordId: string): Promise<string[]> {
