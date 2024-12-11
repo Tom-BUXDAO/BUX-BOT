@@ -28,13 +28,21 @@ SET
     "updatedAt" = CURRENT_TIMESTAMP
 WHERE "buxDao5" IS NULL;
 
--- Convert threshold values
+-- Convert threshold values in two steps
+-- 1. First set NULL values to 0
 UPDATE "RoleConfig"
-SET 
-    threshold = COALESCE(
-        CASE 
-            WHEN threshold > 2147483647 THEN 2147483647
-            ELSE threshold::INTEGER 
-        END,
-        0
-    );
+SET threshold = 0
+WHERE threshold IS NULL;
+
+-- 2. Then convert to INTEGER with constraint
+ALTER TABLE "RoleConfig" 
+ALTER COLUMN threshold SET NOT NULL,
+ALTER COLUMN threshold SET DEFAULT 0,
+ALTER COLUMN threshold TYPE INTEGER 
+USING CASE 
+    WHEN threshold > 2147483647 THEN 2147483647
+    ELSE threshold::INTEGER 
+END;
+
+-- Add a comment explaining the conversion
+COMMENT ON COLUMN "RoleConfig".threshold IS 'Converted from BIGINT to INTEGER with max value capping';
