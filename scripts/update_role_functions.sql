@@ -25,18 +25,24 @@ BEGIN
     FROM "User"
     WHERE "discordId" = user_discord_id;
 
-    -- Get NFT counts
+    -- Get NFT counts with proper collection names
     SELECT 
         COUNT(*) FILTER (WHERE collection = 'ai_bitbots') as ai_bitbots_count,
         COUNT(*) FILTER (WHERE collection = 'fcked_catz') as fcked_catz_count,
         COUNT(*) FILTER (WHERE collection = 'money_monsters') as money_monsters_count,
         COUNT(*) FILTER (WHERE collection = 'money_monsters3d') as money_monsters3d_count,
-        COUNT(*) FILTER (WHERE collection = 'celebcatz') as celebcatz_count
+        COUNT(*) FILTER (WHERE collection = 'celebcatz') as celebcatz_count,
+        COUNT(*) FILTER (WHERE collection = 'candy_bots') as candy_bots_count,
+        COUNT(*) FILTER (WHERE collection = 'doodle_bot') as doodle_bot_count,
+        COUNT(*) FILTER (WHERE collection = 'energy_apes') as energy_apes_count,
+        COUNT(*) FILTER (WHERE collection = 'rjctd_bots') as rjctd_bots_count,
+        COUNT(*) FILTER (WHERE collection = 'squirrels') as squirrels_count,
+        COUNT(*) FILTER (WHERE collection = 'warriors') as warriors_count
     INTO nft_counts
     FROM "NFT"
     WHERE "ownerDiscordId" = user_discord_id;
 
-    -- Update roles
+    -- Update roles with all collections
     INSERT INTO "Roles" ("discordId", "discordName")
     VALUES (user_discord_id, COALESCE(user_name, user_discord_id))
     ON CONFLICT ("discordId") DO UPDATE
@@ -47,6 +53,12 @@ BEGIN
         "moneyMonstersHolder" = nft_counts.money_monsters_count > 0,
         "moneyMonsters3dHolder" = nft_counts.money_monsters3d_count > 0,
         "celebCatzHolder" = nft_counts.celebcatz_count > 0,
+        "candyBotsHolder" = nft_counts.candy_bots_count > 0,
+        "doodleBotsHolder" = nft_counts.doodle_bot_count > 0,
+        "energyApesHolder" = nft_counts.energy_apes_count > 0,
+        "rjctdBotsHolder" = nft_counts.rjctd_bots_count > 0,
+        "squirrelsHolder" = nft_counts.squirrels_count > 0,
+        "warriorsHolder" = nft_counts.warriors_count > 0,
         "buxBanker" = bux_total >= 50000000000000::NUMERIC,
         "buxSaver" = bux_total >= 25000000000000::NUMERIC AND bux_total < 50000000000000::NUMERIC,
         "buxBuilder" = bux_total >= 10000000000000::NUMERIC AND bux_total < 25000000000000::NUMERIC,
