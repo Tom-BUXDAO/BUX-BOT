@@ -158,23 +158,29 @@ export async function calculateQualifyingRoles(
 
   if (!userRoles) return [];
 
-  // Get role configurations
+  // Get ALL role configurations
   const roleConfigs = await prisma.roleConfig.findMany();
+
+  console.log('User roles:', userRoles);
+  console.log('Role configs:', roleConfigs);
   
   // Map role flags to role IDs
-  return roleConfigs
+  const qualifyingRoles = roleConfigs
     .filter(config => {
       const roleName = config.roleName;
-      // Convert roleName to database column name (e.g., 'ai_bitbots_holder' -> 'aiBitbotsHolder')
       const dbColumn = roleName
         .split('_')
         .map((part, i) => i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))
         .join('');
       
-      // Check if the role flag is true in userRoles
-      return userRoles[dbColumn as keyof typeof userRoles] === true;
+      const hasRole = userRoles[dbColumn as keyof typeof userRoles];
+      console.log(`Checking ${roleName} -> ${dbColumn}: ${hasRole}`);
+      return hasRole === true;
     })
     .map(config => config.roleId);
+
+  console.log('Qualifying roles:', qualifyingRoles);
+  return qualifyingRoles;
 }
 
 export async function getCurrentDiscordRoles(discordId: string): Promise<string[]> {
