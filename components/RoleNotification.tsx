@@ -9,7 +9,6 @@ interface RoleNotificationProps {
 
 interface RoleConfig {
   roleId: string;
-  roleName: string;
   displayName: string;
 }
 
@@ -18,32 +17,19 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
 
   useEffect(() => {
     async function fetchRoleNames() {
-      try {
-        const response = await fetch('/api/roles/config');
-        const configs: RoleConfig[] = await response.json();
+      const response = await fetch('/api/roles/config');
+      const configs: RoleConfig[] = await response.json();
 
-        const nameMap = configs.reduce((acc: {[key: string]: string}, config) => {
-          // Use displayName if available, otherwise format roleName
-          acc[config.roleId] = config.displayName || 
-            config.roleName.split('_')
-              .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ')
-              .replace('holder', '')
-              .trim();
-          return acc;
-        }, {});
+      const nameMap = configs.reduce((acc: {[key: string]: string}, config) => {
+        acc[config.roleId] = config.displayName;
+        return acc;
+      }, {});
 
-        console.log('Role name mapping:', nameMap);
-        setRoleNames(nameMap);
-      } catch (error) {
-        console.error('Error fetching role names:', error);
-      }
+      setRoleNames(nameMap);
     }
 
-    if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
-      fetchRoleNames();
-    }
-  }, [roleUpdate]);
+    fetchRoleNames();
+  }, []);
 
   return (
     <div className={styles.notification}>
@@ -57,7 +43,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.added.map(roleId => (
                 <div key={`added-${roleId}`} className={styles.role}>
-                  {roleNames[roleId] || 'Unknown Role'}
+                  {roleNames[roleId]}
                 </div>
               ))}
             </div>
@@ -69,7 +55,7 @@ export default function RoleNotification({ roleUpdate, onClose }: RoleNotificati
             <div className={styles.roles}>
               {roleUpdate.removed.map(roleId => (
                 <div key={`removed-${roleId}`} className={styles.role}>
-                  {roleNames[roleId] || 'Unknown Role'}
+                  {roleNames[roleId]}
                 </div>
               ))}
             </div>
