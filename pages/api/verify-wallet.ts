@@ -72,11 +72,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Discord roles updated successfully');
     }
 
-    // Get role names from Discord
-    const roleNames = await getRoleNames();
-    const assignedRoleNames = qualifyingRoles
-      .map(roleId => roleNames.get(roleId) || roleId)
-      .filter(Boolean);
+    // Get role names from Discord for qualifying roles
+    const roleNames = await getRoleNames(qualifyingRoles);
+    const assignedRoleNames = roleNames.filter(Boolean);
 
     const verification = {
       isHolder: true,
