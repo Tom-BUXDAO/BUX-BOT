@@ -170,7 +170,9 @@ export async function calculateQualifyingRoles(
         .map((part, i) => i === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1))
         .join('')
         .replace('holder', 'Holder')
-        .replace('whale', 'Whale');
+        .replace('whale', 'Whale')
+        .replace('celebcatz', 'celebCatz')
+        .replace('doodle_bot', 'doodleBots');
       
       // Check if the role flag is true
       const hasRole = userRoles[dbColumn as keyof typeof userRoles];
