@@ -4,6 +4,7 @@ import type { RoleUpdate } from '@/types/verification';
 import type { RoleConfig } from '@/types/roles';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
+import { NFT_THRESHOLDS, BUX_THRESHOLDS } from '@/utils/roleConfig';
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
@@ -68,8 +69,32 @@ export async function getCurrentRoles(discordId: string): Promise<string[]> {
   }
 }
 
-// Add missing functions
-export async function calculateQualifyingRoles(discordId: string): Promise<string[]> {
+export async function calculateQualifyingRoles(
+  discordId: string,
+  nftCounts?: Record<string, number>,
+  buxBalance?: number
+): Promise<string[]> {
+  if (nftCounts && buxBalance) {
+    // Calculate roles from provided counts
+    const roleConfigs = await prisma.roleConfig.findMany();
+    return roleConfigs
+      .filter(config => {
+        if (config.collectionName && nftCounts[config.collectionName]) {
+          // NFT holder role
+          const count = nftCounts[config.collectionName];
+          const threshold = config.threshold || NFT_THRESHOLDS[config.collectionName as keyof typeof NFT_THRESHOLDS] || 0;
+          return count >= threshold;
+        } else if (config.roleType === 'token' && buxBalance) {
+          // BUX token role
+          const threshold = config.threshold || BUX_THRESHOLDS[config.roleName as keyof typeof BUX_THRESHOLDS] || 0;
+          return buxBalance >= threshold;
+        }
+        return false;
+      })
+      .map(config => config.roleId);
+  }
+  
+  // Fall back to database lookup if counts not provided
   return getQualifyingRoles(discordId);
 }
 
