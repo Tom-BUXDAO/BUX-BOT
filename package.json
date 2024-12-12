@@ -19,7 +19,8 @@
     "update:bux": "ts-node scripts/updateBuxBalances.ts",
     "update:bux:all": "ts-node scripts/updateAllBuxHolders.ts",
     "sync-discord-ids": "DATABASE_URL=\"postgresql://bux_dao_owner:vEShINmdr61J@ep-purple-wave-a2nm1276.eu-central-1.aws.neon.tech/bux_dao?sslmode=require\" NODE_ENV=development ts-node scripts/syncOwnerDiscordIds.ts",
-    "collections": "ts-node scripts/getCollections.ts"
+    "collections": "ts-node scripts/getCollections.ts",
+    "populate:nft-data": "ts-node scripts/populateNFTData.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

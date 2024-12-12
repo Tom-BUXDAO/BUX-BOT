@@ -1,99 +1,53 @@
+import { prisma } from '../../lib/prisma';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth';
-import { authOptions } from './auth/[...nextauth]';
-import { prisma } from '@/lib/prisma';
-import { verifyHolder } from '@/utils/verifyHolder';
-import { calculateQualifyingRoles, getCurrentDiscordRoles, calculateRoleUpdates, updateDiscordRoles, getRoleNames, syncUserRoles } from '@/utils/discordRoles';
-
-export const config = {
-  maxDuration: 60,
-  api: {
-    responseLimit: false,
-    bodyParser: true
-  }
-};
+import { updateDiscordRoles } from '../../utils/discordRoles';
+import { verifyHolder } from '../../utils/verifyHolder';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const session = await getServerSession(req, res, authOptions);
-    if (!session?.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const { discordId } = req.body;
+    if (!discordId) {
+      return res.status(400).json({ error: 'Discord ID is required' });
     }
 
-    const { address } = req.body;
-    if (!address || typeof address !== 'string') {
-      return res.status(400).json({ error: 'Valid wallet address is required' });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { discordId: true }
+    // Ensure user exists in Roles table
+    const existingRole = await prisma.roles.findUnique({
+      where: { discordId }
     });
 
-    if (!user?.discordId) {
-      return res.status(400).json({ error: 'Discord account not connected' });
+    if (!existingRole) {
+      await prisma.roles.create({
+        data: {
+          discordId,
+          lastUpdated: new Date(),
+          buxDao5: false
+        }
+      });
     }
 
-    // Verify the Discord ID is a valid snowflake
-    if (!/^\d+$/.test(user.discordId)) {
-      return res.status(400).json({ error: 'Invalid Discord ID format' });
-    }
-
-    const result = await verifyHolder(address, user.discordId);
-
-    // Sync roles to database
-    await syncUserRoles(user.discordId);
-
-    // Convert collections to Record<string, number>
-    const nftCounts = Object.entries(result.collections).reduce((acc, [collection, info]) => {
-      acc[collection] = info.count;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Get current Discord roles
-    const currentRoles = await getCurrentDiscordRoles(user.discordId);
-
-    // Calculate qualifying roles with converted collections
-    const qualifyingRoles = await calculateQualifyingRoles(
-      user.discordId,
-      nftCounts,
-      result.buxBalance
-    );
-    console.log('Qualifying roles:', qualifyingRoles);
-
-    // Calculate role changes - await the Promise
-    const roleUpdate = await calculateRoleUpdates(currentRoles, qualifyingRoles);
-    console.log('Role updates:', roleUpdate);
-
-    // Update Discord roles using Discord ID
-    if (roleUpdate.added.length > 0 || roleUpdate.removed.length > 0) {
-      console.log('Updating Discord roles...');
-      try {
-        await updateDiscordRoles(user.discordId, roleUpdate);
-      } catch (error) {
-        console.error('Role update failed but continuing verification:', error);
+    // Verify holdings and update roles
+    const verificationResult = await verifyHolder(discordId);
+    
+    // Update roles in database
+    await prisma.roles.update({
+      where: { discordId },
+      data: {
+        ...verificationResult,
+        lastUpdated: new Date()
       }
-      console.log('Discord roles updated successfully');
-    }
+    });
 
-    // Get role names from Discord for qualifying roles
-    const roleNames = await getRoleNames(qualifyingRoles);
-    const assignedRoleNames = roleNames.filter(Boolean);
+    // Update Discord roles
+    await updateDiscordRoles(discordId);
 
-    const verification = {
-      isHolder: true,
-      collections: result.collections,
-      buxBalance: result.buxBalance,
-      totalNFTs: result.totalNFTs,
-      assignedRoles: assignedRoleNames,
-      qualifyingBuxRoles: result.qualifyingBuxRoles,
-      roleUpdate: roleUpdate
-    };
-
-    return res.status(200).json({ success: true, verification });
+    return res.status(200).json({ message: 'Verification completed successfully' });
 
   } catch (error) {
     console.error('Error in verify-wallet:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 } 

@@ -1,68 +1,68 @@
-import { prisma } from '@/lib/prisma';
-import type { VerificationResult, Collections } from '@/types/verification';
-import type { RoleConfig } from '@/types/roles';
-import type { TokenBalance, NFT, Roles, Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma';
+import { getTokenBalances } from './tokenBalances';
+import { getNFTHoldings } from './nftHoldings';
 
-interface NFTCount {
-  collection: string;
-  _count: number;
-}
-
-export async function verifyHolder(walletAddress: string, discordId: string): Promise<VerificationResult> {
+export async function verifyHolder(discordId: string) {
   try {
-    // Get all data in parallel
-    const [userRoles, nftCountsResult, tokenBalances, roleConfigs] = await Promise.all([
-      prisma.roles.findUnique({
-        where: { discordId }
-      }),
-      prisma.$queryRaw<NFTCount[]>`
-        SELECT collection, COUNT(*) as _count
-        FROM "NFT"
-        WHERE "ownerDiscordId" = ${discordId}
-        GROUP BY collection
-      `,
-      prisma.tokenBalance.findMany({
-        where: { ownerDiscordId: discordId }
-      }),
-      prisma.$queryRaw<RoleConfig[]>`
-        SELECT * FROM "RoleConfig"
-      `
-    ]);
-
-    // Calculate BUX balance
-    const buxBalance = Number(tokenBalances.reduce((sum: bigint, { balance }: TokenBalance) => sum + balance, BigInt(0))) / 1e9;
-
-    // Build collections object
-    const collections: Collections = {};
-    nftCountsResult.forEach(({ collection, _count }: NFTCount) => {
-      collections[collection] = { count: Number(_count) };
+    // Get user's wallets
+    const user = await prisma.user.findUnique({
+      where: { discordId },
+      include: { wallets: true }
     });
 
-    // Get assigned roles from database
-    const assignedRoles = Object.entries(userRoles || {})
-      .filter(([key, value]) => value === true && !key.startsWith('_'))
-      .map(([key]) => {
-        const config = roleConfigs.find((rc: RoleConfig) => rc.roleName === key);
-        return config?.roleId ?? key;
-      });
+    if (!user) {
+      throw new Error('User not found');
+    }
 
-    // Calculate total NFTs
-    const totalNFTs = nftCountsResult.reduce((sum: number, { _count }: NFTCount) => sum + Number(_count), 0);
+    // Get all wallet addresses
+    const walletAddresses = user.wallets.map(w => w.address).filter(Boolean);
 
-    return {
-      isHolder: assignedRoles.length > 0,
-      collections,
-      buxBalance,
-      totalNFTs,
-      assignedRoles,
-      qualifyingBuxRoles: [], // Now handled by database triggers
-      roleUpdate: {
-        added: [],
-        removed: [],
-        previousRoles: [],
-        newRoles: assignedRoles
+    // Get token balances and NFT holdings
+    const [tokenBalances, nftHoldings] = await Promise.all([
+      getTokenBalances(walletAddresses),
+      getNFTHoldings(walletAddresses)
+    ]);
+
+    // Update user's holdings in database
+    await prisma.$transaction(async (tx) => {
+      // Update token balances
+      for (const address of walletAddresses) {
+        await tx.tokenBalance.upsert({
+          where: { walletAddress: address },
+          create: {
+            walletAddress: address,
+            balance: 0,
+            ownerDiscordId: discordId,
+            lastUpdated: new Date()
+          },
+          update: {
+            balance: tokenBalances.find((b: { walletAddress: string; amount: number }) => b.walletAddress === address)?.amount || 0,
+            ownerDiscordId: discordId,
+            lastUpdated: new Date()
+          }
+        });
       }
-    };
+
+      // Update NFT ownerships
+      for (const holding of nftHoldings) {
+        await tx.nFT.update({
+          where: { mint: holding.mint },
+          data: {
+            ownerWallet: holding.walletAddress,
+            ownerDiscordId: discordId,
+            lastUpdated: new Date()
+          }
+        });
+      }
+    });
+
+    // The triggers will handle role updates
+    const roles = await prisma.roles.findUnique({
+      where: { discordId }
+    });
+
+    return roles;
+
   } catch (error) {
     console.error('Error in verifyHolder:', error);
     throw error;

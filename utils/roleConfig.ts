@@ -107,3 +107,36 @@ export const BUX_THRESHOLDS = {
 } as const;
 
 export const BUXDAO_5_ROLE_ID = '1248428373487784006'; 
+
+export function calculateRoles(tokenBalances: any[], nftHoldings: any[], roleConfig: any[]) {
+  const roles: Record<string, boolean> = {};
+  
+  // Initialize all roles to false
+  roleConfig.forEach(config => {
+    roles[config.roleName] = false;
+  });
+
+  // Calculate NFT roles
+  for (const config of roleConfig) {
+    if (config.roleType === 'NFT') {
+      const holdingCount = nftHoldings.filter(h => h.collection === config.collection).length;
+      roles[config.roleName] = holdingCount >= config.threshold;
+    }
+  }
+
+  // Calculate token roles
+  const totalBux = tokenBalances.reduce((sum, b) => sum + b.amount, 0);
+  for (const config of roleConfig) {
+    if (config.roleType === 'TOKEN') {
+      roles[config.roleName] = totalBux >= config.threshold;
+    }
+  }
+
+  // Calculate BUXDao5
+  const hasMainCollections = roleConfig
+    .filter(c => c.isMainCollection)
+    .every(c => roles[c.roleName]);
+  roles.buxDao5 = hasMainCollections;
+
+  return roles;
+}
