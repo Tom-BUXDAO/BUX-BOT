@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { updateDiscordRoles } from '../../utils/discordRoles';
 import { verifyHolder } from '../../utils/verifyHolder';
+import type { RoleUpdate } from '../../types/discord';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -24,12 +25,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Ensure user exists in Roles table
-    const existingRole = await prisma.roles.findUnique({
+    // Get previous roles
+    const previousRoles = await prisma.roles.findUnique({
       where: { discordId }
     });
 
-    if (!existingRole) {
+    // Ensure user exists in Roles table
+    if (!previousRoles) {
       await prisma.roles.create({
         data: {
           discordId,
@@ -52,8 +54,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    // Update Discord roles with both required arguments
-    await updateDiscordRoles(discordId, updatedRoles);
+    // Calculate role changes
+    const roleUpdate: RoleUpdate = {
+      added: [],
+      removed: [],
+      previousRoles: previousRoles || {},
+      newRoles: updatedRoles
+    };
+
+    // Compare roles and populate added/removed arrays
+    Object.keys(updatedRoles).forEach(key => {
+      if (key === 'discordId' || key === 'discordName' || key === 'createdAt' || key === 'updatedAt') return;
+      
+      const prev = previousRoles?.[key] || false;
+      const curr = updatedRoles[key] || false;
+
+      if (!prev && curr) roleUpdate.added.push(key);
+      if (prev && !curr) roleUpdate.removed.push(key);
+    });
+
+    // Update Discord roles with role changes
+    await updateDiscordRoles(discordId, roleUpdate);
 
     return res.status(200).json({ message: 'Verification completed successfully' });
 
