@@ -1,8 +1,8 @@
 export interface RoleUpdate {
   added: string[];
   removed: string[];
-  previousRoles: Record<string, boolean | null>;
-  newRoles: Record<string, boolean | null>;
+  previousRoles: string[];
+  newRoles: string[];
 }
 
 export interface RoleRecord {
