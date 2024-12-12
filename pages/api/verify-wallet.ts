@@ -58,20 +58,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const roleUpdate: RoleUpdate = {
       added: [],
       removed: [],
-      previousRoles: previousRoles as unknown as Record<string, boolean | null>,
-      newRoles: updatedRoles as unknown as Record<string, boolean | null>
+      previousRoles: Object.entries(previousRoles || {})
+        .filter(([key, value]) => 
+          key !== 'discordId' && 
+          key !== 'discordName' && 
+          key !== 'createdAt' && 
+          key !== 'updatedAt' && 
+          value === true
+        )
+        .map(([key]) => key),
+      newRoles: Object.entries(updatedRoles)
+        .filter(([key, value]) => 
+          key !== 'discordId' && 
+          key !== 'discordName' && 
+          key !== 'createdAt' && 
+          key !== 'updatedAt' && 
+          value === true
+        )
+        .map(([key]) => key)
     };
 
     // Compare roles and populate added/removed arrays
-    Object.keys(updatedRoles).forEach(key => {
-      if (key === 'discordId' || key === 'discordName' || key === 'createdAt' || key === 'updatedAt') return;
-      
-      const prev = (previousRoles as RoleRecord)?.[key] as boolean | null || false;
-      const curr = (updatedRoles as RoleRecord)[key] as boolean | null || false;
+    const prevRoleSet = new Set(roleUpdate.previousRoles);
+    const newRoleSet = new Set(roleUpdate.newRoles);
 
-      if (!prev && curr) roleUpdate.added.push(key);
-      if (prev && !curr) roleUpdate.removed.push(key);
-    });
+    roleUpdate.added = [...newRoleSet].filter(role => !prevRoleSet.has(role));
+    roleUpdate.removed = [...prevRoleSet].filter(role => !newRoleSet.has(role));
 
     // Update Discord roles with role changes
     await updateDiscordRoles(discordId, roleUpdate);
