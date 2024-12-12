@@ -1,8 +1,7 @@
 import { prisma } from '../../lib/prisma';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { updateDiscordRoles } from '../../utils/discordRoles';
-import { verifyHolder } from '../../utils/verifyHolder';
-import type { RoleUpdate, RoleRecord } from '../../types/discord';
+import type { RoleUpdate } from '../../types/discord';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -15,80 +14,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Discord ID is required' });
     }
 
-    // Get user info first
-    const user = await prisma.user.findUnique({
-      where: { discordId },
-      select: { discordName: true }
-    });
+    // Call database function to calculate role updates
+    const roleChanges = await prisma.$queryRaw<RoleUpdate>`
+      SELECT * FROM calculate_role_changes(${discordId}::text)
+    `;
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    if (roleChanges.added.length > 0 || roleChanges.removed.length > 0) {
+      // Apply role changes in Discord
+      await updateDiscordRoles(discordId, roleChanges);
     }
 
-    // Get previous roles
-    const previousRoles = await prisma.roles.findUnique({
-      where: { discordId }
+    return res.status(200).json({ 
+      message: 'Verification completed successfully',
+      changes: roleChanges
     });
-
-    // Ensure user exists in Roles table
-    if (!previousRoles) {
-      await prisma.roles.create({
-        data: {
-          discordId,
-          discordName: user.discordName || '',
-          updatedAt: new Date(),
-          buxDao5: false
-        }
-      });
-    }
-
-    // Verify holdings and update roles
-    const verificationResult = await verifyHolder(discordId);
-    
-    // Update roles in database
-    const updatedRoles = await prisma.roles.update({
-      where: { discordId },
-      data: {
-        ...verificationResult,
-        updatedAt: new Date()
-      }
-    });
-
-    // Calculate role changes
-    const roleUpdate: RoleUpdate = {
-      added: [],
-      removed: [],
-      previousRoles: Object.entries(previousRoles || {})
-        .filter(([key, value]) => 
-          key !== 'discordId' && 
-          key !== 'discordName' && 
-          key !== 'createdAt' && 
-          key !== 'updatedAt' && 
-          value === true
-        )
-        .map(([key]) => key),
-      newRoles: Object.entries(updatedRoles)
-        .filter(([key, value]) => 
-          key !== 'discordId' && 
-          key !== 'discordName' && 
-          key !== 'createdAt' && 
-          key !== 'updatedAt' && 
-          value === true
-        )
-        .map(([key]) => key)
-    };
-
-    // Compare roles and populate added/removed arrays
-    const prevRoleSet = new Set(roleUpdate.previousRoles);
-    const newRoleSet = new Set(roleUpdate.newRoles);
-
-    roleUpdate.added = [...newRoleSet].filter(role => !prevRoleSet.has(role));
-    roleUpdate.removed = [...prevRoleSet].filter(role => !newRoleSet.has(role));
-
-    // Update Discord roles with role changes
-    await updateDiscordRoles(discordId, roleUpdate);
-
-    return res.status(200).json({ message: 'Verification completed successfully' });
 
   } catch (error) {
     console.error('Error in verify-wallet:', error);
