@@ -14,6 +14,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Discord ID is required' });
     }
 
+    // Get user info first
+    const user = await prisma.user.findUnique({
+      where: { discordId },
+      select: { discordName: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     // Ensure user exists in Roles table
     const existingRole = await prisma.roles.findUnique({
       where: { discordId }
@@ -23,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await prisma.roles.create({
         data: {
           discordId,
+          discordName: user.discordName || '',
           updatedAt: new Date(),
           buxDao5: false
         }
