@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const verificationResult = await verifyHolder(discordId);
     
     // Update roles in database
-    await prisma.roles.update({
+    const updatedRoles = await prisma.roles.update({
       where: { discordId },
       data: {
         ...verificationResult,
@@ -52,8 +52,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    // Update Discord roles
-    await updateDiscordRoles(discordId);
+    // Update Discord roles with both required arguments
+    await updateDiscordRoles(discordId, updatedRoles);
 
     return res.status(200).json({ message: 'Verification completed successfully' });
 
