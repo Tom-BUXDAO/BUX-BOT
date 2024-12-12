@@ -2,7 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { updateDiscordRoles } from '../../utils/discordRoles';
 import { verifyHolder } from '../../utils/verifyHolder';
-import type { RoleUpdate } from '../../types/discord';
+import type { RoleUpdate, RoleRecord } from '../../types/discord';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -58,16 +58,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const roleUpdate: RoleUpdate = {
       added: [],
       removed: [],
-      previousRoles: previousRoles || {},
-      newRoles: updatedRoles
+      previousRoles: previousRoles as unknown as Record<string, boolean | null>,
+      newRoles: updatedRoles as unknown as Record<string, boolean | null>
     };
 
     // Compare roles and populate added/removed arrays
     Object.keys(updatedRoles).forEach(key => {
       if (key === 'discordId' || key === 'discordName' || key === 'createdAt' || key === 'updatedAt') return;
       
-      const prev = previousRoles?.[key] || false;
-      const curr = updatedRoles[key] || false;
+      const prev = (previousRoles as RoleRecord)?.[key] as boolean | null || false;
+      const curr = (updatedRoles as RoleRecord)[key] as boolean | null || false;
 
       if (!prev && curr) roleUpdate.added.push(key);
       if (prev && !curr) roleUpdate.removed.push(key);
