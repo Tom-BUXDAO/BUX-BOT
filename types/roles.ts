@@ -7,20 +7,29 @@ export enum RoleType {
 
 export interface RoleConfig {
   id: number;
-  displayName: string | null;
-  createdAt: Date;
-  updatedAt: Date;
   roleName: string;
   roleId: string;
-  threshold: number | null;
-  collectionName: string | null;
-  roleType: RoleType;
-}
-
-export interface RoleStatus {
-  discordId: string;
-  discordName: string;
-  roles: Record<string, boolean>;
+  displayName?: string;
+  threshold: number;
+  collectionName?: string;
+  roleType: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface RoleChanges {
+  added: string[];
+  removed: string[];
+  previousRoles: string[];
+  newRoles: string[];
+}
+
+export interface RoleSync {
+  id: string;
+  discordId: string;
+  added: string[];
+  removed: string[];
+  success: boolean;
+  error?: string;
+  timestamp: Date;
 } 
