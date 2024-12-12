@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { updateDiscordRoles } from '../utils/discordRoles';
+import type { RoleSync } from '../types/roles';
 
 async function testRoleSync(discordId: string) {
   try {
@@ -24,12 +25,13 @@ async function testRoleSync(discordId: string) {
     `;
     console.log('Calculated role changes:', roleChanges);
 
-    // 4. Log role sync history
-    const syncHistory = await prisma.roleSync.findMany({
-      where: { discordId },
-      orderBy: { timestamp: 'desc' },
-      take: 5
-    });
+    // 4. Log role sync history using raw query
+    const syncHistory = await prisma.$queryRaw<RoleSync[]>`
+      SELECT * FROM "RoleSync"
+      WHERE "discordId" = ${discordId}
+      ORDER BY timestamp DESC
+      LIMIT 5
+    `;
     console.log('Recent sync history:', syncHistory);
 
     return {
