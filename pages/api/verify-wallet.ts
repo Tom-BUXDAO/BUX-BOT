@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await prisma.roles.create({
         data: {
           discordId,
-          lastUpdated: new Date(),
+          updatedAt: new Date(),
           buxDao5: false
         }
       });
@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       where: { discordId },
       data: {
         ...verificationResult,
-        lastUpdated: new Date()
+        updatedAt: new Date()
       }
     });
 
