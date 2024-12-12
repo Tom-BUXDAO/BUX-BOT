@@ -9,10 +9,10 @@ export interface RoleConfig {
   id: number;
   roleName: string;
   roleId: string;
-  displayName?: string;
+  displayName: string | null;
   threshold: number;
-  collectionName?: string;
-  roleType: string;
+  collectionName: string | null;
+  roleType: RoleType;
   createdAt: Date;
   updatedAt: Date;
 }

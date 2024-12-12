@@ -1,26 +1,36 @@
-import { prisma } from '@/lib/prisma';
-import type { RoleConfig, RoleType } from '@/types/roles';
+import { prisma } from '../lib/prisma';
+import { RoleConfig, RoleType } from '../types/roles';
+
+function formatRoleName(roleName: string): string {
+  return roleName.split('_').map(word => 
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+}
 
 export async function getRoleConfigs(): Promise<RoleConfig[]> {
   const configs = await prisma.roleConfig.findMany({
-    orderBy: [
-      { roleType: 'asc' },
-      { roleName: 'asc' }
-    ]
+    orderBy: { id: 'asc' }
   });
   
   return configs.map(config => ({
     ...config,
     roleType: config.roleType as RoleType,
-    displayName: formatRoleName(config.roleName)
+    displayName: config.displayName || formatRoleName(config.roleName)
   }));
 }
 
-function formatRoleName(roleName: string): string {
-  return roleName
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+export async function getRoleConfig(roleName: string): Promise<RoleConfig | null> {
+  const config = await prisma.roleConfig.findUnique({
+    where: { roleName }
+  });
+
+  if (!config) return null;
+
+  return {
+    ...config,
+    roleType: config.roleType as RoleType,
+    displayName: config.displayName || formatRoleName(config.roleName)
+  };
 }
 
 export async function getRoleIdByName(roleName: string): Promise<string | null> {
