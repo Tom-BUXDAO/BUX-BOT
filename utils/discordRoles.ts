@@ -77,4 +77,27 @@ export async function syncUserRoles(discordId: string): Promise<void> {
   // Call database function to sync roles
   await prisma.$executeRaw`SELECT sync_user_roles(${discordId}::text)`;
 }
+
+interface RoleChangeParams {
+  userId: string
+  discordId: string
+  walletAddress: string
+}
+
+export async function calculateRoleChanges(params: RoleChangeParams) {
+  const { userId, discordId, walletAddress } = params
+  
+  try {
+    // For now, return empty changes
+    return {
+      added: [],
+      removed: [],
+      previousRoles: [],
+      newRoles: []
+    }
+  } catch (error) {
+    console.error('Error calculating role changes:', error)
+    return null
+  }
+}
  
