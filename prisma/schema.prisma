@@ -150,7 +150,7 @@ model WalletVerification {
 }
 
 model Roles {
-  discordId String @id @unique
+  discordId String @id
   discordName String
   buxBalance BigInt?
   aiBitbotsHolder Boolean? @default(false)
