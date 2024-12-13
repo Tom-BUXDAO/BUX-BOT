@@ -7,22 +7,7 @@
     "build": "prisma generate && prisma db push --accept-data-loss && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate",
-    "populate:collections": "ts-node scripts/populateNFTs.ts",
-    "fetch:metadata": "ts-node scripts/fetchNFTMetadata.ts",
-    "check:data": "ts-node scripts/checkData.ts",
-    "update:ownership": "ts-node scripts/updateOwnership.ts",
-    "update:owners": "ts-node scripts/updateNFTOwners.ts",
-    "check:missing": "ts-node scripts/checkMissingOwners.ts",
-    "update:all": "ts-node scripts/updateAllOwners.ts",
-    "update:missing": "ts-node scripts/updateMissingOwners.ts",
-    "update:bux": "ts-node scripts/updateBuxBalances.ts",
-    "update:bux:all": "ts-node scripts/updateAllBuxHolders.ts",
-    "sync-discord-ids": "DATABASE_URL=\"postgresql://bux_dao_owner:vEShINmdr61J@ep-purple-wave-a2nm1276.eu-central-1.aws.neon.tech/bux_dao?sslmode=require\" NODE_ENV=development ts-node scripts/syncOwnerDiscordIds.ts",
-    "collections": "ts-node scripts/getCollections.ts",
-    "populate:nft-data": "ts-node scripts/populateNFTData.ts",
-    "test:roles": "ts-node scripts/testRoleSync.ts",
-    "verify:roles": "ts-node scripts/testRoleSync.ts"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
