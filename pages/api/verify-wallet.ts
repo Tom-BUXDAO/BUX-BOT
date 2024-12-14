@@ -7,7 +7,7 @@ import { Prisma } from '@prisma/client'
 interface VerificationResultJson {
   success: boolean;
   error?: string;
-  [key: string]: any; // Add index signature for Prisma JSON type
+  [key: string]: any;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -16,12 +16,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { walletAddress, userId, discordId } = req.body
+    // Log the request body for debugging
+    console.log('Verify wallet request body:', req.body)
 
-    if (!walletAddress || !userId || !discordId) {
+    const { wallet, userId, discordId } = req.body
+
+    // Use wallet address from the correct field
+    const walletAddress = wallet?.address || req.body.walletAddress
+
+    if (!walletAddress) {
+      console.log('Missing wallet address. Body:', req.body)
+      return res.status(400).json({ 
+        error: 'Missing wallet address',
+        details: 'No wallet address provided in request'
+      })
+    }
+
+    if (!userId || !discordId) {
       return res.status(400).json({ 
         error: 'Missing required fields',
-        details: 'walletAddress, userId, and discordId are required'
+        details: 'userId and discordId are required'
       })
     }
 
@@ -35,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    // Create verification record with properly typed result
+    // Create verification record
     const verification = await prisma.walletVerification.create({
       data: {
         walletAddress,
