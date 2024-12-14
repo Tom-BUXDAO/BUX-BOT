@@ -16,16 +16,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Log the request body for debugging
-    console.log('Verify wallet request body:', req.body)
+    // Detailed request logging
+    console.log('Request body:', JSON.stringify(req.body, null, 2))
+    console.log('Request headers:', req.headers)
 
-    const { wallet, userId, discordId } = req.body
+    const { wallet, user, session } = req.body
 
-    // Use wallet address from the correct field
-    const walletAddress = wallet?.address || req.body.walletAddress
+    // Extract data from nested structure
+    const walletAddress = wallet?.publicKey?.toString() || wallet?.address || req.body.walletAddress
+    const userId = user?.id || session?.user?.id || req.body.userId
+    const discordId = user?.discordId || session?.user?.discordId || req.body.discordId
+
+    console.log('Extracted data:', { walletAddress, userId, discordId })
 
     if (!walletAddress) {
-      console.log('Missing wallet address. Body:', req.body)
+      console.log('Missing wallet address. Full body:', JSON.stringify(req.body, null, 2))
       return res.status(400).json({ 
         error: 'Missing wallet address',
         details: 'No wallet address provided in request'
@@ -33,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!userId || !discordId) {
+      console.log('Missing user data:', { userId, discordId })
       return res.status(400).json({ 
         error: 'Missing required fields',
         details: 'userId and discordId are required'
